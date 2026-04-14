@@ -1,0 +1,16 @@
+Bold graphic design mobile game background, flat design vector art style, sharp clean edges, solid color blocks, high saturation, NOT painterly, NOT watercolor, NOT realistic, NOT blurry, NOT hand-painted. Modern mobile puzzle game aesthetic. Slight vignette darkening at all four corners. NO text, NO characters, NO UI, NO watermark.
+
+Vertical 9:16 portrait orientation.
+
+Design: Dark elegant geometric pattern background for a classic marble puzzle game.
+
+Pattern: Wide diagonal stripes at 45 degrees angle, alternating between two dark navy-blue tones — darker stripe #1B2838 and slightly lighter stripe #253D54. Stripes should be approximately 60-80 pixels wide, clean sharp edges between stripes.
+
+Additional details:
+- Very subtle warm amber glow in the center area (around 8-10% opacity), color #D4A84B, soft radial, suggesting where the game board sits
+- Gentle vignette: edges and corners darken to near-black #0A0F18
+- The stripes should have a very subtle fabric/canvas micro-texture, barely visible, not photorealistic
+- Overall mood: sophisticated, premium, classic board game atmosphere
+- Think dark gentleman's club or premium card game table
+
+Color palette strictly: #1B2838, #253D54, #0A0F18, with subtle #D4A84B center glow only.

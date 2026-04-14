@@ -1,0 +1,19 @@
+A 4x4 grid of 16 mobile game app icons for a colorful marble puzzle game (Color Lines / 五彩连珠). Each icon is a rounded-square app icon with no text, no labels, no writing anywhere.
+
+The game features shiny colorful glass marbles (red, blue, green, yellow, purple, orange, cyan) on a grid board. Each icon should be visually striking, high contrast, eye-catching, with a strong focal point.
+
+Layout: 4 rows x 4 columns. Each row is a different art style. Small gap between icons.
+
+ROW 1 — CUTE CARTOON STYLE:
+4 icons with bubbly, playful, adorable cartoon aesthetic. Round glossy marbles with cute happy expressions or sparkle effects. Bright candy colors, soft gradients, pastel accents. Background: cheerful gradient (pink-to-orange, blue-to-purple, etc). Marbles arranged attractively — clustered, bouncing, or in a satisfying pattern. Thick outlines, rounded shapes, fun and inviting.
+
+ROW 2 — 3D REALISTIC GLASS STYLE:
+4 icons with photorealistic 3D glass marble rendering. Ultra-shiny transparent glass spheres with realistic reflections, caustics, and light refraction. Deep rich colors glowing from within. Dark elegant background (deep blue, dark purple, or black) to make the glass marbles pop. Dramatic studio lighting, lens flare accents. Premium, luxurious feel.
+
+ROW 3 — BOLD FLAT GRAPHIC STYLE:
+4 icons with modern flat vector design, clean geometric shapes. Solid color blocks, no gradients within marbles. Bold high-saturation colors against contrasting backgrounds. Abstract geometric patterns (diagonal stripes, triangles, hexagons) as background elements. Sharp edges, minimal detail, maximum impact. Swiss/Bauhaus inspired graphic design.
+
+ROW 4 — NEON CYBERPUNK STYLE:
+4 icons with glowing neon aesthetic on dark backgrounds. Marbles emit bright neon light (electric blue, hot pink, lime green, golden yellow). Neon grid lines, holographic effects, digital particle trails. Dark navy/black background with colorful neon glow and bloom effects. Futuristic, energetic, high-tech gaming vibe. Circuit board or matrix patterns subtly visible.
+
+CRITICAL: NO TEXT anywhere. No letters, no numbers, no labels, no captions, no writing of any kind in the entire image. Every icon must clearly feature colorful spheres/marbles as the central subject.

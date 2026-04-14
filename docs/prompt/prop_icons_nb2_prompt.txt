@@ -1,0 +1,17 @@
+A single image containing exactly 5 game tool icons arranged in 1 row x 5 columns grid, evenly spaced, each icon in its own square cell. Bold flat design vector art style, high contrast, modern mobile game aesthetic. Each icon is a simple bold white symbol centered on a vibrant colored circular background. Clean sharp edges, NOT painterly, NOT realistic, NOT 3D.
+
+All icons have the same structure: a solid bold-colored circle filling most of the cell, with a thick white icon symbol centered inside.
+
+From left to right:
+
+Cell 1 — POSITION PREVIEW: Bright teal circle (#0DCAF0). White eye icon — a simple almond/oval eye shape with a round pupil dot in center.
+
+Cell 2 — UNDO: Royal blue circle (#0D6EFD). White curved-left arrow icon — a bold counterclockwise undo arrow pointing left.
+
+Cell 3 — REMOVE BALL: Coral red circle (#DC3545). White bold X cross icon — two thick diagonal lines crossing.
+
+Cell 4 — REROLL COLORS: Amber orange circle (#FD7E14). White circular refresh arrows icon — two curved arrows forming a cycle/loop.
+
+Cell 5 — EXTRA LIFE: Emerald green circle (#198754). White bold plus sign icon — a thick + cross shape.
+
+Background: solid flat medium gray #888888 behind all cells for easy background removal. No shadows, no gradients on background. Each icon cell is clearly separated. NO text, NO labels, NO numbers anywhere. Icons should be simple, bold, instantly recognizable at small sizes (48x48 pixels).

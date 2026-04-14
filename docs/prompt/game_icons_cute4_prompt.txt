@@ -1,0 +1,15 @@
+A 2x2 grid of 4 mobile game app icons for a colorful marble puzzle game. Each icon is a perfect rounded-square with equal spacing between them. NO text, NO letters, NO numbers, NO labels, NO captions, NO writing of any kind anywhere in the image. NO faces, NO eyes, NO mouths, NO expressions on the marbles.
+
+Style: Cute bubbly cartoon, glossy shiny marbles with highlight reflections and sparkle stars. Soft pastel gradient backgrounds. Thick rounded outlines. Clean, polished mobile game icon look. Each marble is a smooth shiny sphere with a white highlight spot — like a gumball or candy ball.
+
+CRITICAL LAYOUT: All visual elements must be centered within each icon. The marbles should cluster tightly in the CENTER of each icon, leaving padding around edges. This is because the square icons will be displayed as circles (WeChat crops square to circle), so nothing important should be near the corners.
+
+ICON 1 (top-left): Warm golden-yellow to soft orange gradient background. 5-6 colorful glossy marbles (red, blue, green, purple, orange, cyan) clustered in the center. Small sparkle/star decorations around the marbles. Marbles have cute candy-like glossy sheen with white highlight dots.
+
+ICON 2 (top-right): Cool mint-green to teal gradient background. 5-6 colorful glossy marbles in different arrangement, clustered center. Pink, yellow, blue, orange, purple marbles. Sparkle effects. Fresh and cool color palette.
+
+ICON 3 (bottom-left): Soft lavender to light purple gradient background. 5-6 colorful glossy marbles clustered center. Red, green, yellow, cyan, orange marbles with a dreamy purple-toned atmosphere. Sparkle stars.
+
+ICON 4 (bottom-right): Light coral-pink to warm rose gradient background. 5-6 colorful glossy marbles clustered center. Blue, green, yellow, purple, pink marbles. Warm and inviting feel. Sparkle decorations.
+
+Each icon must look like a premium mobile game app icon. Marbles are smooth round spheres with NO faces, NO eyes, NO expressions — just pure glossy colorful balls with light reflections. Keep the composition centered for circle-crop safety.
