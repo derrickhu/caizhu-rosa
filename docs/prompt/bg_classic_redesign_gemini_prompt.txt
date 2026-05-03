@@ -1,0 +1,11 @@
+Create a clean final portrait mobile game background for classic mode of a colorful marble line puzzle game.
+
+Aspect ratio: 9:16 vertical phone screen.
+
+Reference style: bright blue and purple casual puzzle game background, soft candy shapes, subtle swirls, glossy marbles around edges, cheerful and polished.
+
+Composition:
+No UI, no buttons, no score panel, no board, no text. Keep the center clean enough for a large 9x9 board. Top area should be readable for a score HUD. Bottom can have a subtle blue wave decoration but no UI.
+
+Important:
+NO TEXT, no letters, no numbers, no captions, no logos, no characters. High clarity, saturated blue/purple colors, not dark or muddy.

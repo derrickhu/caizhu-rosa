@@ -1,0 +1,17 @@
+Create a polished 9:16 mobile game UI prototype for a colorful marble puzzle game.
+
+Screen: level selection map.
+
+Visual style:
+Bright cartoon casual game, ocean/candy fantasy background, glossy round buttons, soft blue panels, high saturation, playful stars and marbles.
+
+Layout:
+Top: title "关卡挑战" with a back button and small resource/reward counters.
+Main area: a vertical winding path or map with round level nodes numbered 1 to 30, showing locked/unlocked states and star ratings. Current level should be highlighted with glow.
+Bottom: navigation bar with buttons for 首页, 排行榜, 皮肤, 道具.
+
+Mood:
+Rewarding, progression-driven, easy to understand. Similar to casual puzzle level maps but original, no copyrighted characters.
+
+Requirements:
+Portrait 9:16 mobile screen mockup, polished UI, no real logos. The design should be clear enough for implementation planning.

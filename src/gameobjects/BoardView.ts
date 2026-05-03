@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { BOARD_SIZE, CELL_GAP, BALL_COLORS, BALL_PALETTE, computeBoardLayout } from '@/config/GameConfig';
+import { BOARD_SIZE, CELL_GAP, BALL_COLORS, BALL_PALETTE, computeBoardLayout, scoreForLine } from '@/config/GameConfig';
 import { WILD_BALL, BOMB_BALL, isSpecialBall } from '@/config/PropConfig';
 import { BallSprite } from './BallSprite';
 import { BoardManager, type CellValue, type NewBall, type MoveResult } from '@/managers/BoardManager';
@@ -7,9 +7,12 @@ import { EventBus } from '@/core/EventBus';
 import { TweenManager, Ease } from '@/core/TweenManager';
 import { Game } from '@/core/Game';
 import type { Point } from '@/systems/PathFinder';
+import { loadImageTexture } from '@/utils/imageTexture';
 
 export type BoardInteractionMode = 'normal' | 'removeBall';
 export type BoardTheme = 'classic' | 'level';
+
+type BoardPoint = { x: number; y: number };
 
 export class BoardView extends PIXI.Container {
   private _cellSize = 72;
@@ -18,6 +21,7 @@ export class BoardView extends PIXI.Container {
   private _theme: BoardTheme = 'classic';
 
   private _bgGraphics: PIXI.Graphics;
+  private _levelBoardArt: PIXI.Container;
   private _ballContainer: PIXI.Container;
   private _overlayContainer: PIXI.Container;
   private _balls: (BallSprite | null)[][] = [];
@@ -33,6 +37,9 @@ export class BoardView extends PIXI.Container {
 
     this._bgGraphics = new PIXI.Graphics();
     this.addChild(this._bgGraphics);
+
+    this._levelBoardArt = new PIXI.Container();
+    this.addChild(this._levelBoardArt);
 
     this._ballContainer = new PIXI.Container();
     this.addChild(this._ballContainer);
@@ -54,7 +61,7 @@ export class BoardView extends PIXI.Container {
     const metrics = computeBoardLayout(logicWidth, logicHeight, safeTop, layoutOpts);
     this._cellSize = metrics.cellSize;
     this._boardPixelSize = metrics.boardPixelSize;
-    this._ballRadius = Math.floor(this._cellSize * 0.40);
+    this._ballRadius = Math.floor(this._cellSize * 0.45);
 
     this.x = metrics.boardX;
     this.y = metrics.boardY;
@@ -70,116 +77,88 @@ export class BoardView extends PIXI.Container {
     }
   }
 
-  /** Stone/slate textured board for classic mode */
+  /** Glossy light board for classic mode */
   private _drawClassicBoard(): void {
     const g = this._bgGraphics;
     const size = this._boardPixelSize;
-    const pad = 10;
     g.clear();
+    this._levelBoardArt.removeChildren();
 
-    // Outer stone frame - chiseled edge effect
-    g.beginFill(0x4A5568);
-    g.drawRoundedRect(-pad, -pad, size + pad * 2, size + pad * 2, 8);
-    g.endFill();
+    const pad = Math.round(this._cellSize * 0.52);
+    const boardSize = size + pad * 2;
 
-    // Top-left bevel (light)
-    g.beginFill(0x6B7B8D, 0.6);
-    g.drawRoundedRect(-pad, -pad, size + pad * 2, 4, 8);
-    g.endFill();
-    g.beginFill(0x6B7B8D, 0.4);
-    g.drawRoundedRect(-pad, -pad, 4, size + pad * 2, 8);
-    g.endFill();
-
-    // Bottom-right bevel (dark)
-    g.beginFill(0x2D3748, 0.6);
-    g.drawRoundedRect(-pad, size + pad - 4, size + pad * 2, 4, 8);
-    g.endFill();
-    g.beginFill(0x2D3748, 0.4);
-    g.drawRoundedRect(size + pad - 4, -pad, 4, size + pad * 2, 8);
-    g.endFill();
-
-    // Inner board surface
-    g.beginFill(0x3D4F5F);
-    g.drawRoundedRect(0, 0, size, size, 4);
-    g.endFill();
-
-    for (let r = 0; r < BOARD_SIZE; r++) {
-      for (let c = 0; c < BOARD_SIZE; c++) {
-        const { x, y } = this._cellPos(r, c);
-        const cs = this._cellSize;
-
-        // Cell base with slight color variation for stone texture
-        const shade = ((r + c) % 2 === 0) ? 0x2A3A4A : 0x283848;
-        g.beginFill(shade);
-        g.drawRoundedRect(x, y, cs, cs, 3);
-        g.endFill();
-
-        // Inner shadow (inset effect)
-        g.beginFill(0x1A2A38, 0.4);
-        g.drawRoundedRect(x, y, cs, 2, 3);
-        g.endFill();
-        g.beginFill(0x1A2A38, 0.3);
-        g.drawRoundedRect(x, y, 2, cs, 3);
-        g.endFill();
-
-        // Bottom-right inner highlight
-        g.beginFill(0x4A5A6A, 0.25);
-        g.drawRoundedRect(x, y + cs - 2, cs, 2, 3);
-        g.endFill();
-        g.beginFill(0x4A5A6A, 0.15);
-        g.drawRoundedRect(x + cs - 2, y, 2, cs, 3);
-        g.endFill();
+    Promise.all([
+      loadImageTexture('images/classic_board_base.png'),
+      loadImageTexture('images/classic_board_cell_light.png'),
+      loadImageTexture('images/classic_board_cell_lavender.png'),
+    ]).then(([baseTex, lightTex, lavenderTex]) => {
+      if (this.destroyed || this._theme !== 'classic') return;
+      if (baseTex) {
+        const base = new PIXI.Sprite(baseTex);
+        base.x = -pad;
+        base.y = -pad;
+        base.width = boardSize;
+        base.height = boardSize;
+        this._levelBoardArt.addChild(base);
       }
-    }
+
+      if (!lightTex && !lavenderTex) return;
+      for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+          const tex = ((r + c) % 2 === 0 ? lightTex : lavenderTex) ?? lightTex ?? lavenderTex;
+          if (!tex) continue;
+          const { x, y } = this._cellPos(r, c);
+          const cell = new PIXI.Sprite(tex);
+          cell.x = x;
+          cell.y = y;
+          cell.width = this._cellSize;
+          cell.height = this._cellSize;
+          this._levelBoardArt.addChild(cell);
+        }
+      }
+    });
   }
 
   /** Bright, playful board for level mode */
   private _drawLevelBoard(): void {
     const g = this._bgGraphics;
-    const size = this._boardPixelSize;
-    const pad = 10;
     g.clear();
+    this._levelBoardArt.removeChildren();
 
-    // Soft rounded outer frame
-    g.beginFill(0xE8D5B7, 0.85);
-    g.drawRoundedRect(-pad, -pad, size + pad * 2, size + pad * 2, 14);
-    g.endFill();
+    const size = this._boardPixelSize;
+    const pad = Math.round(this._cellSize * 0.52);
+    const boardSize = size + pad * 2;
 
-    // Light inner highlight
-    g.beginFill(0xFFF8EE, 0.4);
-    g.drawRoundedRect(-pad, -pad, size + pad * 2, 3, 14);
-    g.endFill();
-
-    // Inner board surface
-    g.beginFill(0xF5EDE0);
-    g.drawRoundedRect(0, 0, size, size, 6);
-    g.endFill();
-
-    for (let r = 0; r < BOARD_SIZE; r++) {
-      for (let c = 0; c < BOARD_SIZE; c++) {
-        const { x, y } = this._cellPos(r, c);
-        const cs = this._cellSize;
-
-        // Warm alternating cell colors
-        const shade = ((r + c) % 2 === 0) ? 0xFAF3EA : 0xF0E6D6;
-        g.beginFill(shade);
-        g.drawRoundedRect(x, y, cs, cs, 5);
-        g.endFill();
-
-        // Soft inner shadow
-        g.beginFill(0xD4C4A8, 0.3);
-        g.drawRoundedRect(x, y, cs, 1.5, 5);
-        g.endFill();
-        g.beginFill(0xD4C4A8, 0.2);
-        g.drawRoundedRect(x, y, 1.5, cs, 5);
-        g.endFill();
-
-        // Bottom inner glow
-        g.beginFill(0xFFFFFF, 0.15);
-        g.drawRoundedRect(x, y + cs - 1.5, cs, 1.5, 5);
-        g.endFill();
+    Promise.all([
+      loadImageTexture('images/level_board_base.png'),
+      loadImageTexture('images/level_board_cell_light.png'),
+      loadImageTexture('images/level_board_cell_blue.png'),
+    ]).then(([baseTex, lightTex, blueTex]) => {
+      if (this.destroyed || this._theme !== 'level') return;
+      if (baseTex) {
+        const base = new PIXI.Sprite(baseTex);
+        base.x = -pad;
+        base.y = -pad;
+        base.width = boardSize;
+        base.height = boardSize;
+        this._levelBoardArt.addChild(base);
       }
-    }
+
+      if (!lightTex && !blueTex) return;
+      for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+          const tex = ((r + c) % 2 === 0 ? lightTex : blueTex) ?? lightTex ?? blueTex;
+          if (!tex) continue;
+          const { x, y } = this._cellPos(r, c);
+          const cell = new PIXI.Sprite(tex);
+          cell.x = x;
+          cell.y = y;
+          cell.width = this._cellSize;
+          cell.height = this._cellSize;
+          this._levelBoardArt.addChild(cell);
+        }
+      }
+    });
   }
 
   private _cellPos(row: number, col: number): { x: number; y: number } {
@@ -367,7 +346,10 @@ export class BoardView extends PIXI.Container {
     }
 
     if (result.eliminated.length > 0) {
-      await this._animateElimination(result.eliminated);
+      const activeScore = result.autoEliminated?.length
+        ? scoreForLine(result.eliminated.length)
+        : result.score;
+      await this._animateElimination(result.eliminated, activeScore);
     }
 
     if (result.newBalls.length > 0) {
@@ -375,12 +357,14 @@ export class BoardView extends PIXI.Container {
     }
 
     if (result.autoEliminated && result.autoEliminated.length > 0) {
-      await this._animateElimination(result.autoEliminated);
+      await this._animateElimination(result.autoEliminated, scoreForLine(result.autoEliminated.length));
     }
 
     if (result.score > 0) {
       EventBus.emit('ui:scoreChanged', BoardManager.score, result.score);
     }
+
+    EventBus.emit('ui:moveComplete', result.stepsUsed);
 
     if (result.gameOver) {
       EventBus.emit('ui:gameOver', BoardManager.score);
@@ -440,16 +424,21 @@ export class BoardView extends PIXI.Container {
     });
   }
 
-  private _animateElimination(eliminated: Point[]): Promise<void> {
+  private _animateElimination(eliminated: Point[], scoreDelta = 0): Promise<void> {
     return new Promise((resolve) => {
       if (eliminated.length === 0) { resolve(); return; }
 
       const sorted = [...eliminated].sort((a, b) =>
         a.row !== b.row ? a.row - b.row : a.col - b.col
       );
+      const lineGroups = this._groupEliminationLines(sorted);
+      lineGroups.forEach((line) => this._spawnLineGlow(line));
+      if (scoreDelta > 0) {
+        this._spawnScorePopup(sorted, scoreDelta);
+      }
 
       let remaining = sorted.length;
-      const STAGGER = 0.05;
+      const STAGGER = 0.035;
 
       sorted.forEach((pos, i) => {
         const ball = this._balls[pos.row][pos.col];
@@ -491,6 +480,181 @@ export class BoardView extends PIXI.Container {
         });
       });
     });
+  }
+
+  private _groupEliminationLines(points: Point[]): Point[][] {
+    const key = (p: Point) => `${p.row},${p.col}`;
+    const pointMap = new Map(points.map((p) => [key(p), p]));
+    const groups: Point[][] = [];
+    const directions = [
+      { row: 0, col: 1 },
+      { row: 1, col: 0 },
+      { row: 1, col: 1 },
+      { row: 1, col: -1 },
+    ];
+
+    for (const point of points) {
+      for (const dir of directions) {
+        const prevKey = `${point.row - dir.row},${point.col - dir.col}`;
+        if (pointMap.has(prevKey)) continue;
+
+        const line: Point[] = [];
+        let row = point.row;
+        let col = point.col;
+        while (pointMap.has(`${row},${col}`)) {
+          line.push(pointMap.get(`${row},${col}`)!);
+          row += dir.row;
+          col += dir.col;
+        }
+
+        if (line.length >= 2) {
+          groups.push(line);
+        }
+      }
+    }
+
+    if (groups.length === 0) return [points];
+    return groups;
+  }
+
+  private _spawnLineGlow(line: Point[]): void {
+    if (line.length < 2) return;
+
+    const centers = line.map((pos) => this._cellCenter(pos.row, pos.col));
+    const glow = new PIXI.Container();
+    glow.alpha = 0;
+    this._overlayContainer.addChild(glow);
+
+    const outer = new PIXI.Graphics();
+    outer.lineStyle(this._cellSize * 0.38, 0xFFD94A, 0.22);
+    this._drawPolyline(outer, centers);
+    glow.addChild(outer);
+
+    const mid = new PIXI.Graphics();
+    mid.lineStyle(this._cellSize * 0.22, 0xFFE86B, 0.65);
+    this._drawPolyline(mid, centers);
+    glow.addChild(mid);
+
+    const core = new PIXI.Graphics();
+    core.lineStyle(this._cellSize * 0.08, 0xFFFFFF, 0.95);
+    this._drawPolyline(core, centers);
+    glow.addChild(core);
+
+    for (const center of centers) {
+      const nodeGlow = new PIXI.Graphics();
+      nodeGlow.beginFill(0xFFF3A4, 0.28);
+      nodeGlow.drawCircle(0, 0, this._cellSize * 0.43);
+      nodeGlow.endFill();
+      nodeGlow.beginFill(0xFFFFFF, 0.55);
+      nodeGlow.drawCircle(0, 0, this._cellSize * 0.16);
+      nodeGlow.endFill();
+      nodeGlow.x = center.x;
+      nodeGlow.y = center.y;
+      glow.addChild(nodeGlow);
+    }
+
+    TweenManager.to({
+      target: glow,
+      props: { alpha: 1 },
+      duration: 0.08,
+      ease: Ease.easeOutQuad,
+    });
+    TweenManager.to({
+      target: glow,
+      props: { alpha: 0 },
+      duration: 0.34,
+      delay: 0.18,
+      ease: Ease.easeOutQuad,
+      onComplete: () => {
+        this._overlayContainer.removeChild(glow);
+        glow.destroy({ children: true });
+      },
+    });
+
+    centers.forEach((center, index) => {
+      const trigger = { _v: 0 };
+      TweenManager.to({
+        target: trigger,
+        props: { _v: 1 },
+        duration: 0.001,
+        delay: index * 0.025,
+        onComplete: () => this._spawnSparkle(center),
+      });
+    });
+  }
+
+  private _drawPolyline(g: PIXI.Graphics, points: BoardPoint[]): void {
+    if (points.length === 0) return;
+    g.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) {
+      g.lineTo(points[i].x, points[i].y);
+    }
+  }
+
+  private _spawnScorePopup(points: Point[], scoreDelta: number): void {
+    const center = this._averageCenter(points);
+    const popup = new PIXI.Text(`+${scoreDelta}`, new PIXI.TextStyle({
+      fontSize: Math.round(this._cellSize * 0.66),
+      fill: 0xFFF36A,
+      stroke: 0x8B3300,
+      strokeThickness: 7,
+      fontWeight: 'bold',
+      fontFamily: 'Arial',
+      dropShadow: true,
+      dropShadowColor: 0x7A2D00,
+      dropShadowBlur: 2,
+      dropShadowDistance: 3,
+      dropShadowAlpha: 0.45,
+    }));
+    popup.anchor.set(0.5, 0.5);
+    popup.x = Math.max(this._cellSize, Math.min(this._boardPixelSize - this._cellSize, center.x));
+    popup.y = Math.max(this._cellSize * 0.8, center.y - this._cellSize * 0.52);
+    popup.scale.set(0.45);
+    this._overlayContainer.addChild(popup);
+
+    TweenManager.to({
+      target: popup.scale,
+      props: { x: 1.22, y: 1.22 },
+      duration: 0.16,
+      ease: Ease.easeOutBack,
+      onComplete: () => {
+        TweenManager.to({
+          target: popup.scale,
+          props: { x: 1, y: 1 },
+          duration: 0.12,
+          ease: Ease.easeOutQuad,
+        });
+      },
+    });
+    TweenManager.to({
+      target: popup,
+      props: { y: popup.y - this._cellSize * 0.85 },
+      duration: 0.72,
+      ease: Ease.easeOutQuad,
+    });
+    TweenManager.to({
+      target: popup,
+      props: { alpha: 0 },
+      duration: 0.28,
+      delay: 0.46,
+      onComplete: () => {
+        this._overlayContainer.removeChild(popup);
+        popup.destroy();
+      },
+    });
+  }
+
+  private _averageCenter(points: Point[]): BoardPoint {
+    const sum = points.reduce((acc, p) => {
+      const center = this._cellCenter(p.row, p.col);
+      acc.x += center.x;
+      acc.y += center.y;
+      return acc;
+    }, { x: 0, y: 0 });
+    return {
+      x: sum.x / points.length,
+      y: sum.y / points.length,
+    };
   }
 
   /** White burst flash at elimination point */
@@ -575,12 +739,12 @@ export class BoardView extends PIXI.Container {
     mainColor: number,
     hiColor: number,
   ): void {
-    const count = 8;
+    const count = 16;
     for (let i = 0; i < count; i++) {
-      const angle = (Math.PI * 2 / count) * i + (Math.random() - 0.5) * 0.6;
-      const dist = 35 + Math.random() * 50;
-      const size = 2 + Math.random() * 2.5;
-      const color = Math.random() > 0.4 ? mainColor : hiColor;
+      const angle = (Math.PI * 2 / count) * i + (Math.random() - 0.5) * 0.75;
+      const dist = this._cellSize * 0.55 + Math.random() * this._cellSize * 0.85;
+      const size = 2.6 + Math.random() * 4.2;
+      const color = Math.random() > 0.35 ? mainColor : hiColor;
 
       const p = new PIXI.Graphics();
       p.beginFill(color);
@@ -594,7 +758,7 @@ export class BoardView extends PIXI.Container {
       p.y = center.y;
       this._overlayContainer.addChild(p);
 
-      const dur = 0.28 + Math.random() * 0.18;
+      const dur = 0.34 + Math.random() * 0.22;
       TweenManager.to({
         target: p,
         props: {
@@ -619,6 +783,55 @@ export class BoardView extends PIXI.Container {
         },
       });
     }
+
+    for (let i = 0; i < 4; i++) {
+      const sparkCenter = {
+        x: center.x + (Math.random() - 0.5) * this._cellSize * 0.45,
+        y: center.y + (Math.random() - 0.5) * this._cellSize * 0.45,
+      };
+      this._spawnSparkle(sparkCenter);
+    }
+  }
+
+  private _spawnSparkle(center: BoardPoint): void {
+    const sparkle = new PIXI.Graphics();
+    const r = this._cellSize * (0.12 + Math.random() * 0.08);
+    sparkle.beginFill(0xFFFFFF, 0.95);
+    sparkle.moveTo(0, -r * 1.7);
+    sparkle.lineTo(r * 0.36, -r * 0.36);
+    sparkle.lineTo(r * 1.7, 0);
+    sparkle.lineTo(r * 0.36, r * 0.36);
+    sparkle.lineTo(0, r * 1.7);
+    sparkle.lineTo(-r * 0.36, r * 0.36);
+    sparkle.lineTo(-r * 1.7, 0);
+    sparkle.lineTo(-r * 0.36, -r * 0.36);
+    sparkle.closePath();
+    sparkle.endFill();
+    sparkle.beginFill(0xFFF3A4, 0.75);
+    sparkle.drawCircle(0, 0, r * 0.38);
+    sparkle.endFill();
+    sparkle.x = center.x;
+    sparkle.y = center.y;
+    sparkle.rotation = Math.random() * Math.PI;
+    sparkle.scale.set(0.2);
+    this._overlayContainer.addChild(sparkle);
+
+    TweenManager.to({
+      target: sparkle.scale,
+      props: { x: 1.25, y: 1.25 },
+      duration: 0.13,
+      ease: Ease.easeOutBack,
+    });
+    TweenManager.to({
+      target: sparkle,
+      props: { alpha: 0 },
+      duration: 0.22,
+      delay: 0.1,
+      onComplete: () => {
+        this._overlayContainer.removeChild(sparkle);
+        sparkle.destroy();
+      },
+    });
   }
 
   /** Quick board shake for impact feedback */

@@ -1,0 +1,16 @@
+Generate one standalone title banner image for a mobile game level select screen.
+
+Text:
+- Chinese title text: 关卡挑战
+
+Style:
+- Cute colorful underwater candy mobile game UI.
+- Rounded light cyan title plaque with a warm golden rim.
+- Bold white Chinese title text with dark blue outline, readable and centered.
+- Glossy cartoon style matching the provided underwater level select reference.
+
+Asset requirements:
+- Single title banner only, centered on pure white background.
+- No extra icons, no buttons, no stars, no currency.
+- No shadows outside the banner, no drop shadows, no cast shadows, no contact shadows.
+- Clean cutout edges.

@@ -1,0 +1,22 @@
+Create a single standalone leaderboard main panel UI asset for a colorful mobile puzzle game.
+
+Reference style:
+- Bright blue cartoon mobile game UI.
+- Rounded main panel with cyan outer rim and deep blue inner area.
+- Top has two large tab shapes, left tab active in cyan/turquoise, right tab inactive in dark blue.
+- Below tabs is a rounded information strip area.
+- Middle has three podium/card slots for top 3 players: center card tallest, left/right slightly shorter.
+- Lower area is one large empty deep-blue scroll viewport for rank rows.
+
+Asset requirements:
+- One complete panel only, centered on a pure white background with generous margins.
+- No title text, no tab text, no Chinese characters, no player names, no numbers, no labels.
+- No avatars, no medal numbers, no actual content.
+- It may include blank medal/card shapes for the top 3 area.
+- Do not include any horizontal white list rows, white pill slots, row placeholders, separators, avatars, or repeated blank bars in the lower list area.
+- Keep all text/data areas empty for dynamic rendering in code.
+- Use vivid but clean blue/cyan cartoon UI style.
+- Make the panel taller than the reference, closer to a full-height mobile leaderboard panel.
+- NO shadows outside the panel, no drop shadows, no cast shadows, no contact shadows.
+- Avoid phone frame, avoid background scene, avoid characters.
+- Clean edges for cutout.

@@ -11,8 +11,10 @@ import { GameOverOverlay } from '@/ui/GameOverOverlay';
 import { computeBoardLayout, PLAYFIELD_VERTICAL_OFFSET } from '@/config/GameConfig';
 import { Platform } from '@/core/PlatformService';
 import { RankManager } from '@/managers/RankManager';
+import { SkinManager } from '@/managers/SkinManager';
 import { createBgSprite } from '@/utils/bgHelper';
 import { BallSprite } from '@/gameobjects/BallSprite';
+import { addImageSprite } from '@/utils/imageTexture';
 
 export class ClassicScene implements Scene {
   readonly name = 'classic';
@@ -26,41 +28,48 @@ export class ClassicScene implements Scene {
 
   onEnter(): void {
     this.container.removeChildren();
-    BallSprite.useTextures = false;
+    BallSprite.useTextures = true;
 
     PropManager.resetSession();
 
-    // Background — dark stone atmosphere
-    const bg = createBgSprite('images/bg_classic.jpg', Game.logicWidth, Game.logicHeight, 0x1C2833);
+    const bg = createBgSprite(SkinManager.getGameplayBackground('classic'), Game.logicWidth, Game.logicHeight, 0x2F6CEB);
     this.container.addChild(bg);
 
     const metrics = computeBoardLayout(Game.logicWidth, Game.logicHeight, Game.safeTop, {
-      sidePadding: 10,
-      maxCellSize: 100,
+      sidePadding: 42,
+      maxCellSize: 90,
       bottomPadding: 130,
     });
 
+    const backY = Math.max(Game.safeTop + 28, 34);
+    const hudX = 82;
+    const hudY = Math.max(metrics.topBarY + 38, Game.safeTop + 106);
+    const hudW = Game.logicWidth - hudX * 2;
+    const hudH = 154;
+    this._createHudPanel(hudX, hudY, hudW, hudH);
+
     // Back button
     this._backBtn = this._createBackButton();
-    this._backBtn.x = 20;
-    this._backBtn.y = Game.safeTop + 15 + PLAYFIELD_VERTICAL_OFFSET;
+    this._backBtn.x = 42;
+    this._backBtn.y = backY;
     this.container.addChild(this._backBtn);
 
     // Score panel
     this._scorePanel = new ScorePanel();
-    this._scorePanel.x = Game.logicWidth / 2;
-    this._scorePanel.y = metrics.topBarY + 10;
+    this._scorePanel.x = hudX + hudW * 0.34;
+    this._scorePanel.y = hudY + 26;
     this.container.addChild(this._scorePanel);
 
     // Preview panel
     this._previewPanel = new PreviewPanel();
-    this._previewPanel.x = Game.logicWidth / 2 - 130;
-    this._previewPanel.y = metrics.previewY + 20;
+    this._previewPanel.x = hudX + hudW * 0.79;
+    this._previewPanel.y = hudY + 26;
     this.container.addChild(this._previewPanel);
 
     // Board view — classic stone theme（无道具栏）
     this._boardView = new BoardView('classic');
     this._boardView.layout(Game.logicWidth, Game.logicHeight, Game.safeTop);
+    this._boardView.y += 84;
     this.container.addChild(this._boardView);
 
     // Game over overlay
@@ -120,21 +129,11 @@ export class ClassicScene implements Scene {
     btn.eventMode = 'static';
     btn.cursor = 'pointer';
 
-    const bg = new PIXI.Graphics();
-    bg.beginFill(0xFFFFFF, 0.12);
-    bg.drawRoundedRect(0, 0, 80, 38, 10);
-    bg.endFill();
-    bg.lineStyle(1, 0xFFFFFF, 0.15);
-    bg.drawRoundedRect(0, 0, 80, 38, 10);
-    btn.addChild(bg);
-
-    const text = new PIXI.Text('← 返回', new PIXI.TextStyle({
-      fontSize: 18, fill: 0x8899AA, fontWeight: 'bold', fontFamily: 'Arial',
-    }));
-    text.anchor.set(0.5, 0.5);
-    text.x = 40;
-    text.y = 20;
-    btn.addChild(text);
+    addImageSprite(btn, 'images/classic_back_button.png', (sprite) => {
+      sprite.width = 88;
+      sprite.height = 88;
+    });
+    btn.hitArea = new PIXI.Circle(44, 44, 44);
 
     btn.on('pointerdown', () => {
       this._saveBestScore();
@@ -142,6 +141,17 @@ export class ClassicScene implements Scene {
     });
 
     return btn;
+  }
+
+  private _createHudPanel(x: number, y: number, w: number, h: number): void {
+    const holder = new PIXI.Container();
+    holder.x = x;
+    holder.y = y;
+    this.container.addChild(holder);
+    addImageSprite(holder, 'images/classic_score_hud.png', (sprite) => {
+      sprite.width = w;
+      sprite.height = h;
+    });
   }
 
   private _loadBestScore(): void {

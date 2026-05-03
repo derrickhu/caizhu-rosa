@@ -1,0 +1,22 @@
+Generate a single horizontal sprite sheet containing TWO page navigation button assets for a colorful underwater candy mobile game.
+
+Layout:
+- 2 columns x 1 row on a pure white background.
+- Both buttons must have the same circular size, same perspective, same rim thickness, and matching lighting.
+
+Button 1:
+- Purple circular glossy button.
+- White left arrow icon.
+
+Button 2:
+- Golden yellow circular glossy button.
+- White right arrow icon.
+
+Style:
+- Cute glossy cartoon UI, underwater candy game style.
+- Must look different from a blue back button.
+
+Asset requirements:
+- No text, no labels, no Chinese characters, no numbers.
+- No shadows outside the buttons, no drop shadows, no cast shadows, no contact shadows.
+- Clean cutout edges.

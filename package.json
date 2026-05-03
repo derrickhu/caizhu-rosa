@@ -6,7 +6,7 @@
     "build": "vite build && rimraf minigame/index.html",
     "dev": "vite build --watch"
   },
-  "description": "经典五彩连珠 - 微信小游戏",
+  "description": "彩珠五连 - 微信小游戏",
   "dependencies": {
     "@pixi/unsafe-eval": "^7.3.2",
     "pixi.js": "^7.3.2"

@@ -39,8 +39,8 @@ class LevelManagerClass {
   }
 
   /** Record a level completion. Returns the stars earned this attempt. */
-  recordCompletion(levelId: number, score: number, targetScore: number): number {
-    const stars = getLevelStars(score, targetScore);
+  recordCompletion(levelId: number, score: number, starScores: readonly [number, number, number]): number {
+    const stars = getLevelStars(score, starScores);
     if (stars === 0) return 0;
 
     const existing = this._progress.levels[levelId];

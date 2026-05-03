@@ -1,0 +1,17 @@
+Create a polished 9:16 mobile game UI prototype for a colorful marble line puzzle game.
+
+Screen: classic endless mode gameplay.
+
+Visual style:
+Bright cartoon puzzle UI, glossy marbles, high contrast, rounded panels, toy-like board, juicy casual game feel. Use a blue-purple candy/ocean background with subtle patterns, but keep the game board highly readable.
+
+Gameplay layout:
+Top safe area with WeChat capsule space. Under it, a glossy HUD panel showing current score, best score, and next-three-marbles preview. Add a clear back button.
+Center: a large 9x9 square board, with rounded frame, clear grid cells, strong contrast from background. Several colorful glossy marbles on the board.
+Bottom: five large prop buttons with simple icons for preview, undo, remove, reroll, revive. Buttons should be big enough for touch and visually consistent.
+
+Mood:
+Clean, energetic, premium casual puzzle game. Avoid clutter. Board and marbles must be the focus. Include subtle glow and shadows.
+
+Requirements:
+Portrait 9:16 mobile screen mockup, no copyrighted characters, no real logos. UI text may be approximate but must feel like Chinese casual puzzle game interface.

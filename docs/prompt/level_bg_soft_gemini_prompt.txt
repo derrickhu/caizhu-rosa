@@ -1,0 +1,25 @@
+Create a portrait mobile game background for a colorful puzzle level screen.
+
+Aspect ratio: 9:16.
+
+Visual direction:
+- Inspired by bright casual puzzle games.
+- Smooth teal/cyan gradient on the left blending into warm coral/orange on the right.
+- Very soft dotted halftone pattern, subtle bokeh glow, gentle radial light.
+- Low contrast, sparse details, background-only composition.
+- The UI already has colorful panels, balls, board, and tool buttons, so the background must stay quiet and not compete for attention.
+
+Important constraints:
+- Background only.
+- No UI panels.
+- No board.
+- No buttons.
+- No balls.
+- No phone frame.
+- No characters.
+- No text, no numbers, no labels, no Chinese characters.
+- Avoid strong diagonal stripes.
+- Avoid busy patterns.
+- Avoid high contrast.
+- Avoid dark heavy areas.
+- Keep the center readable and calm for game UI overlays.

@@ -1,0 +1,11 @@
+Create a final 9:16 portrait mobile game background for a colorful marble puzzle game.
+
+Theme: bright coral ocean level mode.
+
+Style: vibrant cartoon underwater world, teal water, coral reef decorations, bubbles, colorful marbles, soft sunlight rays, cheerful casual game look.
+
+Composition:
+Keep the center area open and clean for a 9x9 board. Coral and marbles should decorate left, right, top and bottom edges. Top area should be calm enough for a HUD panel. No UI, no game board, no text.
+
+Requirements:
+9:16 vertical background, high quality, no letters, no numbers, no captions, no logos, no characters. Bright but not too busy behind the board.

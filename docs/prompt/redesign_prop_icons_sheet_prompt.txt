@@ -1,0 +1,17 @@
+Create a horizontal sprite sheet of 5 prop icons for a vibrant cartoon marble puzzle game.
+
+Canvas:
+5 columns x 1 row, five evenly sized square cells, each icon centered, same size and consistent style.
+
+Style:
+Glossy rounded-square game icons, bright saturated colors, thick white/dark outline, soft bevels, polished casual puzzle game. Similar quality to colorful mobile puzzle game power-up icons.
+
+Icons from left to right:
+1. Preview / eye icon: a friendly eye with small glowing grid dots.
+2. Undo icon: curved back arrow with a small marble.
+3. Remove marble icon: red X or trash can with a marble.
+4. Reroll colors icon: circular refresh arrows around three colored marbles.
+5. Extra life / revive icon: green plus sign on a shield or heart.
+
+Important requirements:
+NO TEXT, no letters, no numbers, no labels, no captions, no writing anywhere. Keep each icon isolated and centered. Use a simple flat light background for easy later cutting. No real logos, no copyrighted characters.

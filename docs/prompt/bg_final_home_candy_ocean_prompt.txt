@@ -1,0 +1,11 @@
+Create a final 9:16 portrait mobile game background for a colorful marble puzzle game.
+
+Theme: candy ocean home screen.
+
+Style: vibrant cartoon casual game, bright cyan to purple gradient, glossy colorful marbles and bubbles around the edges, soft sparkles, playful candy-ocean fantasy atmosphere. The center area must remain clean and open for game title and buttons.
+
+Composition:
+Top safe area should be visually calm for WeChat capsule. Decorative marbles can sit near corners and edges, not in the center. Bottom can have richer marbles/candy decorations but must not block UI. No game board, no buttons, no text.
+
+Requirements:
+9:16 vertical background, high quality, no letters, no numbers, no captions, no UI, no logos, no characters. Keep enough negative space in the center.

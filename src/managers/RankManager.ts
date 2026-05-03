@@ -37,6 +37,10 @@ class RankManagerClass {
     return this._records;
   }
 
+  getBestClassicScore(): number {
+    return this._records[0]?.score ?? 0;
+  }
+
   getLevelStats(): { completed: number; total: number; totalStars: number } {
     let completed = 0;
     for (let i = 1; i <= TOTAL_LEVELS; i++) {

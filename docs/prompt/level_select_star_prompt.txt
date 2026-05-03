@@ -1,0 +1,12 @@
+Generate one standalone small star icon for a mobile game level select screen.
+
+Style:
+- Bright golden yellow five-point star.
+- Cute glossy cartoon style matching underwater candy game UI.
+- Slight bevel and highlight.
+
+Asset requirements:
+- Single icon centered on pure white background.
+- NO TEXT, no labels, no Chinese characters.
+- No shadows outside the icon, no drop shadows, no cast shadows, no contact shadows.
+- Clean cutout edges.

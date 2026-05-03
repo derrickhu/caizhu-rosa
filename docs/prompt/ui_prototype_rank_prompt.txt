@@ -1,0 +1,19 @@
+Create a polished 9:16 mobile game UI prototype for a colorful marble puzzle game.
+
+Screen: leaderboard.
+
+Visual style:
+Vibrant cartoon mobile game UI, glossy blue panel, rounded cards, golden medals, bright readable typography, playful marbles in background.
+
+Layout:
+Top: title "排行榜", back button.
+Below title: two large tabs, "经典版" and "关卡版". The active tab is bright blue/green.
+Main area: leaderboard list with top 3 highlighted using gold/silver/bronze cards, avatar placeholders, player name placeholders, score number, rank number.
+Also include a secondary card for "通关数 / 星数" to show future online ranking dimensions.
+Bottom: optional small note or navigation row, but keep list readable.
+
+Future online ranking readiness:
+Show avatar and nickname placeholders as if this will support network ranking, but do not use real people or logos.
+
+Requirements:
+Portrait 9:16 mobile mockup, no copyrighted content, no real brand logos, polished casual game UI.

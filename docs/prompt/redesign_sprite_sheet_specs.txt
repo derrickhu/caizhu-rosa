@@ -1,0 +1,53 @@
+彩珠五连资源合图切图规格
+
+原始输出目录
+/Users/rosa/rosa_games/game_assets/caizhu-rosa/assets/raw/
+
+一、ui_components_sheet.png
+用途：通用 UI 组件雪碧图。
+生成尺寸：以实际文件为准。
+建议切图：4 列 x 4 行。
+命名顺序：
+button_green,button_blue,button_orange,button_purple,
+icon_back,icon_close,icon_rank,icon_skin,
+panel_hud,panel_popup,tab_active,tab_inactive,
+progress_bar,icon_star,icon_lock,icon_medal
+
+二、prop_icons_cartoony_sheet.png
+用途：道具图标雪碧图。
+建议切图：5 列 x 1 行。
+命名顺序：
+prop_preview,prop_undo,prop_remove,prop_reroll,prop_extra
+注意：后续可缩放/重排为现有 prop_icons.png 所需的 80x80 单行 5 帧。
+
+三、orb_skins_sheet.png
+用途：棋子皮肤套装。
+建议切图：7 列 x 5 行。
+列颜色顺序：
+red,yellow,blue,green,purple,orange,cyan
+行皮肤顺序：
+classic_gloss,jelly,gem,candy,ocean
+拆图命名建议：
+skins/classic_gloss/orb_0.png ... orb_6.png
+skins/jelly/orb_0.png ... orb_6.png
+skins/gem/orb_0.png ... orb_6.png
+skins/candy/orb_0.png ... orb_6.png
+skins/ocean/orb_0.png ... orb_6.png
+
+四、board_backgrounds_sheet.png
+用途：背景主题方向图。
+建议切图：2 列 x 3 行。
+命名顺序：
+bg_home_candy_ocean,
+bg_classic_deep_blue,
+bg_level_coral_ocean,
+bg_board_candy,
+bg_board_starry,
+bg_board_garden
+注意：当前是背景合图确认稿。正式接入前建议每张背景再单独生成 9:16 高分辨率版本，避免从合图切出来后分辨率不足。
+
+五、推荐下一步
+1. 先人工确认这四张合图的方向。
+2. UI 与道具图标可直接按网格 split。
+3. 棋子皮肤 split 后用 rembg 去白底，再 crop_trim。
+4. 背景合图先用于确认主题，确认后单张重生高清版本。

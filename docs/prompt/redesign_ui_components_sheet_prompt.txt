@@ -1,0 +1,28 @@
+Create a clean sprite sheet for a vibrant cartoon mobile puzzle game UI.
+
+Canvas:
+4 columns x 4 rows, 16 evenly spaced cells, orthographic front view, consistent style, each asset centered in its own cell, clear margins between cells.
+
+Style:
+Glossy rounded cartoon UI, bright saturated colors, soft bevels, thick outlines, subtle shadows, high contrast, polished casual WeChat mini game look. Use no copyrighted characters.
+
+Assets by cell, left to right, top to bottom:
+1. Large green glossy pill button base, empty, no text.
+2. Large blue glossy pill button base, empty, no text.
+3. Large orange glossy pill button base, empty, no text.
+4. Large purple glossy pill button base, empty, no text.
+5. Round blue back button with simple white left arrow icon only.
+6. Round red close button with simple white X icon only.
+7. Round gold/blue leaderboard icon button with trophy symbol only.
+8. Round blue/purple skin icon button with shirt symbol only.
+9. Wide blue HUD info panel, empty, no text.
+10. Large blue popup panel with header area, empty, no text.
+11. Bright cyan selected tab pill, empty, no text.
+12. Dark blue inactive tab pill, empty, no text.
+13. Horizontal progress bar track with green-blue fill, no numbers.
+14. Gold star icon.
+15. Silver lock icon.
+16. Gold medal/crown icon.
+
+Important requirements:
+NO TEXT, no letters, no numbers, no labels, no captions, no writing anywhere. Icons may use simple symbols like arrow, X, trophy, shirt, star, lock, crown. Do not include full phone mockups. Do not include background scenes. Use a simple flat light background so assets are easy to cut out later.

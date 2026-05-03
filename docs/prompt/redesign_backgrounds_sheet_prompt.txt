@@ -1,0 +1,18 @@
+Create a 2 columns x 3 rows concept sheet of portrait mobile game backgrounds for a vibrant cartoon marble puzzle game.
+
+Canvas:
+2 columns x 3 rows, six portrait background thumbnails, each cell is a complete 9:16 vertical background concept. No UI elements, no buttons, no text.
+
+Style:
+Bright cartoon casual puzzle game backgrounds, saturated colors, soft gradients, playful fantasy atmosphere, clean center area where a puzzle board can be placed, decorative marbles/bubbles/stars around edges only. No copyrighted characters or logos.
+
+Backgrounds by cell, left to right, top to bottom:
+1. Home screen candy-ocean blue-purple background with colorful marbles around the edges and open center.
+2. Classic mode deep blue/purple puzzle background with subtle diagonal patterns and faint marble motifs, readable behind a board.
+3. Level mode coral reef / ocean background, bright teal and coral, open center.
+4. Candy dream background, pastel sweets and glossy marbles, open center.
+5. Starry sky background, purple-blue night gradient, small stars, open center.
+6. Secret garden background, fresh green meadow and flowers, soft sunny light, open center.
+
+Important requirements:
+NO TEXT, no letters, no numbers, no labels, no captions, no writing anywhere. Do not include puzzle boards or UI panels. These are pure backgrounds for mobile game screens.

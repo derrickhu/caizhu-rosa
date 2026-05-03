@@ -12,46 +12,52 @@ export class ScorePanel extends PIXI.Container {
     super();
 
     const labelStyle = new PIXI.TextStyle({
-      fontSize: 20,
-      fill: 0x8899AA,
+      fontSize: 26,
+      fill: 0xFFFFFF,
       fontFamily: 'Arial',
       fontWeight: 'bold',
+      stroke: 0x1357A8,
+      strokeThickness: 4,
     });
     const valueStyle = new PIXI.TextStyle({
-      fontSize: 38,
+      fontSize: 42,
+      fill: 0xFFE66D,
+      fontWeight: 'bold',
+      fontFamily: 'Arial',
+      stroke: 0x17438A,
+      strokeThickness: 5,
+    });
+    const bestValueStyle = new PIXI.TextStyle({
+      fontSize: 42,
       fill: 0xFFFFFF,
       fontWeight: 'bold',
       fontFamily: 'Arial',
-    });
-    const bestValueStyle = new PIXI.TextStyle({
-      fontSize: 26,
-      fill: 0xF59E0B,
-      fontWeight: 'bold',
-      fontFamily: 'Arial',
+      stroke: 0x17438A,
+      strokeThickness: 5,
     });
 
     this._scoreLabel = new PIXI.Text('得分', labelStyle);
-    this._scoreLabel.anchor.set(0.5, 0);
-    this._scoreLabel.x = 0;
+    this._scoreLabel.anchor.set(0, 0);
+    this._scoreLabel.x = -138;
     this._scoreLabel.y = 0;
     this.addChild(this._scoreLabel);
 
     this._scoreValue = new PIXI.Text('0', valueStyle);
-    this._scoreValue.anchor.set(0.5, 0);
-    this._scoreValue.x = 0;
-    this._scoreValue.y = 24;
+    this._scoreValue.anchor.set(0, 0.5);
+    this._scoreValue.x = -138;
+    this._scoreValue.y = 70;
     this.addChild(this._scoreValue);
 
     this._bestLabel = new PIXI.Text('最高', labelStyle);
-    this._bestLabel.anchor.set(0.5, 0);
-    this._bestLabel.x = 240;
+    this._bestLabel.anchor.set(0, 0);
+    this._bestLabel.x = 30;
     this._bestLabel.y = 0;
     this.addChild(this._bestLabel);
 
     this._bestValue = new PIXI.Text('0', bestValueStyle);
-    this._bestValue.anchor.set(0.5, 0);
-    this._bestValue.x = 240;
-    this._bestValue.y = 24;
+    this._bestValue.anchor.set(0, 0.5);
+    this._bestValue.x = 30;
+    this._bestValue.y = 70;
     this.addChild(this._bestValue);
 
     EventBus.on('ui:scoreChanged', (_total: number, delta: number) => {

@@ -6,14 +6,13 @@ import { TweenManager, Ease } from '@/core/TweenManager';
 import { getPropIconTexture } from '@/utils/iconLoader';
 
 /** Slot width per prop (icon + label) */
-const BTN_SIZE = 76;
-const BTN_GAP = 12;
-const BTN_RADIUS = 18;
+const BTN_SIZE = 114;
+const BTN_GAP = 18;
 /** Icon graphic size inside the slot */
-const ICON_DISPLAY_SIZE = 56;
+const ICON_DISPLAY_SIZE = 114;
 
 const LABEL_STYLE = new PIXI.TextStyle({
-  fontSize: 15,
+  fontSize: 17,
   fill: 0xFFFFFF,
   fontWeight: 'bold',
   fontFamily: 'PingFang SC, Microsoft YaHei, Arial',
@@ -74,7 +73,6 @@ export class PropBar extends PIXI.Container {
 
 class PropButton extends PIXI.Container {
   private _type: PropType;
-  private _bg: PIXI.Graphics;
   private _iconContainer: PIXI.Container;
   private _stockBadge: PIXI.Container;
   private _stockText: PIXI.Text;
@@ -85,18 +83,15 @@ class PropButton extends PIXI.Container {
     this._type = type;
     const def = PROP_DEFS[type];
 
-    this._bg = new PIXI.Graphics();
-    this.addChild(this._bg);
-
     this._iconContainer = new PIXI.Container();
     this._iconContainer.x = BTN_SIZE / 2;
-    this._iconContainer.y = BTN_SIZE / 2 - 4;
+    this._iconContainer.y = BTN_SIZE / 2;
     this.addChild(this._iconContainer);
     this._buildIcon(def.icon);
 
     this._stockBadge = new PIXI.Container();
-    this._stockBadge.x = BTN_SIZE - 6;
-    this._stockBadge.y = 6;
+    this._stockBadge.x = BTN_SIZE - 8;
+    this._stockBadge.y = 8;
     this.addChild(this._stockBadge);
 
     this._stockText = new PIXI.Text('0', new PIXI.TextStyle({
@@ -111,13 +106,14 @@ class PropButton extends PIXI.Container {
     this._nameLabel = new PIXI.Text(def.name, LABEL_STYLE);
     this._nameLabel.anchor.set(0.5, 0);
     this._nameLabel.x = BTN_SIZE / 2;
-    this._nameLabel.y = BTN_SIZE + 6;
+    this._nameLabel.y = BTN_SIZE + 2;
     this._nameLabel.wordWrap = true;
     this._nameLabel.wordWrapWidth = BTN_SIZE + 8;
     this.addChild(this._nameLabel);
 
     this.eventMode = 'static';
     this.cursor = 'pointer';
+    this.hitArea = new PIXI.RoundedRectangle(0, 0, BTN_SIZE, BTN_SIZE, 18);
     this.on('pointerdown', () => {
       EventBus.emit('prop:request', this._type);
     });
@@ -148,23 +144,6 @@ class PropButton extends PIXI.Container {
     const stock = PropManager.getStock(this._type);
     const canUse = PropManager.canUse(this._type);
 
-    this._bg.clear();
-
-    // 不透明白底，避免关卡条纹背景透出造成「遮罩」感
-    if (canUse) {
-      this._bg.beginFill(0xFFFFFF, 1);
-      this._bg.drawRoundedRect(0, 0, BTN_SIZE, BTN_SIZE, BTN_RADIUS);
-      this._bg.endFill();
-      this._bg.lineStyle(2, 0x2563EB, 0.85);
-      this._bg.drawRoundedRect(0, 0, BTN_SIZE, BTN_SIZE, BTN_RADIUS);
-    } else {
-      this._bg.beginFill(0xF3F4F6, 1);
-      this._bg.drawRoundedRect(0, 0, BTN_SIZE, BTN_SIZE, BTN_RADIUS);
-      this._bg.endFill();
-      this._bg.lineStyle(1.5, 0xD1D5DB, 1);
-      this._bg.drawRoundedRect(0, 0, BTN_SIZE, BTN_SIZE, BTN_RADIUS);
-    }
-
     this._stockBadge.removeChildren();
     this._stockBadge.visible = stock > 0;
 
@@ -180,8 +159,8 @@ class PropButton extends PIXI.Container {
       this._stockBadge.addChild(this._stockText);
     }
 
-    this._iconContainer.alpha = canUse ? 1 : 0.55;
-    this._nameLabel.alpha = canUse ? 1 : 0.75;
+    this._iconContainer.alpha = 1;
+    this._nameLabel.alpha = canUse ? 1 : 0.9;
   }
 
   animateUse(): void {

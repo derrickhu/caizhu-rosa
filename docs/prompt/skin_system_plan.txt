@@ -1,0 +1,57 @@
+彩珠五连皮肤与背景系统设计
+
+目标
+在不改变核心玩法的前提下，新增可收集的棋子皮肤和对局背景，提升长期目标与商业化扩展空间。
+
+数据配置
+新增 src/config/SkinConfig.ts：
+1. MarbleSkinDef：id、name、description、preview、orbFiles、unlockType、unlockValue。
+2. BoardBgDef：id、name、preview、imagePath、unlockType、unlockValue。
+3. 默认皮肤和默认背景必须永远可用。
+
+管理器
+新增 src/managers/SkinManager.ts：
+1. 存储 key：caizhu_skin_state。
+2. 状态：unlockedSkins、unlockedBackgrounds、activeSkinId、activeBackgroundId。
+3. 方法：
+   - init()
+   - isSkinUnlocked(id)
+   - isBackgroundUnlocked(id)
+   - unlockSkin(id)
+   - unlockBackground(id)
+   - setActiveSkin(id)
+   - setActiveBackground(id)
+   - checkProgressUnlocks()
+4. 先做本地解锁，后续可接广告、活动或联网账号。
+
+棋子接入
+当前 orbLoader.ts 写死 7 张 orb 文件。改造方案：
+1. 从 SkinManager 读取 activeSkinId。
+2. 根据 SkinConfig 的 orbFiles 加载当前套装。
+3. BallSprite 仍按 colorIndex 获取纹理，不直接关心皮肤 id。
+4. 切换皮肤后需要清空纹理缓存并重新加载，当前棋盘可通过 syncWithBoard 重绘。
+
+背景接入
+当前 createBgSprite 接收字符串路径。改造方案：
+1. 首页和关卡选择可使用固定主题背景。
+2. 对局页可从 SkinManager 获取 activeBackground.imagePath。
+3. 经典/关卡可以共用玩家选择背景，也可以保留模式默认背景作为 fallback。
+
+皮肤页
+新增 src/scenes/SkinScene.ts：
+1. 顶部标题“我的皮肤”和返回/关闭按钮。
+2. 两个 Tab：棋子皮肤、对局背景。
+3. 三列卡片网格：预览图、名称、状态。
+4. 点击已解锁卡片可使用。
+5. 点击未解锁卡片显示条件，例如“通关 10 关解锁”“经典最高分 500 解锁”。
+
+解锁规则建议
+1. 默认：classic_marbles、classic_blue_bg。
+2. 通关 5 关：ocean_bg。
+3. 通关 10 关：jelly_marbles。
+4. 通关 20 关：candy_bg。
+5. 经典最高分 300：gem_marbles。
+6. 经典最高分 800：starry_bg。
+
+注意
+旧存档不迁移，不改已有 caizhu_best_score、caizhu_level_progress 等 key。皮肤系统只新增自己的存储。

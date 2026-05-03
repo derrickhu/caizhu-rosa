@@ -1,3 +1,6 @@
+/** 游戏展示名（首页标题、日志、分享等） */
+export const GAME_DISPLAY_NAME = '彩珠五连';
+
 export const BOARD_SIZE = 9;
 export const BOARD_CELLS = BOARD_SIZE * BOARD_SIZE; // 81
 

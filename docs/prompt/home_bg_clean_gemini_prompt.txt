@@ -1,0 +1,12 @@
+Create a clean final portrait mobile game home background for a colorful marble puzzle game.
+
+Aspect ratio: 9:16 vertical phone screen.
+
+Style:
+Vibrant cartoon casual puzzle game, bright cyan center fading to purple edges and bottom, glossy colorful marbles around the edges and corners, small sparkles, candy-ocean playful atmosphere. Match a polished WeChat mini game home screen style.
+
+Composition:
+No UI elements. No title. No buttons. No labels. No top tag. Keep the center open and clean for separately overlaid title and buttons. Decorative marbles should stay near the screen borders and corners. Top safe area should be calm and not busy.
+
+Important:
+NO TEXT, no letters, no numbers, no captions, no logos, no characters, no game board. High clarity, saturated colors, readable empty center.

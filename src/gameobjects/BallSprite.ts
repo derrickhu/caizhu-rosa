@@ -71,12 +71,6 @@ export class BallSprite extends PIXI.Container {
   /** Use the orb image texture */
   private _drawOrbSprite(tex: PIXI.Texture): void {
     const r = this._radius;
-    const g = this._gfx;
-
-    // Drop shadow
-    g.beginFill(0x000000, 0.18);
-    g.drawEllipse(1.5, r * 0.2, r * 0.82, r * 0.32);
-    g.endFill();
 
     const sprite = new PIXI.Sprite(tex);
     const displaySize = r * 2;
@@ -263,20 +257,29 @@ export class BallSprite extends PIXI.Container {
   animateEliminate(onComplete?: () => void): void {
     TweenManager.to({
       target: this.scale,
-      props: { x: 1.35, y: 1.35 },
-      duration: 0.07,
+      props: { x: 1.22, y: 1.22 },
+      duration: 0.055,
       ease: Ease.easeOutQuad,
       onComplete: () => {
         TweenManager.to({
           target: this.scale,
-          props: { x: 1.9, y: 1.9 },
-          duration: 0.16,
-          ease: Ease.easeOutQuad,
+          props: { x: 0.72, y: 0.72 },
+          duration: 0.055,
+          ease: Ease.easeInQuad,
+          onComplete: () => {
+            TweenManager.to({
+              target: this.scale,
+              props: { x: 2.15, y: 2.15 },
+              duration: 0.16,
+              ease: Ease.easeOutQuad,
+            });
+          },
         });
         TweenManager.to({
           target: this,
           props: { alpha: 0 },
-          duration: 0.14,
+          duration: 0.18,
+          delay: 0.055,
           onComplete,
         });
       },

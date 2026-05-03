@@ -1,4 +1,4 @@
-A 4x4 grid of 16 mobile game app icons for a colorful marble puzzle game (Color Lines / 五彩连珠). Each icon is a rounded-square app icon with no text, no labels, no writing anywhere.
+A 4x4 grid of 16 mobile game app icons for a colorful marble puzzle game (Color Lines / 彩珠五连). Each icon is a rounded-square app icon with no text, no labels, no writing anywhere.
 
 The game features shiny colorful glass marbles (red, blue, green, yellow, purple, orange, cyan) on a grid board. Each icon should be visually striking, high contrast, eye-catching, with a strong focal point.
 

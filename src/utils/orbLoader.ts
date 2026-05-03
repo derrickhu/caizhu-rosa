@@ -1,4 +1,9 @@
 import * as PIXI from 'pixi.js';
+import { SkinManager } from '@/managers/SkinManager';
+
+const ORB_SHEET_PATH = 'images/orb_skins_sheet.png';
+const ORB_SHEET_COLS = 7;
+const ORB_SHEET_FRAME = 96;
 
 const ORB_FILES: string[] = [
   'images/orb_fire.png',    // 0 = red
@@ -12,6 +17,8 @@ const ORB_FILES: string[] = [
 
 let _textures: (PIXI.Texture | null)[] = [];
 let _loaded = false;
+let _loadedFromSheet = false;
+let _sheetBaseTexture: PIXI.BaseTexture | null = null;
 
 export function loadOrbTextures(): Promise<void> {
   if (_loaded) return Promise.resolve();
@@ -20,6 +27,75 @@ export function loadOrbTextures(): Promise<void> {
     typeof wx !== 'undefined' ? wx :
     typeof tt !== 'undefined' ? tt : null;
 
+  return _loadOrbSheet(platform).then((loadedFromSheet) => {
+    if (loadedFromSheet) {
+      _loaded = true;
+      console.log(`[orbLoader] loaded ${_textures.filter(Boolean).length}/${ORB_SHEET_COLS} orb textures from sprite sheet`);
+      return;
+    }
+
+    return _loadLegacyOrbFiles(platform).then(() => {
+      _loaded = true;
+      console.log(`[orbLoader] loaded ${_textures.filter(Boolean).length}/${ORB_FILES.length} orb textures`);
+    });
+  });
+}
+
+function _loadOrbSheet(platform: any): Promise<boolean> {
+  return new Promise<boolean>((resolve) => {
+    try {
+      const onTextureReady = (base: PIXI.BaseTexture) => {
+        _sheetBaseTexture = base;
+        _loadedFromSheet = true;
+        _applyOrbSheetRow(SkinManager.getSelectedOrbSkin().sheetRow);
+        resolve(true);
+      };
+
+      if (platform?.createImage) {
+        const img = platform.createImage();
+        img.onload = () => {
+          try {
+            onTextureReady(PIXI.BaseTexture.from(img as any));
+          } catch (e) {
+            console.warn(`[orbLoader] sprite sheet texture creation failed: ${ORB_SHEET_PATH}`, e);
+            resolve(false);
+          }
+        };
+        img.onerror = () => {
+          console.warn(`[orbLoader] sprite sheet load failed: ${ORB_SHEET_PATH}`);
+          resolve(false);
+        };
+        img.src = ORB_SHEET_PATH;
+      } else {
+        try {
+          onTextureReady(PIXI.BaseTexture.from(ORB_SHEET_PATH));
+        } catch (e) {
+          console.warn(`[orbLoader] sprite sheet fallback load failed: ${ORB_SHEET_PATH}`, e);
+          resolve(false);
+        }
+      }
+    } catch (e) {
+      console.warn(`[orbLoader] sprite sheet error: ${ORB_SHEET_PATH}`, e);
+      resolve(false);
+    }
+  });
+}
+
+function _applyOrbSheetRow(row: number): void {
+  if (!_sheetBaseTexture) return;
+  _textures = [];
+  for (let i = 0; i < ORB_SHEET_COLS; i++) {
+    const frame = new PIXI.Rectangle(
+      i * ORB_SHEET_FRAME,
+      row * ORB_SHEET_FRAME,
+      ORB_SHEET_FRAME,
+      ORB_SHEET_FRAME,
+    );
+    _textures[i] = new PIXI.Texture(_sheetBaseTexture, frame);
+  }
+}
+
+function _loadLegacyOrbFiles(platform: any): Promise<void> {
   const promises = ORB_FILES.map((path, index) =>
     new Promise<void>((resolve) => {
       try {
@@ -58,14 +134,33 @@ export function loadOrbTextures(): Promise<void> {
     })
   );
 
-  return Promise.all(promises).then(() => {
-    _loaded = true;
-    console.log(`[orbLoader] loaded ${_textures.filter(Boolean).length}/${ORB_FILES.length} orb textures`);
-  });
+  return Promise.all(promises).then(() => undefined);
 }
 
 export function getOrbTexture(colorIndex: number): PIXI.Texture | null {
   return _textures[colorIndex] ?? null;
+}
+
+export function getOrbSkinTexture(row: number, colorIndex: number): PIXI.Texture | null {
+  if (!_sheetBaseTexture) return null;
+  return new PIXI.Texture(
+    _sheetBaseTexture,
+    new PIXI.Rectangle(
+      colorIndex * ORB_SHEET_FRAME,
+      row * ORB_SHEET_FRAME,
+      ORB_SHEET_FRAME,
+      ORB_SHEET_FRAME,
+    ),
+  );
+}
+
+export function refreshOrbTextures(): Promise<void> {
+  if (_loadedFromSheet && _sheetBaseTexture) {
+    _applyOrbSheetRow(SkinManager.getSelectedOrbSkin().sheetRow);
+    return Promise.resolve();
+  }
+  _loaded = false;
+  return loadOrbTextures();
 }
 
 export function isOrbTexturesLoaded(): boolean {

@@ -1,0 +1,20 @@
+Create a sprite sheet of marble/orb game pieces for a colorful line puzzle game.
+
+Canvas:
+7 columns x 5 rows, 35 evenly spaced cells. Each cell contains exactly one centered orb, same size, front view, with clear margin. Use a simple flat light background for later cutting.
+
+Column color order:
+Column 1 red, column 2 yellow, column 3 blue, column 4 green, column 5 purple, column 6 orange/pink, column 7 cyan.
+
+Row skin style order:
+Row 1 classic glossy glass marbles, round with strong highlight.
+Row 2 jelly marbles, semi-transparent and soft, cute and bouncy.
+Row 3 gemstone marbles, faceted jewel look, shiny cuts.
+Row 4 candy marbles, sweet candy coating, playful sugar highlights.
+Row 5 ocean bubble marbles, water/bubble/shell feeling, glossy and fresh.
+
+Style:
+Vibrant cartoon mobile game asset, high saturation, strong readable color differences, polished highlights and soft shadows. All orbs should look like one coherent game asset set.
+
+Important requirements:
+NO TEXT, no letters, no numbers, no labels, no captions, no writing anywhere. Do not include UI panels, phones, hands, characters, or background scenes. Only the 35 isolated orb assets in a clean grid.

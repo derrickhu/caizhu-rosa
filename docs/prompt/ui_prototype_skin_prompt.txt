@@ -1,0 +1,17 @@
+Create a polished 9:16 mobile game UI prototype for a colorful marble puzzle game.
+
+Screen: collection page for marble skins and board backgrounds.
+
+Visual style:
+Bright cartoon game collection UI, glossy blue panel, rounded cards, high saturation, cheerful, clear locked/unlocked states. Similar to casual puzzle games with collectible skins, but original.
+
+Layout:
+Top: title "我的皮肤", close/back button.
+Tabs: "棋子皮肤" and "对局背景".
+Main grid: 3 columns of collectible cards. Each card has a preview image, a Chinese name, and a state label: "使用中", "已解锁", or lock condition like "50关解锁".
+Include several marble skin examples: classic glossy marbles, jelly marbles, gem marbles, candy marbles, ocean marbles.
+Include several background examples: ocean, candy, starry sky, garden, classic blue.
+Bottom: a large green "使用" button for selected item and an orange unlock/reward button.
+
+Requirements:
+Portrait 9:16 mobile screen mockup, no real logos, no copyrighted characters. UI should be clear enough for later splitting into cards, tabs, buttons, and icons.

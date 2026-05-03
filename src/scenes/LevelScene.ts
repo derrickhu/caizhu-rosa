@@ -11,11 +11,12 @@ import { LevelHud } from '@/ui/LevelHud';
 import { LevelCompleteOverlay } from '@/ui/LevelCompleteOverlay';
 import { LevelFailOverlay } from '@/ui/LevelFailOverlay';
 import { PropBar } from '@/ui/PropBar';
-import { getLevelDef, getLevelStars, TOTAL_LEVELS, type LevelDef } from '@/config/LevelConfig';
+import { getLevelDef, getLevelStars, getMaxStarScore, getPassScore, TOTAL_LEVELS, type LevelDef } from '@/config/LevelConfig';
 import { PropType, EXTRA_STEPS, EXTRA_TIME } from '@/config/PropConfig';
-import { computeBoardLayout, PLAYFIELD_VERTICAL_OFFSET } from '@/config/GameConfig';
 import { createBgSprite } from '@/utils/bgHelper';
 import { BallSprite } from '@/gameobjects/BallSprite';
+import { addImageSprite } from '@/utils/imageTexture';
+import { SkinManager } from '@/managers/SkinManager';
 
 export class LevelScene implements Scene {
   readonly name = 'level';
@@ -52,40 +53,42 @@ export class LevelScene implements Scene {
     PropManager.resetSession();
 
     // Background — bright playful
-    const bg = createBgSprite('images/bg_level.jpg', Game.logicWidth, Game.logicHeight, 0xE8F4F8);
+    const bg = createBgSprite(SkinManager.getGameplayBackground('level'), Game.logicWidth, Game.logicHeight, 0xE8F4F8);
     this.container.addChild(bg);
 
-    const metrics = computeBoardLayout(Game.logicWidth, Game.logicHeight, Game.safeTop);
+    const hudW = Math.min(660, Game.logicWidth - 64);
+    const hudH = Math.round(hudW * 0.385);
+    const hudY = Game.safeTop + 58;
+    const previewY = hudY + hudH + 62;
 
     // Back button
     const backBtn = this._createBackButton();
-    backBtn.x = 20;
-    backBtn.y = Game.safeTop + 8 + PLAYFIELD_VERTICAL_OFFSET;
+    backBtn.x = 34;
+    backBtn.y = Game.safeTop - 11;
     this.container.addChild(backBtn);
 
-    // HUD — wide glass panel for readability on busy level backgrounds
-    const hudInnerW = Math.min(400, Game.logicWidth - 48);
-    const hudPanelPad = 28; // must match LevelHud horizontal padding (14×2)
-    this._hud = new LevelHud(def, hudInnerW);
-    this._hud.x = (Game.logicWidth - hudInnerW - hudPanelPad) / 2;
-    this._hud.y = Game.safeTop + 6 + PLAYFIELD_VERTICAL_OFFSET;
+    // HUD — image-backed panel matching the level prototype.
+    this._hud = new LevelHud(def, hudW);
+    this._hud.x = (Game.logicWidth - hudW) / 2;
+    this._hud.y = hudY;
     this.container.addChild(this._hud);
 
     // Preview
     this._previewPanel = new PreviewPanel({ variant: 'level' });
-    this._previewPanel.x = Game.logicWidth / 2 - 130;
-    this._previewPanel.y = metrics.previewY + 20;
+    this._previewPanel.x = Game.logicWidth / 2;
+    this._previewPanel.y = previewY;
     this.container.addChild(this._previewPanel);
 
     // Board — level playful theme
     this._boardView = new BoardView('level');
     this._boardView.layout(Game.logicWidth, Game.logicHeight, Game.safeTop);
+    this._boardView.y = previewY + 144;
     this.container.addChild(this._boardView);
 
     // Prop bar at bottom
     this._propBar = new PropBar();
     this._propBar.x = Game.logicWidth / 2;
-    this._propBar.y = metrics.boardY + this._boardView.boardPixelSize + 24;
+    this._propBar.y = this._boardView.y + this._boardView.boardPixelSize + 92;
     this.container.addChild(this._propBar);
 
     // Overlays
@@ -125,7 +128,7 @@ export class LevelScene implements Scene {
 
         if (this._timeRemaining <= 0) {
           this._timerActive = false;
-          this._onLevelFail();
+          this._settleByFinalScore();
         }
       };
       Game.ticker.add(this._tickerCallback);
@@ -155,14 +158,14 @@ export class LevelScene implements Scene {
       this._hud.updateSteps(BoardManager.stepsUsed);
     }
 
-    if (score >= this._levelDef.targetScore) {
+    if (score >= getMaxStarScore(this._levelDef.starScores)) {
       this._onLevelComplete();
       return;
     }
 
     if (this._levelDef.type === 'steps' && this._levelDef.stepLimit) {
       if (BoardManager.stepsUsed >= this._levelDef.stepLimit) {
-        this._onLevelFail();
+        this._settleByFinalScore();
       }
     }
   };
@@ -177,14 +180,27 @@ export class LevelScene implements Scene {
     }
   };
 
+  private _onMoveComplete = () => {
+    if (this._finished || this._levelDef.type !== 'steps') return;
+    this._hud.updateSteps(BoardManager.stepsUsed);
+
+    if (this._levelDef.stepLimit && BoardManager.stepsUsed >= this._levelDef.stepLimit) {
+      this._settleByFinalScore();
+    }
+  };
+
   private _onGameOver = () => {
     if (this._finished) return;
-    if (BoardManager.score >= this._levelDef.targetScore) {
+    this._settleByFinalScore();
+  };
+
+  private _settleByFinalScore(): void {
+    if (BoardManager.score >= getPassScore(this._levelDef.starScores)) {
       this._onLevelComplete();
     } else {
       this._onLevelFail();
     }
-  };
+  }
 
   private _onLevelComplete(): void {
     if (this._finished) return;
@@ -192,8 +208,8 @@ export class LevelScene implements Scene {
     this._timerActive = false;
 
     const score = BoardManager.score;
-    const stars = getLevelStars(score, this._levelDef.targetScore);
-    LevelManager.recordCompletion(this._levelDef.id, score, this._levelDef.targetScore);
+    const stars = getLevelStars(score, this._levelDef.starScores);
+    LevelManager.recordCompletion(this._levelDef.id, score, this._levelDef.starScores);
 
     const isLast = this._levelDef.id >= TOTAL_LEVELS;
     this._completeOverlay.show(score, stars, isLast);
@@ -204,7 +220,7 @@ export class LevelScene implements Scene {
     this._finished = true;
     this._timerActive = false;
 
-    this._failOverlay.show(BoardManager.score, this._levelDef.targetScore);
+    this._failOverlay.show(BoardManager.score, getPassScore(this._levelDef.starScores));
   }
 
   // ─── Prop Handlers ───────────────────────────────────────
@@ -313,6 +329,7 @@ export class LevelScene implements Scene {
 
   private _bindEvents(): void {
     EventBus.on('ui:scoreChanged', this._onScoreChanged);
+    EventBus.on('ui:moveComplete', this._onMoveComplete);
     EventBus.on('board:eliminated', this._onBoardEliminated);
     EventBus.on('game:over', this._onGameOver);
     EventBus.on('level:retry', this._onRetry);
@@ -324,6 +341,7 @@ export class LevelScene implements Scene {
 
   private _unbindEvents(): void {
     EventBus.off('ui:scoreChanged', this._onScoreChanged);
+    EventBus.off('ui:moveComplete', this._onMoveComplete);
     EventBus.off('board:eliminated', this._onBoardEliminated);
     EventBus.off('game:over', this._onGameOver);
     EventBus.off('level:retry', this._onRetry);
@@ -338,27 +356,11 @@ export class LevelScene implements Scene {
     btn.eventMode = 'static';
     btn.cursor = 'pointer';
 
-    const w = 88;
-    const h = 42;
-    const bg = new PIXI.Graphics();
-    bg.beginFill(0x0F172A, 0.88);
-    bg.drawRoundedRect(0, 0, w, h, 14);
-    bg.endFill();
-    bg.lineStyle(1.5, 0xFFFFFF, 0.22);
-    bg.drawRoundedRect(0, 0, w, h, 14);
-    btn.addChild(bg);
-
-    const text = new PIXI.Text('返回', new PIXI.TextStyle({
-      fontSize: 18,
-      fill: 0xF1F5F9,
-      fontFamily: 'Arial',
-      fontWeight: 'bold',
-      letterSpacing: 1,
-    }));
-    text.anchor.set(0.5, 0.5);
-    text.x = w / 2;
-    text.y = h / 2;
-    btn.addChild(text);
+    addImageSprite(btn, 'images/classic_back_button.png', (sprite) => {
+      sprite.width = 72;
+      sprite.height = 72;
+    });
+    btn.hitArea = new PIXI.Circle(36, 36, 36);
 
     btn.on('pointerdown', () => SceneManager.switchTo('levelSelect'));
     return btn;

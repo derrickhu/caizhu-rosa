@@ -84,9 +84,9 @@ export class LevelFailOverlay extends PIXI.Container {
     this._panel.addChild(btn);
   }
 
-  show(score: number, targetScore: number): void {
+  show(score: number, passScore: number): void {
     this._scoreText.text = `当前: ${score}分`;
-    this._targetText.text = `目标: ${targetScore}分`;
+    this._targetText.text = `一星目标: ${passScore}分`;
 
     this._panel.x = Game.logicWidth / 2;
     this._panel.y = Game.logicHeight / 2;

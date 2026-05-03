@@ -4,6 +4,7 @@ import { WILD_BALL, BOMB_BALL } from '@/config/PropConfig';
 import { EventBus } from '@/core/EventBus';
 import { BallSprite } from '@/gameobjects/BallSprite';
 import { getOrbTexture } from '@/utils/orbLoader';
+import { addImageSprite } from '@/utils/imageTexture';
 
 export type PreviewPanelVariant = 'classic' | 'level';
 
@@ -16,9 +17,10 @@ export class PreviewPanel extends PIXI.Container {
     super();
 
     const variant = options?.variant ?? 'classic';
+    this._dotRadius = variant === 'classic' ? 23 : 34;
     const labelStyle = variant === 'level'
       ? new PIXI.TextStyle({
-          fontSize: 22,
+          fontSize: 28,
           fill: 0xFFFFFF,
           fontFamily: 'Arial',
           fontWeight: 'bold',
@@ -31,32 +33,35 @@ export class PreviewPanel extends PIXI.Container {
           dropShadowAlpha: 0.45,
         })
       : new PIXI.TextStyle({
-          fontSize: 22,
-          fill: 0x8899AA,
+          fontSize: 30,
+          fill: 0xFFFFFF,
           fontFamily: 'Arial',
           fontWeight: 'bold',
+          stroke: 0x1357A8,
+          strokeThickness: 4,
         });
 
     if (variant === 'level') {
-      const pill = new PIXI.Graphics();
-      pill.beginFill(0x0F172A, 0.88);
-      pill.drawRoundedRect(-14, -26, 318, 52, 26);
-      pill.endFill();
-      pill.lineStyle(1.5, 0xFFFFFF, 0.2);
-      pill.drawRoundedRect(-14, -26, 318, 52, 26);
-      this.addChild(pill);
+      const bannerHolder = new PIXI.Container();
+      this.addChild(bannerHolder);
+      addImageSprite(bannerHolder, 'images/level_next_banner.png', (sprite) => {
+        sprite.x = -280;
+        sprite.y = -36;
+        sprite.width = 560;
+        sprite.height = 101;
+      });
     }
 
-    this._label = new PIXI.Text('下一步', labelStyle);
-    this._label.anchor.set(0, 0.5);
-    this._label.x = 0;
-    this._label.y = 0;
+    this._label = new PIXI.Text(variant === 'classic' ? '下次' : '下一步', labelStyle);
+    this._label.anchor.set(0.5, 0.5);
+    this._label.x = variant === 'classic' ? 0 : -212;
+    this._label.y = variant === 'classic' ? 8 : 14;
     this.addChild(this._label);
 
     for (let i = 0; i < BALLS_PER_TURN; i++) {
       const slot = new PIXI.Container();
-      slot.x = 110 + i * 46;
-      slot.y = 0;
+      slot.x = variant === 'classic' ? -58 + i * 58 : -74 + i * 112;
+      slot.y = variant === 'classic' ? 70 : 14;
       this.addChild(slot);
       this._slots.push(slot);
     }

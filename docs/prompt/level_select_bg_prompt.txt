@@ -1,0 +1,14 @@
+Generate a full-screen portrait 9:16 mobile game level select background.
+
+Reference style:
+- Colorful underwater candy world.
+- Turquoise ocean water, coral, shells, starfish, candy rocks, bubbles, small colorful marbles.
+- A winding purple-blue path travels from the bottom foreground toward the upper area, leaving room to place level buttons on top in code.
+- Top area has space for a title panel and currency counters, but do not draw UI panels.
+
+Asset requirements:
+- Background only.
+- No numbered level buttons, no circles, no locks, no stars, no text, no labels, no Chinese characters.
+- Keep the path visible and spacious enough for separate level nodes.
+- Bright cute cartoon mobile puzzle game style.
+- 9:16 portrait composition.

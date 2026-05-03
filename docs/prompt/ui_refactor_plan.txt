@@ -1,0 +1,60 @@
+彩珠五连 UI 重构实施计划
+
+原则
+先确认原型，再拆资源，再改代码。代码重构保持玩法逻辑不动，主要改视觉组件、布局、资源路径和新增皮肤页。
+
+阶段 1：抽公共 UI 样式
+新增或整理 src/ui/common/：
+1. UIButton：支持颜色主题、按下缩放、禁用态。
+2. UIPanel：圆角面板、描边、阴影。
+3. UITabBar：双 Tab/多 Tab。
+4. UIIconButton：圆形入口按钮。
+5. UIProgressBar：关卡进度条、分数进度条。
+这样 HomeScene、RankScene、SkinScene、Overlay 可复用。
+
+阶段 2：首页
+修改 src/scenes/HomeScene.ts：
+1. 主标题保持彩珠五连。
+2. 主按钮“开始闯关”进入 levelSelect 或最新未通关关卡。
+3. 次按钮“经典模式”进入 classic。
+4. 周边入口：排行榜、皮肤、设置、福利。
+5. 背景改为明亮主题，加入边缘彩珠装饰。
+
+阶段 3：对局页
+修改 src/scenes/ClassicScene.ts、src/scenes/LevelScene.ts：
+1. 顶部 HUD 改为统一卡通面板。
+2. 下一步预览放入 HUD 或单独胶囊条。
+3. 棋盘外框换成厚圆角框，保证格子清晰。
+4. PropBar 改为大图标底部工具条，减少小字。
+5. 兼容安全区和微信胶囊，不遮挡。
+
+阶段 4：关卡选择
+修改 src/scenes/LevelSelectScene.ts：
+1. 用地图式路径或卡片网格展示关卡。
+2. 节点显示星级、锁定、当前推荐关。
+3. 顶部显示总星数和返回按钮。
+
+阶段 5：排行榜
+修改 src/scenes/RankScene.ts：
+1. 保留经典版/关卡版双 Tab。
+2. 为联网排行预留头像、昵称、排名字段。
+3. 当前本地数据可作为 fallback。
+
+阶段 6：皮肤与背景
+新增 SkinScene、SkinManager、SkinConfig：
+1. 首页入口进入 SkinScene。
+2. 可切换棋子皮肤和对局背景。
+3. 本地存储当前选择。
+4. 对局页读取当前选择。
+
+阶段 7：弹窗统一
+修改 GameOverOverlay、LevelCompleteOverlay、LevelFailOverlay：
+1. 统一蓝色弹窗底板。
+2. 大标题、星星、分数展示。
+3. 绿色主按钮和蓝色次按钮。
+
+阶段 8：验收
+1. npm run build。
+2. 微信开发者工具模拟 iPhone 刘海屏和普通屏。
+3. 真机看棋盘清晰度、按钮大小、文字可读性。
+4. 检查包体大小。

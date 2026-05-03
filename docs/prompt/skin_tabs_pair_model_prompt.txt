@@ -1,0 +1,14 @@
+Generate a single image containing TWO standalone tab button UI assets for a mobile game skin screen.
+
+Use the provided skin screen reference style:
+- Left tab: active state, bright cyan/turquoise, raised glossy cartoon style.
+- Right tab: inactive state, darker blue, recessed glossy cartoon style.
+- Both tabs must have the exact same size, same perspective, same corner radius, same rim thickness, and matching lighting.
+- Place them side by side on one horizontal row with clear spacing.
+- No text on either tab.
+
+Asset requirements:
+- Pure white background.
+- Clean cutout edges.
+- NO TEXT, no labels, no Chinese characters, no icons, no numbers.
+- No shadows outside the tabs, no drop shadows, no cast shadows, no contact shadows.

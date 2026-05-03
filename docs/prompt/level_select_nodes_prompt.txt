@@ -1,0 +1,30 @@
+Generate a single horizontal sprite sheet containing THREE circular level button assets for a colorful underwater candy mobile game.
+
+Layout:
+- 3 columns x 1 row on a pure white background.
+- All three buttons must have the exact same size, circular silhouette, same perspective, and consistent lighting.
+
+Button 1: completed/unlocked state.
+- Glossy bright blue circular medallion.
+- Golden rim.
+- Small bottom area left clear for stars to be overlaid in code.
+- No number.
+
+Button 2: current/next state.
+- Glossy golden yellow circular medallion.
+- Golden rim.
+- Subtle inner glow only, but no outside shadow.
+- Small bottom area left clear for stars to be overlaid in code.
+- No number.
+
+Button 3: locked state.
+- Glossy silver gray circular medallion.
+- Muted rim.
+- No lock icon, no number.
+
+Asset requirements:
+- NO TEXT, no numbers, no labels, no Chinese characters.
+- No lock icon.
+- No stars.
+- No shadows outside the buttons, no drop shadows, no cast shadows, no contact shadows.
+- Clean cutout edges.

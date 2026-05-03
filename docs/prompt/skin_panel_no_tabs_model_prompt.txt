@@ -1,0 +1,20 @@
+Generate a single standalone EMPTY main skin shop panel UI asset for a colorful mobile puzzle game.
+
+Use the provided skin screen reference style:
+- Bright blue cartoon mobile game UI.
+- Tall portrait mobile panel, close to a 3:4 vertical aspect ratio.
+- Tall rounded main panel with glossy cyan rim and deep blue inner scroll viewport.
+- Top title plaque shape with no text.
+- A circular close button is baked directly into the upper right corner of the panel, with a white X icon.
+- The panel must NOT include tab buttons. Leave a clean blank area where separate tab assets can be overlaid by code.
+- There must be clear vertical space between the top title plaque and the dark blue inner content viewport for two separate tab buttons to be overlaid later.
+- The dark blue inner content viewport should start lower, below the reserved tab area.
+- The close button must remain perfectly circular, not oval or stretched.
+- The large content area must be empty, no item cards inside.
+
+Asset requirements:
+- One complete panel only, centered on a pure white background with generous margins.
+- No title text, no tab text, no Chinese characters, no labels, no item icons, no cards.
+- Clean blue/cyan glossy cartoon style matching the reference.
+- No shadows outside the panel, no drop shadows, no cast shadows, no contact shadows.
+- Clean edges for cutout.

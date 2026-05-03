@@ -1,0 +1,15 @@
+Create a polished 9:16 mobile game UI prototype for a colorful marble puzzle game named "彩珠五连".
+
+Screen: main home screen.
+
+Visual style:
+Vibrant cartoon casual puzzle game, bright ocean blue and purple gradient background, glossy colorful marbles around the edges, rounded thick UI panels, high saturation, soft bevels, playful but clean. Similar quality to popular WeChat casual puzzle games. Safe area at top for WeChat capsule.
+
+Layout:
+Top third: large centered game title area, big readable Chinese title "彩珠五连" with white/yellow fill and dark blue outline.
+Middle: one large green primary button for "开始闯关", one blue secondary button for "经典模式".
+Bottom/side: round icon buttons for "排行榜", "皮肤", "设置", "福利". Make icons large and readable, text can be placeholder-like but should feel Chinese mobile game UI.
+Add decorative marbles and sparkles but keep important UI clear.
+
+Requirements:
+Portrait 9:16, full mobile screen mockup, no copyrighted characters, no real brand logos, no photo realism, no dark muddy palette. The design should look final enough for art direction approval.
