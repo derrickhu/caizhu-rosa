@@ -1,6 +1,7 @@
 import '@/core/pixiWechatPatch';
 import { Game } from '@/core/Game';
 import { SceneManager } from '@/core/SceneManager';
+import { LoadingScene } from '@/scenes/LoadingScene';
 import { HomeScene } from '@/scenes/HomeScene';
 import { ClassicScene } from '@/scenes/ClassicScene';
 import { LevelSelectScene } from '@/scenes/LevelSelectScene';
@@ -11,10 +12,13 @@ import { LevelManager } from '@/managers/LevelManager';
 import { RankManager } from '@/managers/RankManager';
 import { SkinManager } from '@/managers/SkinManager';
 import { PropManager } from '@/managers/PropManager';
+import { CloudSyncManager } from '@/managers/CloudSyncManager';
 import { Platform } from '@/core/PlatformService';
 import { AudioManager } from '@/core/AudioManager';
 import { loadPropIcons } from '@/utils/iconLoader';
 import { loadOrbTextures } from '@/utils/orbLoader';
+import { preloadImageAssets } from '@/utils/assetPreloader';
+import { loadImageTexture } from '@/utils/imageTexture';
 import { GAME_DISPLAY_NAME } from '@/config/GameConfig';
 
 declare const GameGlobal: any;
@@ -38,6 +42,11 @@ async function main(): Promise<void> {
 
     Game.init(canvas);
 
+    const loadingScene = new LoadingScene();
+    SceneManager.register(loadingScene);
+    await loadImageTexture('images/loading_screen.png');
+    SceneManager.switchTo('loading');
+
     Platform.onShareAppMessage(() => ({
       title: GAME_DISPLAY_NAME,
     }));
@@ -48,7 +57,11 @@ async function main(): Promise<void> {
     AudioManager.register('select', 'audio/select.mp3', 0.5);
     AudioManager.register('gameover', 'audio/gameover.mp3', 0.7);
 
-    // Init managers
+    CloudSyncManager.prewarm();
+    const cloudStartup = await CloudSyncManager.awaitStartupSync();
+    console.log(`[main] 云同步启动状态: ${cloudStartup.status}, reason=${cloudStartup.reason}`);
+
+    // Init managers after startup sync has had a chance to import cloud data.
     LevelManager.init();
     RankManager.init();
     SkinManager.init();
@@ -56,7 +69,11 @@ async function main(): Promise<void> {
     PropManager.grantStarterPack();
 
     // Preload assets after skin state is available, so orb textures use the selected row.
-    await Promise.all([loadPropIcons(), loadOrbTextures()]);
+    await Promise.all([
+      preloadImageAssets((loaded, total) => loadingScene.setProgress(loaded, total)),
+      loadPropIcons(),
+      loadOrbTextures(),
+    ]);
 
     // Register scenes
     const homeScene = new HomeScene();
@@ -90,6 +107,10 @@ async function main(): Promise<void> {
     // Save on hide
     Platform.onHide(() => {
       console.log('[main] 游戏退到后台');
+      void CloudSyncManager.flushNow('hide');
+    });
+    Platform.onShow(() => {
+      CloudSyncManager.prewarm();
     });
 
     console.log(`[main] ${GAME_DISPLAY_NAME} 启动完成`);

@@ -1,32 +1,45 @@
 import {
   BOARD_SIZE, CLASSIC_COLOR_COUNT, BALLS_PER_TURN, INITIAL_BALLS, scoreForLine,
 } from '@/config/GameConfig';
-import { WILD_BALL, BOMB_BALL, isBombBall } from '@/config/PropConfig';
+import {
+  cloneCell,
+  clonePiece,
+  createSpecialPiece,
+  damagePieceByExplosion,
+  damagePieceByLine,
+  isBombPiece,
+  isMovablePiece,
+  rollSpawnPiece,
+  type CellValue,
+  type Piece,
+  type PieceSpawnKind,
+  type SpecialPieceChances,
+} from '@/config/PieceConfig';
 import { findPath, type Point } from '@/systems/PathFinder';
 import { detectLines } from '@/systems/LineDetector';
 import { EventBus } from '@/core/EventBus';
 
-export type CellValue = number | null;
+export type { CellValue, Piece } from '@/config/PieceConfig';
 
-export interface LevelModeConfig {
+export interface LevelModeConfig extends SpecialPieceChances {
   colorCount: number;
   initialBalls: number;
   ballsPerTurn: number;
   noSpawnThreshold: number;
-  wildBallChance?: number;
-  bombBallChance?: number;
+  guaranteedInitialPieces?: readonly PieceSpawnKind[];
+  guaranteedNextPieces?: readonly PieceSpawnKind[];
 }
 
 interface BoardSnapshot {
   grid: CellValue[][];
-  nextColors: number[];
+  nextPieces: Piece[];
   score: number;
   stepsUsed: number;
 }
 
 class BoardManagerClass {
   private _grid: CellValue[][] = [];
-  private _nextColors: number[] = [];
+  private _nextPieces: Piece[] = [];
   private _score = 0;
   private _bestScore = 0;
   private _gameOver = false;
@@ -38,8 +51,9 @@ class BoardManagerClass {
 
   private _isLevelMode = false;
   private _noSpawnThreshold = 8;
-  private _wildBallChance = 0;
-  private _bombBallChance = 0;
+  private _specialChances: SpecialPieceChances = {};
+  private _guaranteedInitialPieces: readonly PieceSpawnKind[] = [];
+  private _guaranteedNextPieces: readonly PieceSpawnKind[] = [];
 
   /** Undo support: stores the state before the last move */
   private _undoSnapshot: BoardSnapshot | null = null;
@@ -48,7 +62,7 @@ class BoardManagerClass {
   private _nextPositions: Point[] | null = null;
 
   get grid(): CellValue[][] { return this._grid; }
-  get nextColors(): number[] { return this._nextColors; }
+  get nextColors(): Piece[] { return this._nextPieces; }
   get score(): number { return this._score; }
   get bestScore(): number { return this._bestScore; }
   get gameOver(): boolean { return this._gameOver; }
@@ -62,8 +76,9 @@ class BoardManagerClass {
     this._initialBalls = INITIAL_BALLS;
     this._ballsPerTurn = BALLS_PER_TURN;
     this._noSpawnThreshold = 99;
-    this._wildBallChance = 0;
-    this._bombBallChance = 0;
+    this._specialChances = {};
+    this._guaranteedInitialPieces = [];
+    this._guaranteedNextPieces = [];
     this._commonInit();
   }
 
@@ -74,8 +89,15 @@ class BoardManagerClass {
     this._initialBalls = config.initialBalls;
     this._ballsPerTurn = config.ballsPerTurn;
     this._noSpawnThreshold = config.noSpawnThreshold;
-    this._wildBallChance = config.wildBallChance ?? 0;
-    this._bombBallChance = config.bombBallChance ?? 0;
+    this._specialChances = {
+      wildBallChance: config.wildBallChance ?? 0,
+      bombBallChance: config.bombBallChance ?? 0,
+      frozenBallChance: config.frozenBallChance ?? 0,
+      chainBallChance: config.chainBallChance ?? 0,
+      blockChance: config.blockChance ?? 0,
+    };
+    this._guaranteedInitialPieces = config.guaranteedInitialPieces ?? [];
+    this._guaranteedNextPieces = config.guaranteedNextPieces ?? [];
     this._commonInit();
   }
 
@@ -88,7 +110,7 @@ class BoardManagerClass {
     this._gameOver = false;
     this._undoSnapshot = null;
     this._nextPositions = null;
-    this._generateNextColors();
+    this._generateNextPieces(this._guaranteedNextPieces);
     this._spawnInitialBalls();
   }
 
@@ -124,8 +146,8 @@ class BoardManagerClass {
   // ─── Core Move ───────────────────────────────────────────
 
   moveBall(from: Point, to: Point): MoveResult {
-    const color = this._grid[from.row][from.col];
-    if (color === null) return { moved: false, eliminated: [], score: 0, newBalls: [], gameOver: false, stepsUsed: 0 };
+    const piece = this._grid[from.row][from.col];
+    if (!isMovablePiece(piece)) return { moved: false, eliminated: [], score: 0, newBalls: [], gameOver: false, stepsUsed: 0 };
 
     // Save undo snapshot BEFORE any grid modifications
     this._saveSnapshot();
@@ -134,12 +156,12 @@ class BoardManagerClass {
     const path = findPath(this._grid, from, to);
 
     if (!path) {
-      this._grid[from.row][from.col] = color;
+      this._grid[from.row][from.col] = piece;
       this._undoSnapshot = null;
       return { moved: false, eliminated: [], score: 0, newBalls: [], gameOver: false, stepsUsed: 0 };
     }
 
-    this._grid[to.row][to.col] = color;
+    this._grid[to.row][to.col] = piece;
     this._stepsUsed++;
 
     const eliminated = detectLines(this._grid, [to]);
@@ -149,37 +171,40 @@ class BoardManagerClass {
     const allEliminated = bombExpanded.length > eliminated.length ? bombExpanded : eliminated;
 
     if (allEliminated.length > 0) {
-      const turnScore = this._processElimination(allEliminated);
+      const bombCells = bombExpanded.length > eliminated.length
+        ? bombExpanded.filter(p => !eliminated.some(e => e.row === p.row && e.col === p.col))
+        : [];
+      const turnResult = this._processElimination(allEliminated, bombCells);
 
       if (this._isLevelMode && allEliminated.length < this._noSpawnThreshold) {
         const newBalls = this._spawnNextBalls();
-        this._generateNextColors();
+        this._generateNextPieces();
 
         const newBallPositions = newBalls.map(b => b.position);
         const autoElim = detectLines(this._grid, newBallPositions);
         const autoExpanded = this._expandBombElimination(autoElim);
-        let autoScore = 0;
+        const autoBombCells = autoExpanded.length > autoElim.length
+          ? autoExpanded.filter(p => !autoElim.some(e => e.row === p.row && e.col === p.col))
+          : [];
+        let autoResult: EliminationResult = { score: 0, changedPieces: [] };
         if (autoExpanded.length > 0) {
-          autoScore = this._processElimination(autoExpanded);
+          autoResult = this._processElimination(autoExpanded, autoBombCells);
         }
 
         const gameOver = this._checkGameOver();
         return {
-          moved: true, path, eliminated: allEliminated, score: turnScore + autoScore,
-          newBalls, gameOver, stepsUsed: this._stepsUsed,
+          moved: true, path, eliminated: allEliminated, score: turnResult.score + autoResult.score,
+          newBalls, gameOver, stepsUsed: this._stepsUsed, changedPieces: turnResult.changedPieces,
           autoEliminated: autoExpanded.length > 0 ? autoExpanded : undefined,
-          bombCells: bombExpanded.length > eliminated.length
-            ? bombExpanded.filter(p => !eliminated.some(e => e.row === p.row && e.col === p.col))
-            : undefined,
+          autoChangedPieces: autoResult.changedPieces,
+          bombCells: bombCells.length > 0 ? bombCells : undefined,
         };
       }
 
       return {
-        moved: true, path, eliminated: allEliminated, score: turnScore,
-        newBalls: [], gameOver: false, stepsUsed: this._stepsUsed,
-        bombCells: bombExpanded.length > eliminated.length
-          ? bombExpanded.filter(p => !eliminated.some(e => e.row === p.row && e.col === p.col))
-          : undefined,
+        moved: true, path, eliminated: allEliminated, score: turnResult.score,
+        newBalls: [], gameOver: false, stepsUsed: this._stepsUsed, changedPieces: turnResult.changedPieces,
+        bombCells: bombCells.length > 0 ? bombCells : undefined,
       };
     }
 
@@ -189,20 +214,24 @@ class BoardManagerClass {
     const newBallPositions = newBalls.map(b => b.position);
     const autoEliminated = detectLines(this._grid, newBallPositions);
     const autoExpanded = this._expandBombElimination(autoEliminated);
-    let autoScore = 0;
+    const autoBombCells = autoExpanded.length > autoEliminated.length
+      ? autoExpanded.filter(p => !autoEliminated.some(e => e.row === p.row && e.col === p.col))
+      : [];
+    let autoResult: EliminationResult = { score: 0, changedPieces: [] };
     if (autoExpanded.length > 0) {
-      autoScore = this._processElimination(autoExpanded);
+      autoResult = this._processElimination(autoExpanded, autoBombCells);
     }
 
-    this._generateNextColors();
+    this._generateNextPieces();
 
     const gameOver = this._checkGameOver();
 
     return {
       moved: true, path,
       eliminated: [],
-      score: autoScore, newBalls, gameOver, stepsUsed: this._stepsUsed,
+      score: autoResult.score, newBalls, gameOver, stepsUsed: this._stepsUsed,
       autoEliminated: autoExpanded.length > 0 ? autoExpanded : undefined,
+      autoChangedPieces: autoResult.changedPieces,
     };
   }
 
@@ -218,7 +247,7 @@ class BoardManagerClass {
     const toCheck = [...eliminated];
     while (toCheck.length > 0) {
       const p = toCheck.pop()!;
-      if (!isBombBall(this._grid[p.row][p.col])) continue;
+      if (!isBombPiece(this._grid[p.row][p.col])) continue;
 
       for (let dr = -1; dr <= 1; dr++) {
         for (let dc = -1; dc <= 1; dc++) {
@@ -247,8 +276,8 @@ class BoardManagerClass {
   undo(): boolean {
     if (!this._undoSnapshot) return false;
     const snap = this._undoSnapshot;
-    this._grid = snap.grid.map(row => [...row]);
-    this._nextColors = [...snap.nextColors];
+    this._grid = snap.grid.map(row => row.map(cloneCell));
+    this._nextPieces = snap.nextPieces.map(clonePiece);
     this._score = snap.score;
     this._stepsUsed = snap.stepsUsed;
     this._gameOver = false;
@@ -270,7 +299,7 @@ class BoardManagerClass {
 
   /** Reroll the next colors */
   rerollNextColors(): void {
-    this._generateNextColors();
+    this._generateNextPieces();
     this._nextPositions = null;
   }
 
@@ -288,7 +317,7 @@ class BoardManagerClass {
     const positions: Point[] = [];
     const tempEmpty = [...empty];
 
-    for (let i = 0; i < this._nextColors.length && tempEmpty.length > 0; i++) {
+    for (let i = 0; i < this._nextPieces.length && tempEmpty.length > 0; i++) {
       const idx = Math.floor(Math.random() * tempEmpty.length);
       positions.push(tempEmpty.splice(idx, 1)[0]);
     }
@@ -301,8 +330,8 @@ class BoardManagerClass {
 
   private _saveSnapshot(): void {
     this._undoSnapshot = {
-      grid: this._grid.map(row => [...row]),
-      nextColors: [...this._nextColors],
+      grid: this._grid.map(row => row.map(cloneCell)),
+      nextPieces: this._nextPieces.map(clonePiece),
       score: this._score,
       stepsUsed: this._stepsUsed,
     };
@@ -320,20 +349,31 @@ class BoardManagerClass {
     return gameOver;
   }
 
-  private _processElimination(eliminated: Point[]): number {
+  private _processElimination(eliminated: Point[], explosionCells: Point[] = []): EliminationResult {
     const totalScore = scoreForLine(eliminated.length);
+    const explosionSet = new Set(explosionCells.map(p => `${p.row},${p.col}`));
+    const changedPieces: ChangedPiece[] = [];
+
     for (const p of eliminated) {
-      this._grid[p.row][p.col] = null;
+      const piece = this._grid[p.row][p.col];
+      if (!piece) continue;
+      const next = explosionSet.has(`${p.row},${p.col}`)
+        ? damagePieceByExplosion(piece)
+        : damagePieceByLine(piece);
+      this._grid[p.row][p.col] = next;
+      if (next) {
+        changedPieces.push({ position: p, piece: clonePiece(next) });
+      }
     }
     this._score += totalScore;
     EventBus.emit('board:eliminated', eliminated, totalScore);
-    return totalScore;
+    return { score: totalScore, changedPieces };
   }
 
   private _spawnNextBalls(): NewBall[] {
     const empty = this.getEmptyCells();
     const spawned: NewBall[] = [];
-    const count = Math.min(this._nextColors.length, empty.length);
+    const count = Math.min(this._nextPieces.length, empty.length);
 
     // Use pre-computed positions if available (from preview)
     const previewPositions = this._nextPositions;
@@ -357,9 +397,9 @@ class BoardManagerClass {
         pos = empty.splice(idx, 1)[0];
       }
 
-      const color = this._nextColors[i];
-      this._grid[pos.row][pos.col] = color;
-      spawned.push({ position: pos, color });
+      const piece = clonePiece(this._nextPieces[i]);
+      this._grid[pos.row][pos.col] = piece;
+      spawned.push({ position: pos, piece });
     }
 
     EventBus.emit('board:spawned', spawned);
@@ -370,36 +410,31 @@ class BoardManagerClass {
     const empty = this.getEmptyCells();
     const spawned: NewBall[] = [];
 
+    const guaranteed = this._guaranteedInitialPieces.map(kind => createSpecialPiece(kind, this._colorCount));
     for (let i = 0; i < this._initialBalls && empty.length > 0; i++) {
       const idx = Math.floor(Math.random() * empty.length);
       const pos = empty.splice(idx, 1)[0];
-      const color = this._rollBallColor();
-      this._grid[pos.row][pos.col] = color;
-      spawned.push({ position: pos, color });
+      const piece = guaranteed[i] ? clonePiece(guaranteed[i]) : this._rollPiece();
+      this._grid[pos.row][pos.col] = piece;
+      spawned.push({ position: pos, piece });
     }
 
     EventBus.emit('board:spawned', spawned);
   }
 
-  private _generateNextColors(): void {
-    this._nextColors = [];
+  private _generateNextPieces(guaranteedKinds: readonly PieceSpawnKind[] = []): void {
+    this._nextPieces = [];
     for (let i = 0; i < this._ballsPerTurn; i++) {
-      this._nextColors.push(this._rollBallColor());
+      const kind = guaranteedKinds[i];
+      this._nextPieces.push(kind ? createSpecialPiece(kind, this._colorCount) : this._rollPiece());
     }
     this._nextPositions = null;
-    EventBus.emit('board:nextColors', this._nextColors);
+    EventBus.emit('board:nextColors', this._nextPieces);
   }
 
-  /** Roll a ball color, with chance for special balls in level mode */
-  private _rollBallColor(): number {
-    const rand = Math.random();
-    if (this._wildBallChance > 0 && rand < this._wildBallChance) {
-      return WILD_BALL;
-    }
-    if (this._bombBallChance > 0 && rand < this._wildBallChance + this._bombBallChance) {
-      return BOMB_BALL;
-    }
-    return Math.floor(Math.random() * this._colorCount);
+  /** Roll a piece, with chance for special pieces in level mode. */
+  private _rollPiece(): Piece {
+    return rollSpawnPiece(this._colorCount, this._isLevelMode ? this._specialChances : {});
   }
 
   revive(): void {
@@ -416,22 +451,22 @@ class BoardManagerClass {
       this._grid[pos.row][pos.col] = null;
     }
     this._gameOver = false;
-    this._generateNextColors();
+    this._generateNextPieces();
     EventBus.emit('board:revived');
   }
 
   exportState() {
     return {
-      grid: this._grid.map(row => [...row]),
-      nextColors: [...this._nextColors],
+      grid: this._grid.map(row => row.map(cloneCell)),
+      nextPieces: this._nextPieces.map(clonePiece),
       score: this._score,
       bestScore: this._bestScore,
     };
   }
 
   loadState(state: ReturnType<typeof this.exportState>): void {
-    this._grid = state.grid.map(row => [...row]);
-    this._nextColors = [...state.nextColors];
+    this._grid = state.grid.map(row => row.map(cloneCell));
+    this._nextPieces = state.nextPieces.map(clonePiece);
     this._score = state.score;
     this._bestScore = state.bestScore;
     this._gameOver = false;
@@ -440,7 +475,17 @@ class BoardManagerClass {
 
 export interface NewBall {
   position: Point;
-  color: number;
+  piece: Piece;
+}
+
+export interface ChangedPiece {
+  position: Point;
+  piece: Piece;
+}
+
+interface EliminationResult {
+  score: number;
+  changedPieces: ChangedPiece[];
 }
 
 export interface MoveResult {
@@ -450,6 +495,8 @@ export interface MoveResult {
   autoEliminated?: Point[];
   /** Extra cells cleared by bomb explosions (subset of eliminated not in the line) */
   bombCells?: Point[];
+  changedPieces?: ChangedPiece[];
+  autoChangedPieces?: ChangedPiece[];
   score: number;
   newBalls: NewBall[];
   gameOver: boolean;

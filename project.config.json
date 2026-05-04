@@ -27,6 +27,7 @@
     "disableSWC": true
   },
   "compileType": "game",
+  "cloudfunctionRoot": "cloudfunctions/",
   "miniprogramRoot": "minigame/",
   "libVersion": "latest",
   "appid": "wx19255301c4f7232e",

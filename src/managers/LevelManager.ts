@@ -1,7 +1,6 @@
-import { Platform } from '@/core/PlatformService';
+import { LEVEL_PROGRESS_KEY } from '@/config/CloudConfig';
 import { TOTAL_LEVELS, getLevelStars } from '@/config/LevelConfig';
-
-const STORAGE_KEY = 'caizhu_level_progress';
+import { PersistService } from '@/core/PersistService';
 
 interface LevelRecord {
   stars: number;
@@ -16,6 +15,14 @@ interface LevelProgress {
 class LevelManagerClass {
   private _progress: LevelProgress = { levels: {}, maxUnlocked: 1 };
   private _currentLevelId = 1;
+
+  constructor() {
+    PersistService.subscribeCloudImport((info) => {
+      if (info.changedKeys.includes(LEVEL_PROGRESS_KEY)) {
+        this._load();
+      }
+    });
+  }
 
   get currentLevelId(): number { return this._currentLevelId; }
   set currentLevelId(id: number) { this._currentLevelId = id; }
@@ -70,18 +77,12 @@ class LevelManagerClass {
   }
 
   private _load(): void {
-    const raw = Platform.getStorageSync(STORAGE_KEY);
-    if (raw) {
-      try {
-        this._progress = JSON.parse(raw);
-      } catch {
-        this._progress = { levels: {}, maxUnlocked: 1 };
-      }
-    }
+    this._progress = PersistService.readJSON<LevelProgress>(LEVEL_PROGRESS_KEY)
+      || { levels: {}, maxUnlocked: 1 };
   }
 
   private _save(): void {
-    Platform.setStorageSync(STORAGE_KEY, JSON.stringify(this._progress));
+    PersistService.writeJSON(LEVEL_PROGRESS_KEY, this._progress);
   }
 }
 

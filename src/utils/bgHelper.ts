@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { loadImageTexture } from './imageTexture';
 
 /**
  * Creates a background container with a fallback color, then async-loads
@@ -18,7 +19,7 @@ export function createBgSprite(
   fallback.endFill();
   container.addChild(fallback);
 
-  _loadImage(imagePath).then((texture) => {
+  loadImageTexture(imagePath).then((texture) => {
     if (!texture) return;
     const sprite = new PIXI.Sprite(texture);
     sprite.width = width;
@@ -27,44 +28,4 @@ export function createBgSprite(
   });
 
   return container;
-}
-
-function _loadImage(path: string): Promise<PIXI.Texture | null> {
-  return new Promise((resolve) => {
-    try {
-      const platform: any =
-        typeof wx !== 'undefined' ? wx :
-        typeof tt !== 'undefined' ? tt : null;
-
-      if (platform?.createImage) {
-        const img = platform.createImage();
-        img.onload = () => {
-          try {
-            const baseTexture = PIXI.BaseTexture.from(img as any);
-            resolve(new PIXI.Texture(baseTexture));
-          } catch (e) {
-            console.warn('[bgHelper] texture creation failed:', path, e);
-            resolve(null);
-          }
-        };
-        img.onerror = (err: any) => {
-          console.warn('[bgHelper] image load failed:', path, err);
-          resolve(null);
-        };
-        img.src = path;
-      } else {
-        // Browser / dev environment fallback
-        try {
-          const texture = PIXI.Texture.from(path);
-          resolve(texture);
-        } catch (e) {
-          console.warn('[bgHelper] fallback load failed:', path, e);
-          resolve(null);
-        }
-      }
-    } catch (e) {
-      console.warn('[bgHelper] load error:', path, e);
-      resolve(null);
-    }
-  });
 }

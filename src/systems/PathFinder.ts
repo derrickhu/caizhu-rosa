@@ -1,4 +1,5 @@
 import { BOARD_SIZE } from '@/config/GameConfig';
+import type { CellValue } from '@/config/PieceConfig';
 
 export interface Point { row: number; col: number; }
 
@@ -10,7 +11,7 @@ const DIRS = [[-1, 0], [1, 0], [0, -1], [0, 1]]; // up, down, left, right
  * Only horizontal/vertical moves through empty cells are allowed.
  */
 export function findPath(
-  board: (number | null)[][],
+  board: CellValue[][],
   start: Point,
   end: Point,
 ): Point[] | null {

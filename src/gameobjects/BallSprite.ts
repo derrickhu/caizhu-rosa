@@ -1,8 +1,9 @@
 import * as PIXI from 'pixi.js';
 import { BALL_PALETTE } from '@/config/GameConfig';
-import { WILD_BALL, BOMB_BALL } from '@/config/PropConfig';
+import { getPieceColor, type Piece } from '@/config/PieceConfig';
 import { TweenManager, Ease } from '@/core/TweenManager';
 import { getOrbTexture } from '@/utils/orbLoader';
+import { addImageSprite } from '@/utils/imageTexture';
 
 const RAINBOW: [number, number, number][] = [
   [0xDC3545, 0xFF6B7A, 0x8B0000],
@@ -18,15 +19,15 @@ export class BallSprite extends PIXI.Container {
 
   private _gfx: PIXI.Graphics;
   private _sprite: PIXI.Sprite | null = null;
-  private _colorIndex: number;
+  private _piece: Piece;
   private _radius: number;
   private _selected = false;
   private _bounceTween: any = null;
   private _inner: PIXI.Container;
 
-  constructor(colorIndex: number, radius: number) {
+  constructor(piece: Piece, radius: number) {
     super();
-    this._colorIndex = colorIndex;
+    this._piece = piece;
     this._radius = radius;
 
     this._inner = new PIXI.Container();
@@ -38,32 +39,45 @@ export class BallSprite extends PIXI.Container {
     this._draw();
   }
 
-  get colorIndex(): number { return this._colorIndex; }
+  get colorIndex(): number { return getPieceColor(this._piece) ?? -1; }
+  get piece(): Piece { return this._piece; }
 
-  setColor(colorIndex: number): void {
-    this._colorIndex = colorIndex;
+  setPiece(piece: Piece): void {
+    this._piece = piece;
     this._draw();
   }
 
   private _draw(): void {
+    this._inner.removeChildren();
+    this._inner.addChild(this._gfx);
     this._gfx.clear();
 
-    if (this._sprite) {
-      this._inner.removeChild(this._sprite);
-      this._sprite.destroy();
-      this._sprite = null;
-    }
+    this._sprite = null;
 
-    if (this._colorIndex === WILD_BALL) {
+    if (this._piece.kind === 'wild') {
       this._drawWildBall(this._gfx);
-    } else if (this._colorIndex === BOMB_BALL) {
+      this._drawImageSprite('images/special_wild.png');
+    } else if (this._piece.kind === 'bomb') {
       this._drawBombBall(this._gfx);
+      this._drawImageSprite('images/special_bomb.png');
+    } else if (this._piece.kind === 'block') {
+      this._drawBlock(this._gfx);
+      this._drawImageSprite('images/special_block.png');
     } else {
-      const tex = BallSprite.useTextures ? getOrbTexture(this._colorIndex) : null;
+      const color = getPieceColor(this._piece);
+      if (color === null) return;
+      const tex = BallSprite.useTextures ? getOrbTexture(color) : null;
       if (tex) {
         this._drawOrbSprite(tex);
       } else {
         this._drawGlassBall(this._gfx);
+      }
+      if (this._piece.kind === 'frozen') {
+        this._drawFrozenOverlay(this._gfx);
+        this._drawImageSprite('images/special_frozen_overlay.png');
+      } else if (this._piece.kind === 'chain') {
+        this._drawChainOverlay(this._gfx, this._piece.layers);
+        this._drawImageSprite('images/special_chain_overlay.png');
       }
     }
   }
@@ -81,10 +95,20 @@ export class BallSprite extends PIXI.Container {
     this._sprite = sprite;
   }
 
+  private _drawImageSprite(path: string): void {
+    const r = this._radius;
+    addImageSprite(this._inner, path, (sprite) => {
+      sprite.width = r * 2.12;
+      sprite.height = r * 2.12;
+      sprite.anchor.set(0.5, 0.5);
+    });
+  }
+
   /** Fallback: glass marble rendering with multi-layer shading */
   private _drawGlassBall(g: PIXI.Graphics): void {
     const r = this._radius;
-    const palette = BALL_PALETTE[this._colorIndex];
+    const color = getPieceColor(this._piece);
+    const palette = color === null ? null : BALL_PALETTE[color];
     if (!palette) return;
     const [main, hi, shadow] = palette;
 
@@ -197,6 +221,51 @@ export class BallSprite extends PIXI.Container {
     g.beginFill(0xFFFFFF, 0.6);
     g.drawCircle(r * 0.7, -r * 0.72, 1.5);
     g.endFill();
+  }
+
+  private _drawFrozenOverlay(g: PIXI.Graphics): void {
+    const r = this._radius;
+    g.beginFill(0xCFFAFE, 0.42);
+    g.drawCircle(0, 0, r * 1.04);
+    g.endFill();
+    g.lineStyle(3, 0xE0F7FF, 0.9);
+    g.drawCircle(0, 0, r * 0.96);
+    g.lineStyle(2, 0x73D7FF, 0.75);
+    g.moveTo(-r * 0.55, -r * 0.2);
+    g.lineTo(r * 0.45, -r * 0.62);
+    g.moveTo(-r * 0.35, r * 0.42);
+    g.lineTo(r * 0.55, r * 0.12);
+    g.lineStyle(0);
+  }
+
+  private _drawChainOverlay(g: PIXI.Graphics, layers: 1 | 2): void {
+    const r = this._radius;
+    g.lineStyle(5, 0xFFE082, 0.95);
+    g.moveTo(-r * 0.78, -r * 0.28);
+    g.lineTo(r * 0.78, r * 0.28);
+    if (layers > 1) {
+      g.moveTo(r * 0.78, -r * 0.28);
+      g.lineTo(-r * 0.78, r * 0.28);
+    }
+    g.lineStyle(2, 0x8A4B00, 0.95);
+    g.drawCircle(0, 0, r * 0.34);
+    g.lineStyle(0);
+  }
+
+  private _drawBlock(g: PIXI.Graphics): void {
+    const r = this._radius;
+    g.beginFill(0x000000, 0.22);
+    g.drawEllipse(1.5, r * 0.22, r * 0.82, r * 0.34);
+    g.endFill();
+    g.beginFill(0x7B8798);
+    g.drawRoundedRect(-r * 0.86, -r * 0.74, r * 1.72, r * 1.48, r * 0.22);
+    g.endFill();
+    g.beginFill(0xB6C2D2, 0.72);
+    g.drawRoundedRect(-r * 0.72, -r * 0.63, r * 1.44, r * 0.58, r * 0.18);
+    g.endFill();
+    g.lineStyle(3, 0x506070, 0.9);
+    g.drawRoundedRect(-r * 0.86, -r * 0.74, r * 1.72, r * 1.48, r * 0.22);
+    g.lineStyle(0);
   }
 
   setSelected(selected: boolean): void {

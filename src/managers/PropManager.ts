@@ -1,8 +1,8 @@
-import { Platform } from '@/core/PlatformService';
+import { PROP_INVENTORY_KEY } from '@/config/CloudConfig';
 import { EventBus } from '@/core/EventBus';
-import { PropType, PROP_DEFS, type PropDef } from '@/config/PropConfig';
-
-const STORAGE_KEY = 'caizhu_prop_inventory';
+import { PersistService } from '@/core/PersistService';
+import { Platform } from '@/core/PlatformService';
+import { PropType, PROP_DEFS } from '@/config/PropConfig';
 
 interface PropInventory {
   [key: string]: number;
@@ -12,6 +12,17 @@ class PropManagerClass {
   private _inventory: PropInventory = {};
   private _sessionUsage: Record<string, number> = {};
   private _adResolve: ((granted: boolean) => void) | null = null;
+
+  constructor() {
+    PersistService.subscribeCloudImport((info) => {
+      if (info.changedKeys.includes(PROP_INVENTORY_KEY)) {
+        this._load();
+        for (const type of Object.values(PropType)) {
+          EventBus.emit('prop:stockChanged', type, this.getStock(type));
+        }
+      }
+    });
+  }
 
   init(): void {
     this._load();
@@ -137,14 +148,11 @@ class PropManagerClass {
   }
 
   private _load(): void {
-    const raw = Platform.getStorageSync(STORAGE_KEY);
-    if (raw) {
-      try { this._inventory = JSON.parse(raw); } catch { this._inventory = {}; }
-    }
+    this._inventory = PersistService.readJSON<PropInventory>(PROP_INVENTORY_KEY) || {};
   }
 
   private _save(): void {
-    Platform.setStorageSync(STORAGE_KEY, JSON.stringify(this._inventory));
+    PersistService.writeJSON(PROP_INVENTORY_KEY, this._inventory);
   }
 }
 

@@ -32,7 +32,7 @@ export const DEFAULT_ORB_SKIN_ID = 'glass';
 export const DEFAULT_BACKGROUND_SKIN_ID = 'default-bg';
 
 export const DEFAULT_CLASSIC_BACKGROUND = 'images/bg_classic_redesign.png';
-export const DEFAULT_LEVEL_BACKGROUND = 'images/bg_level.jpg';
+export const DEFAULT_LEVEL_BACKGROUND = 'images/bg_level_redesign.png';
 
 export const ORB_SKINS: readonly OrbSkinDef[] = [
   {

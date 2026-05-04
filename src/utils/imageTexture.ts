@@ -1,7 +1,23 @@
 import * as PIXI from 'pixi.js';
 
+const _textureCache = new Map<string, PIXI.Texture | null>();
+const _pendingLoads = new Map<string, Promise<PIXI.Texture | null>>();
+
 export function loadImageTexture(path: string): Promise<PIXI.Texture | null> {
-  return new Promise((resolve) => {
+  if (_textureCache.has(path)) {
+    return Promise.resolve(_textureCache.get(path) ?? null);
+  }
+
+  const pending = _pendingLoads.get(path);
+  if (pending) return pending;
+
+  const loadPromise = new Promise<PIXI.Texture | null>((resolve) => {
+    const finish = (texture: PIXI.Texture | null) => {
+      _textureCache.set(path, texture);
+      _pendingLoads.delete(path);
+      resolve(texture);
+    };
+
     try {
       const platform: any =
         typeof wx !== 'undefined' ? wx :
@@ -12,31 +28,34 @@ export function loadImageTexture(path: string): Promise<PIXI.Texture | null> {
         img.onload = () => {
           try {
             const baseTexture = PIXI.BaseTexture.from(img as any);
-            resolve(new PIXI.Texture(baseTexture));
+            finish(new PIXI.Texture(baseTexture));
           } catch (e) {
             console.warn('[imageTexture] texture creation failed:', path, e);
-            resolve(null);
+            finish(null);
           }
         };
         img.onerror = (err: any) => {
           console.warn('[imageTexture] image load failed:', path, err);
-          resolve(null);
+          finish(null);
         };
         img.src = path;
         return;
       }
 
       try {
-        resolve(PIXI.Texture.from(path));
+        finish(PIXI.Texture.from(path));
       } catch (e) {
         console.warn('[imageTexture] fallback load failed:', path, e);
-        resolve(null);
+        finish(null);
       }
     } catch (e) {
       console.warn('[imageTexture] load error:', path, e);
-      resolve(null);
+      finish(null);
     }
   });
+
+  _pendingLoads.set(path, loadPromise);
+  return loadPromise;
 }
 
 export function addImageSprite(

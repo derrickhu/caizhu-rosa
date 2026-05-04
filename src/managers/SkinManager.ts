@@ -1,4 +1,6 @@
+import { SKIN_STATE_KEY } from '@/config/CloudConfig';
 import { Platform } from '@/core/PlatformService';
+import { PersistService } from '@/core/PersistService';
 import { LevelManager } from './LevelManager';
 import { RankManager } from './RankManager';
 import {
@@ -15,8 +17,6 @@ import {
   getSkinById,
 } from '@/config/SkinConfig';
 
-const STORAGE_KEY = 'caizhu_skin_state';
-
 interface SkinState {
   selectedOrbSkinId: string;
   selectedBackgroundSkinId: string;
@@ -31,6 +31,15 @@ class SkinManagerClass {
   };
 
   private _adResolve: ((granted: boolean) => void) | null = null;
+
+  constructor() {
+    PersistService.subscribeCloudImport((info) => {
+      if (info.changedKeys.includes(SKIN_STATE_KEY)) {
+        this._load();
+        this._repairSelection();
+      }
+    });
+  }
 
   init(): void {
     this._load();
@@ -148,10 +157,9 @@ class SkinManagerClass {
   }
 
   private _load(): void {
-    const raw = Platform.getStorageSync(STORAGE_KEY);
-    if (!raw) return;
+    const parsed = PersistService.readJSON<Partial<SkinState>>(SKIN_STATE_KEY);
+    if (!parsed) return;
     try {
-      const parsed = JSON.parse(raw) as Partial<SkinState>;
       this._state = {
         selectedOrbSkinId: parsed.selectedOrbSkinId || DEFAULT_ORB_SKIN_ID,
         selectedBackgroundSkinId: parsed.selectedBackgroundSkinId || DEFAULT_BACKGROUND_SKIN_ID,
@@ -167,7 +175,7 @@ class SkinManagerClass {
   }
 
   private _save(): void {
-    Platform.setStorageSync(STORAGE_KEY, JSON.stringify(this._state));
+    PersistService.writeJSON(SKIN_STATE_KEY, this._state);
   }
 
   private _showRewardedAd(condition: Extract<UnlockCondition, { type: 'ad' }>): Promise<boolean> {

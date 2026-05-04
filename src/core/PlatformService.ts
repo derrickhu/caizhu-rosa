@@ -4,6 +4,19 @@ declare const GameGlobal: any;
 
 export type PlatformName = 'wechat' | 'douyin' | 'unknown';
 
+export interface PlatformRequestOptions {
+  url: string;
+  method?: 'GET' | 'POST';
+  data?: any;
+  headers?: Record<string, string>;
+  timeoutMs?: number;
+}
+
+export interface PlatformRequestResult {
+  statusCode: number;
+  data: any;
+}
+
 class PlatformServiceClass {
   readonly name: PlatformName;
   private _api: any;
@@ -23,6 +36,8 @@ class PlatformServiceClass {
 
   get isMinigame(): boolean { return this._api !== null; }
   get isWechat(): boolean { return this.name === 'wechat'; }
+  get isDouyin(): boolean { return this.name === 'douyin'; }
+  get canUseBackend(): boolean { return this.isWechat || this.isDouyin || !this.isMinigame; }
   get api(): any { return this._api; }
 
   getStorageSync(key: string): string | null {
@@ -75,6 +90,58 @@ class PlatformServiceClass {
 
   onShow(callback: (res?: any) => void): void {
     try { this._api?.onShow?.(callback); } catch {}
+  }
+
+  loginCode(): Promise<string> {
+    return new Promise((resolve) => {
+      try {
+        if (!this._api?.login) {
+          resolve('');
+          return;
+        }
+        this._api.login({
+          success: (res: any) => resolve(String(res?.code || '')),
+          fail: () => resolve(''),
+        });
+      } catch {
+        resolve('');
+      }
+    });
+  }
+
+  request(options: PlatformRequestOptions): Promise<PlatformRequestResult> {
+    return new Promise((resolve, reject) => {
+      try {
+        if (!this._api?.request) {
+          if (typeof fetch === 'function') {
+            fetch(options.url, {
+              method: options.method || 'GET',
+              headers: options.headers,
+              body: options.data === undefined ? undefined : JSON.stringify(options.data),
+            })
+              .then(async (res) => resolve({ statusCode: res.status, data: await res.json().catch(() => null) }))
+              .catch(reject);
+            return;
+          }
+          reject(new Error('platform request unavailable'));
+          return;
+        }
+        this._api.request({
+          url: options.url,
+          method: options.method || 'GET',
+          data: options.data,
+          header: options.headers,
+          timeout: options.timeoutMs,
+          success: (res: any) => resolve({
+            statusCode: Number(res?.statusCode || 0),
+            data: res?.data,
+          }),
+          fail: (err: any) => reject(err),
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 
   showToast(title: string, icon: 'success' | 'none' | 'error' = 'none'): void {

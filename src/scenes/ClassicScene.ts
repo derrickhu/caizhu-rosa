@@ -8,8 +8,9 @@ import { BoardView } from '@/gameobjects/BoardView';
 import { ScorePanel } from '@/ui/ScorePanel';
 import { PreviewPanel } from '@/ui/PreviewPanel';
 import { GameOverOverlay } from '@/ui/GameOverOverlay';
+import { BEST_SCORE_KEY } from '@/config/CloudConfig';
 import { computeBoardLayout, PLAYFIELD_VERTICAL_OFFSET } from '@/config/GameConfig';
-import { Platform } from '@/core/PlatformService';
+import { PersistService } from '@/core/PersistService';
 import { RankManager } from '@/managers/RankManager';
 import { SkinManager } from '@/managers/SkinManager';
 import { createBgSprite } from '@/utils/bgHelper';
@@ -155,7 +156,7 @@ export class ClassicScene implements Scene {
   }
 
   private _loadBestScore(): void {
-    const raw = Platform.getStorageSync('caizhu_best_score');
+    const raw = PersistService.readRaw(BEST_SCORE_KEY);
     if (raw) {
       const best = parseInt(raw, 10);
       if (!isNaN(best)) {
@@ -166,6 +167,6 @@ export class ClassicScene implements Scene {
   }
 
   private _saveBestScore(): void {
-    Platform.setStorageSync('caizhu_best_score', String(BoardManager.bestScore));
+    PersistService.writeRaw(BEST_SCORE_KEY, String(BoardManager.bestScore));
   }
 }

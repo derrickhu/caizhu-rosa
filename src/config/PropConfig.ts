@@ -1,23 +1,3 @@
-/** Special ball type markers stored in the grid as negative numbers */
-export const WILD_BALL = -1;
-export const BOMB_BALL = -2;
-
-export function isSpecialBall(value: number | null): boolean {
-  return value !== null && value < 0;
-}
-
-export function isWildBall(value: number | null): boolean {
-  return value === WILD_BALL;
-}
-
-export function isBombBall(value: number | null): boolean {
-  return value === BOMB_BALL;
-}
-
-export function isNormalColor(value: number | null): boolean {
-  return value !== null && value >= 0;
-}
-
 /** Prop types available in-game */
 export enum PropType {
   PositionPreview = 'positionPreview',

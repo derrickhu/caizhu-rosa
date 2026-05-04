@@ -10,8 +10,10 @@ import { PreviewPanel } from '@/ui/PreviewPanel';
 import { LevelHud } from '@/ui/LevelHud';
 import { LevelCompleteOverlay } from '@/ui/LevelCompleteOverlay';
 import { LevelFailOverlay } from '@/ui/LevelFailOverlay';
+import { SpecialPieceIntroOverlay } from '@/ui/SpecialPieceIntroOverlay';
 import { PropBar } from '@/ui/PropBar';
 import { getLevelDef, getLevelStars, getMaxStarScore, getPassScore, TOTAL_LEVELS, type LevelDef } from '@/config/LevelConfig';
+import { getSpecialPieceIntros, hasSeenSpecialPieceIntro, markSpecialPieceIntroSeen, type SpecialPieceIntroDef } from '@/config/SpecialPieceIntroConfig';
 import { PropType, EXTRA_STEPS, EXTRA_TIME } from '@/config/PropConfig';
 import { createBgSprite } from '@/utils/bgHelper';
 import { BallSprite } from '@/gameobjects/BallSprite';
@@ -28,6 +30,7 @@ export class LevelScene implements Scene {
   private _propBar!: PropBar;
   private _completeOverlay!: LevelCompleteOverlay;
   private _failOverlay!: LevelFailOverlay;
+  private _introOverlay!: SpecialPieceIntroOverlay;
   private _levelDef!: LevelDef;
 
   private _timerActive = false;
@@ -98,6 +101,9 @@ export class LevelScene implements Scene {
     this._failOverlay = new LevelFailOverlay();
     this.container.addChild(this._failOverlay);
 
+    this._introOverlay = new SpecialPieceIntroOverlay();
+    this.container.addChild(this._introOverlay);
+
     // Init board with level config
     BoardManager.initLevel({
       colorCount: def.colorCount,
@@ -106,6 +112,11 @@ export class LevelScene implements Scene {
       noSpawnThreshold: def.noSpawnThreshold,
       wildBallChance: def.wildBallChance,
       bombBallChance: def.bombBallChance,
+      frozenBallChance: def.frozenBallChance,
+      chainBallChance: def.chainBallChance,
+      blockChance: def.blockChance,
+      guaranteedInitialPieces: def.guaranteedInitialPieces,
+      guaranteedNextPieces: def.guaranteedNextPieces,
     });
     this._boardView.syncWithBoard();
     this._hud.updateScore(0);
@@ -114,28 +125,9 @@ export class LevelScene implements Scene {
       this._hud.updateSteps(0);
     }
 
-    // Timer for timed levels
-    if (def.type === 'timed' && def.timeLimit) {
-      this._timeRemaining = def.timeLimit;
-      this._timerActive = true;
-      this._hud.updateTime(this._timeRemaining);
-
-      this._tickerCallback = () => {
-        if (!this._timerActive || this._finished) return;
-        const dt = Game.ticker.deltaMS / 1000;
-        this._timeRemaining -= dt;
-        this._hud.updateTime(this._timeRemaining);
-
-        if (this._timeRemaining <= 0) {
-          this._timerActive = false;
-          this._settleByFinalScore();
-        }
-      };
-      Game.ticker.add(this._tickerCallback);
-    }
-
     this._propBar.refresh();
     this._bindEvents();
+    this._showIntroOrStartTimer();
   }
 
   onExit(): void {
@@ -200,6 +192,50 @@ export class LevelScene implements Scene {
     } else {
       this._onLevelFail();
     }
+  }
+
+  private _showIntroOrStartTimer(): void {
+    const intros = getSpecialPieceIntros(this._levelDef.id)
+      .filter(intro => !hasSeenSpecialPieceIntro(intro.id));
+    if (intros.length === 0) {
+      this._startTimerIfNeeded();
+      return;
+    }
+
+    this._showIntroQueue(intros);
+  }
+
+  private _showIntroQueue(intros: SpecialPieceIntroDef[]): void {
+    const [intro, ...rest] = intros;
+    this._introOverlay.show(intro, () => {
+      markSpecialPieceIntroSeen(intro.id);
+      if (rest.length > 0) {
+        this._showIntroQueue(rest);
+      } else {
+        this._startTimerIfNeeded();
+      }
+    });
+  }
+
+  private _startTimerIfNeeded(): void {
+    if (this._levelDef.type !== 'timed' || !this._levelDef.timeLimit || this._tickerCallback) return;
+
+    this._timeRemaining = this._levelDef.timeLimit;
+    this._timerActive = true;
+    this._hud.updateTime(this._timeRemaining);
+
+    this._tickerCallback = () => {
+      if (!this._timerActive || this._finished) return;
+      const dt = Game.ticker.deltaMS / 1000;
+      this._timeRemaining -= dt;
+      this._hud.updateTime(this._timeRemaining);
+
+      if (this._timeRemaining <= 0) {
+        this._timerActive = false;
+        this._settleByFinalScore();
+      }
+    };
+    Game.ticker.add(this._tickerCallback);
   }
 
   private _onLevelComplete(): void {

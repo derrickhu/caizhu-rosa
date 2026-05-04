@@ -2,6 +2,10 @@ import * as PIXI from 'pixi.js';
 import { Game } from '@/core/Game';
 import { TweenManager, Ease } from '@/core/TweenManager';
 import { EventBus } from '@/core/EventBus';
+import { addImageSprite } from '@/utils/imageTexture';
+
+const PANEL_W = 430;
+const PANEL_H = 560;
 
 export class LevelFailOverlay extends PIXI.Container {
   private _panel: PIXI.Container;
@@ -22,60 +26,86 @@ export class LevelFailOverlay extends PIXI.Container {
     this._panel = new PIXI.Container();
     this.addChild(this._panel);
 
-    // White card
-    const bg = new PIXI.Graphics();
-    bg.beginFill(0xFFFFFF, 0.98);
-    bg.drawRoundedRect(-195, -155, 390, 310, 24);
-    bg.endFill();
-    this._panel.addChild(bg);
-
-    // Red accent bar
-    const accent = new PIXI.Graphics();
-    accent.beginFill(0xDC2626);
-    accent.drawRoundedRect(-195, -155, 390, 6, 24);
-    accent.endFill();
-    this._panel.addChild(accent);
+    const imageLayer = new PIXI.Container();
+    this._panel.addChild(imageLayer);
+    addImageSprite(imageLayer, 'images/level_complete_panel.png', (sprite) => {
+      sprite.anchor.set(0.5, 0.5);
+      sprite.width = PANEL_W;
+      sprite.height = PANEL_H;
+    });
 
     const title = new PIXI.Text('挑战失败', new PIXI.TextStyle({
-      fontSize: 36, fill: 0xDC2626, fontWeight: 'bold', fontFamily: 'Arial',
+      fontSize: 40,
+      fill: 0xFFFFFF,
+      stroke: 0x7A1233,
+      strokeThickness: 5,
+      fontWeight: 'bold',
+      fontFamily: 'Arial',
+      dropShadow: true,
+      dropShadowColor: 0x000000,
+      dropShadowBlur: 3,
+      dropShadowDistance: 2,
+      dropShadowAlpha: 0.35,
     }));
     title.anchor.set(0.5, 0.5);
-    title.y = -105;
+    title.y = -224;
     this._panel.addChild(title);
 
     this._scoreText = new PIXI.Text('当前: 0分', new PIXI.TextStyle({
-      fontSize: 26, fill: 0x1F2937, fontFamily: 'Arial', fontWeight: 'bold',
+      fontSize: 42,
+      fill: 0xFFE082,
+      stroke: 0x8A3A00,
+      strokeThickness: 5,
+      fontFamily: 'Arial',
+      fontWeight: 'bold',
+      dropShadow: true,
+      dropShadowColor: 0x000000,
+      dropShadowBlur: 3,
+      dropShadowDistance: 2,
+      dropShadowAlpha: 0.3,
     }));
     this._scoreText.anchor.set(0.5, 0.5);
-    this._scoreText.y = -40;
+    this._scoreText.y = -74;
     this._panel.addChild(this._scoreText);
 
     this._targetText = new PIXI.Text('目标: 0分', new PIXI.TextStyle({
-      fontSize: 22, fill: 0x9CA3AF, fontFamily: 'Arial',
+      fontSize: 27,
+      fill: 0xFFFFFF,
+      stroke: 0x174078,
+      strokeThickness: 4,
+      fontWeight: 'bold',
+      fontFamily: 'Arial',
+      wordWrap: true,
+      wordWrapWidth: 310,
+      align: 'center',
     }));
     this._targetText.anchor.set(0.5, 0.5);
-    this._targetText.y = 0;
+    this._targetText.y = 5;
     this._panel.addChild(this._targetText);
 
-    // Retry button
-    this._createButton('重试', 0xDC2626, 65, () => { this.hide(); EventBus.emit('level:retry'); });
-    this._createButton('返回', 0x9CA3AF, 123, () => { this.hide(); EventBus.emit('level:back'); });
+    this._createButtonHitArea('重试', 92, () => { this.hide(); EventBus.emit('level:retry'); });
+    this._createButtonHitArea('返回', 158, () => { this.hide(); EventBus.emit('level:back'); });
   }
 
-  private _createButton(label: string, color: number, yOff: number, onClick: () => void): void {
+  private _createButtonHitArea(label: string, yOff: number, onClick: () => void): void {
     const btn = new PIXI.Container();
     btn.y = yOff;
     btn.eventMode = 'static';
     btn.cursor = 'pointer';
 
-    const bg = new PIXI.Graphics();
-    bg.beginFill(color);
-    bg.drawRoundedRect(-95, -21, 190, 42, 21);
-    bg.endFill();
-    btn.addChild(bg);
+    const hit = new PIXI.Graphics();
+    hit.beginFill(0xFFFFFF, 0.001);
+    hit.drawRoundedRect(-132, -24, 264, 48, 24);
+    hit.endFill();
+    btn.addChild(hit);
 
     const text = new PIXI.Text(label, new PIXI.TextStyle({
-      fontSize: 22, fill: 0xFFFFFF, fontWeight: 'bold', fontFamily: 'Arial',
+      fontSize: 25,
+      fill: 0xFFFFFF,
+      stroke: 0x174078,
+      strokeThickness: 4,
+      fontWeight: 'bold',
+      fontFamily: 'Arial',
     }));
     text.anchor.set(0.5, 0.5);
     btn.addChild(text);

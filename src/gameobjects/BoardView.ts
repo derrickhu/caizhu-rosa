@@ -1,13 +1,13 @@
 import * as PIXI from 'pixi.js';
-import { BOARD_SIZE, CELL_GAP, BALL_COLORS, BALL_PALETTE, computeBoardLayout, scoreForLine } from '@/config/GameConfig';
-import { WILD_BALL, BOMB_BALL, isSpecialBall } from '@/config/PropConfig';
+import { BOARD_SIZE, CELL_GAP, BALL_PALETTE, computeBoardLayout, scoreForLine } from '@/config/GameConfig';
 import { BallSprite } from './BallSprite';
-import { BoardManager, type CellValue, type NewBall, type MoveResult } from '@/managers/BoardManager';
+import { BoardManager, type ChangedPiece, type NewBall } from '@/managers/BoardManager';
 import { EventBus } from '@/core/EventBus';
 import { TweenManager, Ease } from '@/core/TweenManager';
 import { Game } from '@/core/Game';
 import type { Point } from '@/systems/PathFinder';
 import { loadImageTexture } from '@/utils/imageTexture';
+import { getPieceDisplayColor, isMovablePiece, type Piece } from '@/config/PieceConfig';
 
 export type BoardInteractionMode = 'normal' | 'removeBall';
 export type BoardTheme = 'classic' | 'level';
@@ -216,17 +216,15 @@ export class BoardView extends PIXI.Container {
 
   // ─── Position Preview ────────────────────────────────────
 
-  showPositionPreview(positions: Point[], colors: number[]): void {
+  showPositionPreview(positions: Point[], pieces: Piece[]): void {
     this.clearPositionPreview();
-    for (let i = 0; i < positions.length && i < colors.length; i++) {
+    for (let i = 0; i < positions.length && i < pieces.length; i++) {
       const pos = positions[i];
-      const color = colors[i];
+      const piece = pieces[i];
       const center = this._cellCenter(pos.row, pos.col);
 
       const marker = new PIXI.Graphics();
-      const displayColor = color === WILD_BALL ? 0xFFFFFF
-        : color === BOMB_BALL ? 0xF39C12
-        : (BALL_COLORS[color] ?? 0xCCCCCC);
+      const displayColor = getPieceDisplayColor(piece);
 
       marker.beginFill(displayColor, 0.35);
       marker.drawCircle(0, 0, this._ballRadius);
@@ -280,13 +278,16 @@ export class BoardView extends PIXI.Container {
       const cellValue = grid[cell.row][cell.col];
 
       if (this._selectedPos === null) {
-        if (cellValue !== null) {
+        if (isMovablePiece(cellValue)) {
           this._selectBall(cell);
         }
       } else {
-        if (cellValue !== null) {
+        if (isMovablePiece(cellValue)) {
           this._deselectBall();
           this._selectBall(cell);
+        } else if (cellValue !== null) {
+          this._deselectBall();
+          this._flashCell(cell);
         } else {
           this._tryMove(this._selectedPos, cell);
         }
@@ -350,6 +351,7 @@ export class BoardView extends PIXI.Container {
         ? scoreForLine(result.eliminated.length)
         : result.score;
       await this._animateElimination(result.eliminated, activeScore);
+      this._refreshChangedPieces(result.changedPieces);
     }
 
     if (result.newBalls.length > 0) {
@@ -358,6 +360,7 @@ export class BoardView extends PIXI.Container {
 
     if (result.autoEliminated && result.autoEliminated.length > 0) {
       await this._animateElimination(result.autoEliminated, scoreForLine(result.autoEliminated.length));
+      this._refreshChangedPieces(result.autoChangedPieces);
     }
 
     if (result.score > 0) {
@@ -872,11 +875,30 @@ export class BoardView extends PIXI.Container {
   private _spawnBallSprites(newBalls: NewBall[]): void {
     for (const ball of newBalls) {
       const center = this._cellCenter(ball.position.row, ball.position.col);
-      const sprite = new BallSprite(ball.color, this._ballRadius);
+      const sprite = new BallSprite(ball.piece, this._ballRadius);
       sprite.x = center.x;
       sprite.y = center.y;
       this._ballContainer.addChild(sprite);
       this._balls[ball.position.row][ball.position.col] = sprite;
+      sprite.animateAppear();
+    }
+  }
+
+  private _refreshChangedPieces(changedPieces: ChangedPiece[] | undefined): void {
+    if (!changedPieces || changedPieces.length === 0) return;
+    for (const changed of changedPieces) {
+      const { row, col } = changed.position;
+      const old = this._balls[row][col];
+      if (old) {
+        this._ballContainer.removeChild(old);
+        old.destroy();
+      }
+      const center = this._cellCenter(row, col);
+      const sprite = new BallSprite(changed.piece, this._ballRadius);
+      sprite.x = center.x;
+      sprite.y = center.y;
+      this._ballContainer.addChild(sprite);
+      this._balls[row][col] = sprite;
       sprite.animateAppear();
     }
   }

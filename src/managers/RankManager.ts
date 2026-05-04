@@ -1,8 +1,8 @@
-import { Platform } from '@/core/PlatformService';
+import { CLASSIC_RANKS_KEY } from '@/config/CloudConfig';
+import { PersistService } from '@/core/PersistService';
 import { LevelManager } from './LevelManager';
 import { TOTAL_LEVELS } from '@/config/LevelConfig';
 
-const STORAGE_KEY = 'caizhu_classic_ranks';
 const MAX_RECORDS = 10;
 
 export interface ClassicRecord {
@@ -13,11 +13,16 @@ export interface ClassicRecord {
 class RankManagerClass {
   private _records: ClassicRecord[] = [];
 
+  constructor() {
+    PersistService.subscribeCloudImport((info) => {
+      if (info.changedKeys.includes(CLASSIC_RANKS_KEY)) {
+        this.init();
+      }
+    });
+  }
+
   init(): void {
-    const raw = Platform.getStorageSync(STORAGE_KEY);
-    if (raw) {
-      try { this._records = JSON.parse(raw); } catch { this._records = []; }
-    }
+    this._records = PersistService.readJSON<ClassicRecord[]>(CLASSIC_RANKS_KEY) || [];
   }
 
   addClassicScore(score: number): void {
@@ -30,7 +35,7 @@ class RankManagerClass {
     if (this._records.length > MAX_RECORDS) {
       this._records.length = MAX_RECORDS;
     }
-    Platform.setStorageSync(STORAGE_KEY, JSON.stringify(this._records));
+    PersistService.writeJSON(CLASSIC_RANKS_KEY, this._records);
   }
 
   getClassicRecords(): ClassicRecord[] {

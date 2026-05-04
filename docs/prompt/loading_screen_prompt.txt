@@ -1,0 +1,22 @@
+Create a game-ready loading screen background for a mobile casual puzzle game called "彩珠五连".
+
+Style:
+- vibrant glossy cartoon mobile game UI
+- colorful glass marbles, rounded puzzle board, candy-like highlights
+- consistent with a playful marble line-matching puzzle game
+- high saturation, clean readable composition, polished casual WeChat mini game style
+
+Composition:
+- portrait 9:16 loading screen
+- soft blue-purple gradient background with subtle sparkles and floating glass marbles
+- center area shows a cute 9x9 puzzle board fragment with colorful marbles forming a glowing five-in-a-row line
+- include a bright line-clear glow effect across five marbles to communicate gameplay
+- bottom area has a glossy rounded loading bar frame, empty inside, suitable for code-drawn progress fill
+- leave clean space above or below the board for code-drawn "加载中" text and percentage
+
+Important:
+- NO text, no labels, no captions, no writing, no numbers
+- do not include logos or UI buttons
+- no ocean/coral/seaweed/shell theme
+- full-screen background image, no transparent background
+- polished, clean, high quality, mobile portrait wallpaper
