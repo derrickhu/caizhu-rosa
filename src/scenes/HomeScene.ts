@@ -14,16 +14,16 @@ export class HomeScene implements Scene {
     const W = Game.logicWidth;
     const H = Game.logicHeight;
 
-    const bg = createBgSprite('images/home_bg_clean.png', W, H, 0x39C7F3);
+    const bg = createBgSprite('subpkg_assets/images/home_bg_clean.png', W, H, 0x39C7F3);
     this.container.addChild(bg);
 
-    this._addImage('images/home_title_cz5.png', W / 2, H * 0.25, W * 0.76);
-    this._addImage('images/home_btn_start.png', W / 2, H * 0.46, W * 0.58);
-    this._addImage('images/home_btn_classic.png', W / 2, H * 0.57, W * 0.47);
-    this._addImage('images/home_btn_rank.png', W * 0.29, H * 0.72, W * 0.34);
-    this._addImage('images/home_btn_skin.png', W * 0.71, H * 0.72, W * 0.34);
-    this._addImage('images/home_btn_settings.png', W * 0.29, H * 0.84, W * 0.34);
-    this._addImage('images/home_btn_rewards.png', W * 0.71, H * 0.84, W * 0.34);
+    this._addImage('subpkg_assets/images/home_title_cz5.png', W / 2, H * 0.25, W * 0.76);
+    this._addImage('subpkg_assets/images/home_btn_start.png', W / 2, H * 0.46, W * 0.58);
+    this._addImage('subpkg_assets/images/home_btn_classic.png', W / 2, H * 0.57, W * 0.47);
+    this._addImage('subpkg_assets/images/home_btn_rank.png', W * 0.29, H * 0.72, W * 0.34);
+    this._addImage('subpkg_assets/images/home_btn_skin.png', W * 0.71, H * 0.72, W * 0.34);
+    this._addImage('subpkg_assets/images/home_btn_settings.png', W * 0.29, H * 0.84, W * 0.34);
+    this._addImage('subpkg_assets/images/home_btn_rewards.png', W * 0.71, H * 0.84, W * 0.34);
 
     this._createHotspot(W * 0.21, H * 0.415, W * 0.79, H * 0.505, () => SceneManager.switchTo('levelSelect'));
     this._createHotspot(W * 0.26, H * 0.525, W * 0.74, H * 0.615, () => SceneManager.switchTo('classic'));

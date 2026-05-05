@@ -1,18 +1,18 @@
 import * as PIXI from 'pixi.js';
 import { SkinManager } from '@/managers/SkinManager';
 
-const ORB_SHEET_PATH = 'images/orb_skins_sheet.png';
+const ORB_SHEET_PATH = 'subpkg_assets/images/orb_skins_sheet.png';
 const ORB_SHEET_COLS = 7;
 const ORB_SHEET_FRAME = 96;
 
 const ORB_FILES: string[] = [
-  'images/orb_fire.png',    // 0 = red
-  'images/orb_metal.png',   // 1 = yellow
-  'images/orb_water.png',   // 2 = blue
-  'images/orb_grass.png',   // 3 = green
-  'images/orb_shadow.png',  // 4 = purple
-  'images/orb_heart.png',   // 5 = orange/pink
-  'images/orb_wind.png',    // 6 = cyan
+  'subpkg_assets/images/orb_fire.png',    // 0 = red
+  'subpkg_assets/images/orb_metal.png',   // 1 = yellow
+  'subpkg_assets/images/orb_water.png',   // 2 = blue
+  'subpkg_assets/images/orb_grass.png',   // 3 = green
+  'subpkg_assets/images/orb_shadow.png',  // 4 = purple
+  'subpkg_assets/images/orb_heart.png',   // 5 = orange/pink
+  'subpkg_assets/images/orb_wind.png',    // 6 = cyan
 ];
 
 let _textures: (PIXI.Texture | null)[] = [];

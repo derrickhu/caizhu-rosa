@@ -392,7 +392,7 @@ export class LevelScene implements Scene {
     btn.eventMode = 'static';
     btn.cursor = 'pointer';
 
-    addImageSprite(btn, 'images/classic_back_button.png', (sprite) => {
+    addImageSprite(btn, 'subpkg_assets/images/classic_back_button.png', (sprite) => {
       sprite.width = 72;
       sprite.height = 72;
     });

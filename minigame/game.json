@@ -11,6 +11,10 @@
     {
       "name": "audio",
       "root": "subpkg_audio/"
+    },
+    {
+      "name": "assets",
+      "root": "subpkg_assets/"
     }
   ]
 }

@@ -45,7 +45,7 @@ export class LevelHud extends PIXI.Container {
 
     const panelHolder = new PIXI.Container();
     this.addChild(panelHolder);
-    addImageSprite(panelHolder, 'images/level_hud_panel.png', (panelSprite) => {
+    addImageSprite(panelHolder, 'subpkg_assets/images/level_hud_panel.png', (panelSprite) => {
       panelSprite.width = this._panelW;
       panelSprite.height = this._panelH;
     });
@@ -62,7 +62,7 @@ export class LevelHud extends PIXI.Container {
 
     const hourglassHolder = new PIXI.Container();
     this.addChild(hourglassHolder);
-    addImageSprite(hourglassHolder, 'images/level_hourglass_icon.png', (sprite) => {
+    addImageSprite(hourglassHolder, 'subpkg_assets/images/level_hourglass_icon.png', (sprite) => {
       sprite.width = Math.round(this._panelW * 0.06);
       sprite.height = Math.round(this._panelW * 0.09);
       sprite.anchor.set(0.5, 0.5);
@@ -236,7 +236,7 @@ export class LevelHud extends PIXI.Container {
       badge.drawRoundedRect(-28, 30, 56, 25, 10);
       marker.addChild(badge);
 
-      addImageSprite(marker, 'images/level_star_icon.png', (sprite) => {
+      addImageSprite(marker, 'subpkg_assets/images/level_star_icon.png', (sprite) => {
         const size = Math.round(this._panelW * 0.075);
         sprite.width = size;
         sprite.height = size;

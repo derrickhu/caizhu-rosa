@@ -88,9 +88,9 @@ export class BoardView extends PIXI.Container {
     const boardSize = size + pad * 2;
 
     Promise.all([
-      loadImageTexture('images/classic_board_base.png'),
-      loadImageTexture('images/classic_board_cell_light.png'),
-      loadImageTexture('images/classic_board_cell_lavender.png'),
+      loadImageTexture('subpkg_assets/images/classic_board_base.png'),
+      loadImageTexture('subpkg_assets/images/classic_board_cell_light.png'),
+      loadImageTexture('subpkg_assets/images/classic_board_cell_lavender.png'),
     ]).then(([baseTex, lightTex, lavenderTex]) => {
       if (this.destroyed || this._theme !== 'classic') return;
       if (baseTex) {
@@ -130,9 +130,9 @@ export class BoardView extends PIXI.Container {
     const boardSize = size + pad * 2;
 
     Promise.all([
-      loadImageTexture('images/level_board_base.png'),
-      loadImageTexture('images/level_board_cell_light.png'),
-      loadImageTexture('images/level_board_cell_blue.png'),
+      loadImageTexture('subpkg_assets/images/level_board_base.png'),
+      loadImageTexture('subpkg_assets/images/level_board_cell_light.png'),
+      loadImageTexture('subpkg_assets/images/level_board_cell_blue.png'),
     ]).then(([baseTex, lightTex, blueTex]) => {
       if (this.destroyed || this._theme !== 'level') return;
       if (baseTex) {

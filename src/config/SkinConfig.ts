@@ -31,8 +31,8 @@ export type SkinDef = OrbSkinDef | BackgroundSkinDef;
 export const DEFAULT_ORB_SKIN_ID = 'glass';
 export const DEFAULT_BACKGROUND_SKIN_ID = 'default-bg';
 
-export const DEFAULT_CLASSIC_BACKGROUND = 'images/bg_classic_redesign.png';
-export const DEFAULT_LEVEL_BACKGROUND = 'images/bg_level_redesign.png';
+export const DEFAULT_CLASSIC_BACKGROUND = 'subpkg_assets/images/bg_classic_redesign.png';
+export const DEFAULT_LEVEL_BACKGROUND = 'subpkg_assets/images/bg_level_redesign.png';
 
 export const ORB_SKINS: readonly OrbSkinDef[] = [
   {
@@ -110,8 +110,8 @@ export const BACKGROUND_SKINS: readonly BackgroundSkinDef[] = [
     category: 'background',
     name: '甜蜜糖果',
     description: '看广告解锁',
-    imagePath: 'images/home_bg_clean.png',
-    previewPath: 'images/home_bg_clean.png',
+    imagePath: 'subpkg_assets/images/home_bg_clean.png',
+    previewPath: 'subpkg_assets/images/home_bg_clean.png',
     unlock: { type: 'ad', adUnitId: 'ad_skin_bg_sweet' },
   },
   {

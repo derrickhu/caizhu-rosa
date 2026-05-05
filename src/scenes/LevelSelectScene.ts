@@ -51,7 +51,7 @@ export class LevelSelectScene implements Scene {
     const W = Game.logicWidth;
     const H = Game.logicHeight;
 
-    const bg = createBgSprite('images/level_select_bg.jpg', W, H, 0x2AC6E9);
+    const bg = createBgSprite('subpkg_assets/images/level_select_bg.jpg', W, H, 0x2AC6E9);
     this.container.addChild(bg);
 
     const backBtn = this._createBackButton();
@@ -87,7 +87,7 @@ export class LevelSelectScene implements Scene {
     panel.x = x;
     panel.y = y;
 
-    addImageSprite(panel, 'images/level_select_title.png', (sprite) => {
+    addImageSprite(panel, 'subpkg_assets/images/level_select_title.png', (sprite) => {
       sprite.anchor.set(0.5, 0);
       sprite.width = 420;
       sprite.height = 150;
@@ -108,7 +108,7 @@ export class LevelSelectScene implements Scene {
     bg.drawRoundedRect(0, 0, 128, 48, 14);
     counter.addChild(bg);
 
-    addImageSprite(counter, 'images/level_select_star.png', (sprite) => {
+    addImageSprite(counter, 'subpkg_assets/images/level_select_star.png', (sprite) => {
       sprite.anchor.set(0.5, 0.5);
       sprite.width = 38;
       sprite.height = 38;
@@ -154,7 +154,7 @@ export class LevelSelectScene implements Scene {
     btn.cursor = 'pointer';
     btn.hitArea = new PIXI.Circle(43, 43, 43);
 
-    addImageSprite(btn, direction === 'next' ? 'images/level_page_next.png' : 'images/level_page_prev.png', (sprite) => {
+    addImageSprite(btn, direction === 'next' ? 'subpkg_assets/images/level_page_next.png' : 'subpkg_assets/images/level_page_prev.png', (sprite) => {
       sprite.width = 86;
       sprite.height = 86;
     });
@@ -177,8 +177,8 @@ export class LevelSelectScene implements Scene {
     const isNext = levelId === LevelManager.maxUnlocked && stars === 0;
     const size = isNext ? CURRENT_NODE_SIZE : NODE_SIZE;
     const assetPath = !unlocked
-      ? 'images/level_node_locked.png'
-      : isNext ? 'images/level_node_current.png' : 'images/level_node_completed.png';
+      ? 'subpkg_assets/images/level_node_locked.png'
+      : isNext ? 'subpkg_assets/images/level_node_current.png' : 'subpkg_assets/images/level_node_completed.png';
 
     loadImageTexture(assetPath).then((texture) => {
       if (!texture || cell.destroyed) return;
@@ -207,7 +207,7 @@ export class LevelSelectScene implements Scene {
         starHolder.x = (s - 1) * (STAR_SIZE * 0.62);
         starHolder.y = size * 0.62;
         starHolder.alpha = s < stars ? 1 : 0.25;
-        addImageSprite(starHolder, 'images/level_select_star.png', (sprite) => {
+        addImageSprite(starHolder, 'subpkg_assets/images/level_select_star.png', (sprite) => {
           sprite.anchor.set(0.5, 0.5);
           sprite.width = STAR_SIZE;
           sprite.height = STAR_SIZE;
@@ -392,7 +392,7 @@ export class LevelSelectScene implements Scene {
     btn.eventMode = 'static';
     btn.cursor = 'pointer';
 
-    addImageSprite(btn, 'images/classic_back_button.png', (sprite) => {
+    addImageSprite(btn, 'subpkg_assets/images/classic_back_button.png', (sprite) => {
       sprite.width = 74;
       sprite.height = 74;
     });

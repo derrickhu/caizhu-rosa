@@ -25,7 +25,7 @@ export class RankScene implements Scene {
     const W = Game.logicWidth;
     const H = Game.logicHeight;
 
-    const bg = createBgSprite('images/home_bg_clean.png', W, H, 0x1C2833);
+    const bg = createBgSprite('subpkg_assets/images/home_bg_clean.png', W, H, 0x1C2833);
     this.container.addChild(bg);
 
     // Back button

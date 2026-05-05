@@ -43,7 +43,7 @@ export class PreviewPanel extends PIXI.Container {
     if (variant === 'level') {
       const bannerHolder = new PIXI.Container();
       this.addChild(bannerHolder);
-      addImageSprite(bannerHolder, 'images/level_next_banner.png', (sprite) => {
+      addImageSprite(bannerHolder, 'subpkg_assets/images/level_next_banner.png', (sprite) => {
         sprite.x = -280;
         sprite.y = -36;
         sprite.width = 560;

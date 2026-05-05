@@ -8,10 +8,10 @@ import { addImageSprite, loadImageTexture } from '@/utils/imageTexture';
 import { getOrbSkinTexture, refreshOrbTextures } from '@/utils/orbLoader';
 import type { SkinCategory, SkinDef, OrbSkinDef, BackgroundSkinDef } from '@/config/SkinConfig';
 
-const PANEL_PATH = 'images/skin_panel.png';
-const TAB_ACTIVE_PATH = 'images/skin_tab_active.png';
-const TAB_INACTIVE_PATH = 'images/skin_tab_inactive.png';
-const CARD_PATH = 'images/skin_card_empty.png';
+const PANEL_PATH = 'subpkg_assets/images/skin_panel.png';
+const TAB_ACTIVE_PATH = 'subpkg_assets/images/skin_tab_active.png';
+const TAB_INACTIVE_PATH = 'subpkg_assets/images/skin_tab_inactive.png';
+const CARD_PATH = 'subpkg_assets/images/skin_card_empty.png';
 
 export class SkinScene implements Scene {
   readonly name = 'skin';
@@ -39,7 +39,7 @@ export class SkinScene implements Scene {
 
     const W = Game.logicWidth;
     const H = Game.logicHeight;
-    this.container.addChild(createBgSprite('images/home_bg_clean.png', W, H, 0x1C9DE6));
+    this.container.addChild(createBgSprite('subpkg_assets/images/home_bg_clean.png', W, H, 0x1C9DE6));
 
     const panelW = Math.min(704, W - 34);
     const panelH = Math.round(panelW * (1038 / 704));

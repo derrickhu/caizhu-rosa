@@ -56,13 +56,13 @@ export class BallSprite extends PIXI.Container {
 
     if (this._piece.kind === 'wild') {
       this._drawWildBall(this._gfx);
-      this._drawImageSprite('images/special_wild.png');
+      this._drawImageSprite('subpkg_assets/images/special_wild.png');
     } else if (this._piece.kind === 'bomb') {
       this._drawBombBall(this._gfx);
-      this._drawImageSprite('images/special_bomb.png');
+      this._drawImageSprite('subpkg_assets/images/special_bomb.png');
     } else if (this._piece.kind === 'block') {
       this._drawBlock(this._gfx);
-      this._drawImageSprite('images/special_block.png');
+      this._drawImageSprite('subpkg_assets/images/special_block.png');
     } else {
       const color = getPieceColor(this._piece);
       if (color === null) return;
@@ -74,10 +74,10 @@ export class BallSprite extends PIXI.Container {
       }
       if (this._piece.kind === 'frozen') {
         this._drawFrozenOverlay(this._gfx);
-        this._drawImageSprite('images/special_frozen_overlay.png');
+        this._drawImageSprite('subpkg_assets/images/special_frozen_overlay.png');
       } else if (this._piece.kind === 'chain') {
         this._drawChainOverlay(this._gfx, this._piece.layers);
-        this._drawImageSprite('images/special_chain_overlay.png');
+        this._drawImageSprite('subpkg_assets/images/special_chain_overlay.png');
       }
     }
   }

@@ -21,11 +21,29 @@ import { preloadImageAssets } from '@/utils/assetPreloader';
 import { loadImageTexture } from '@/utils/imageTexture';
 import { GAME_DISPLAY_NAME } from '@/config/GameConfig';
 
+declare const wx: any;
+declare const tt: any;
 declare const GameGlobal: any;
 
 if (typeof GameGlobal !== 'undefined') {
   GameGlobal.onError = (msg: string) => console.error('[GlobalError]', msg);
   GameGlobal.onUnhandledRejection = (ev: any) => console.error('[UnhandledRejection]', ev?.reason || ev);
+}
+
+function loadWechatSubpackage(name: string): Promise<void> {
+  const platform: any =
+    typeof wx !== 'undefined' ? wx :
+    typeof tt !== 'undefined' ? tt : null;
+
+  if (!platform?.loadSubpackage) return Promise.resolve();
+
+  return new Promise((resolve, reject) => {
+    platform.loadSubpackage({
+      name,
+      success: () => resolve(),
+      fail: (err: any) => reject(err),
+    });
+  });
 }
 
 async function main(): Promise<void> {
@@ -46,6 +64,8 @@ async function main(): Promise<void> {
     SceneManager.register(loadingScene);
     await loadImageTexture('images/loading_screen.png');
     SceneManager.switchTo('loading');
+
+    await loadWechatSubpackage('assets');
 
     Platform.onShareAppMessage(() => ({
       title: GAME_DISPLAY_NAME,

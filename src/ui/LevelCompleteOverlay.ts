@@ -31,7 +31,7 @@ export class LevelCompleteOverlay extends PIXI.Container {
 
     const imageLayer = new PIXI.Container();
     this._panel.addChild(imageLayer);
-    addImageSprite(imageLayer, 'images/level_complete_panel.png', (sprite) => {
+    addImageSprite(imageLayer, 'subpkg_assets/images/level_complete_panel.png', (sprite) => {
       sprite.anchor.set(0.5, 0.5);
       sprite.width = PANEL_W;
       sprite.height = PANEL_H;
@@ -62,7 +62,7 @@ export class LevelCompleteOverlay extends PIXI.Container {
       this._starNodes.push(starNode);
       this._starSprites.push(null);
 
-      addImageSprite(starNode, 'images/level_select_star.png', (sprite) => {
+      addImageSprite(starNode, 'subpkg_assets/images/level_select_star.png', (sprite) => {
         sprite.anchor.set(0.5, 0.5);
         sprite.width = 72;
         sprite.height = 72;

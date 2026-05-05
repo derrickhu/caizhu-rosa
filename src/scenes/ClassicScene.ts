@@ -130,7 +130,7 @@ export class ClassicScene implements Scene {
     btn.eventMode = 'static';
     btn.cursor = 'pointer';
 
-    addImageSprite(btn, 'images/classic_back_button.png', (sprite) => {
+    addImageSprite(btn, 'subpkg_assets/images/classic_back_button.png', (sprite) => {
       sprite.width = 88;
       sprite.height = 88;
     });
@@ -149,7 +149,7 @@ export class ClassicScene implements Scene {
     holder.x = x;
     holder.y = y;
     this.container.addChild(holder);
-    addImageSprite(holder, 'images/classic_score_hud.png', (sprite) => {
+    addImageSprite(holder, 'subpkg_assets/images/classic_score_hud.png', (sprite) => {
       sprite.width = w;
       sprite.height = h;
     });

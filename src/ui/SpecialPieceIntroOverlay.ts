@@ -30,7 +30,7 @@ export class SpecialPieceIntroOverlay extends PIXI.Container {
     this._panel = new PIXI.Container();
     this.addChild(this._panel);
 
-    addImageSprite(this._panel, 'images/special_intro_panel.png', (sprite) => {
+    addImageSprite(this._panel, 'subpkg_assets/images/special_intro_panel.png', (sprite) => {
       sprite.anchor.set(0.5);
       sprite.width = PANEL_W;
       sprite.height = PANEL_H;

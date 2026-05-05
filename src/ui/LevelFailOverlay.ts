@@ -28,7 +28,7 @@ export class LevelFailOverlay extends PIXI.Container {
 
     const imageLayer = new PIXI.Container();
     this._panel.addChild(imageLayer);
-    addImageSprite(imageLayer, 'images/level_complete_panel.png', (sprite) => {
+    addImageSprite(imageLayer, 'subpkg_assets/images/level_complete_panel.png', (sprite) => {
       sprite.anchor.set(0.5, 0.5);
       sprite.width = PANEL_W;
       sprite.height = PANEL_H;

@@ -40,10 +40,10 @@ export function loadPropIcons(): Promise<void> {
           console.warn('[iconLoader] image load failed');
           resolve();
         };
-        img.src = 'images/prop_icons.png';
+        img.src = 'subpkg_assets/images/prop_icons.png';
       } else {
         try {
-          _sheetTexture = PIXI.BaseTexture.from('images/prop_icons.png');
+          _sheetTexture = PIXI.BaseTexture.from('subpkg_assets/images/prop_icons.png');
           _createFrames();
           _loaded = true;
         } catch (e) {
