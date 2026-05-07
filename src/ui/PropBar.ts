@@ -12,14 +12,14 @@ const BTN_GAP = 18;
 const ICON_DISPLAY_SIZE = 114;
 
 const LABEL_STYLE = new PIXI.TextStyle({
-  fontSize: 17,
+  fontSize: 23,
   fill: 0xFFFFFF,
   fontWeight: 'bold',
   fontFamily: 'PingFang SC, Microsoft YaHei, Arial',
   align: 'center',
   stroke: 0x1A1A1A,
-  strokeThickness: 4,
-  lineHeight: 18,
+  strokeThickness: 5,
+  lineHeight: 26,
   dropShadow: true,
   dropShadowColor: 0x000000,
   dropShadowBlur: 2,
@@ -27,13 +27,35 @@ const LABEL_STYLE = new PIXI.TextStyle({
   dropShadowAlpha: 0.55,
 });
 
+/** 文案大致占两行时的内容底边（与 LABEL_STYLE.lineHeight 一致） */
+const PROP_LABEL_BLOCK_H = 2 * LABEL_STYLE.lineHeight! + 8;
+
 export class PropBar extends PIXI.Container {
   private _buttons: Map<PropType, PropButton> = new Map();
 
   constructor() {
     super();
+    const props = ALL_PROPS;
+    const totalWidth = props.length * BTN_SIZE + (props.length - 1) * BTN_GAP;
+    this._addBackdrop(totalWidth);
     this._createButtons();
     this._bindEvents();
+  }
+
+  private _addBackdrop(totalWidth: number): void {
+    const contentBottom = BTN_SIZE + 2 + PROP_LABEL_BLOCK_H;
+    const padX = 22;
+    const padY = 14;
+    const w = totalWidth + padX * 2;
+    const h = contentBottom + padY * 2;
+    const radius = 20;
+    const g = new PIXI.Graphics();
+    g.beginFill(0x061018, 0.5);
+    g.drawRoundedRect(0, 0, w, h, radius);
+    g.endFill();
+    g.x = -w / 2;
+    g.y = -padY;
+    this.addChildAt(g, 0);
   }
 
   private _createButtons(): void {
