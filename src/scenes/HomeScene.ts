@@ -4,10 +4,13 @@ import { SceneManager, type Scene } from '@/core/SceneManager';
 import { Platform } from '@/core/PlatformService';
 import { createBgSprite } from '@/utils/bgHelper';
 import { addImageSprite } from '@/utils/imageTexture';
+import { GmOverlay } from '@/ui/GmOverlay';
 
 export class HomeScene implements Scene {
   readonly name = 'home';
   readonly container = new PIXI.Container();
+
+  private _gmOverlay: GmOverlay | null = null;
 
   onEnter(): void {
     this.container.removeChildren();
@@ -31,6 +34,8 @@ export class HomeScene implements Scene {
     this._createHotspot(W * 0.51, H * 0.665, W * 0.91, H * 0.78, () => SceneManager.switchTo('skin'));
     this._createHotspot(W * 0.09, H * 0.785, W * 0.49, H * 0.90, () => this._showComingSoon('设置功能即将开放'));
     this._createHotspot(W * 0.51, H * 0.785, W * 0.91, H * 0.90, () => this._showComingSoon('福利功能即将开放'));
+
+    this._maybeAddGmEntry();
   }
 
   onExit(): void {}
@@ -64,5 +69,51 @@ export class HomeScene implements Scene {
 
   private _showComingSoon(message: string): void {
     Platform.showToast(message);
+  }
+
+  private _maybeAddGmEntry(): void {
+    if (!Platform.isSimulator) return;
+
+    const btn = new PIXI.Container();
+    btn.x = 70;
+    btn.y = Math.max(70, Game.safeTop + 50);
+    btn.eventMode = 'static';
+    btn.cursor = 'pointer';
+    this.container.addChild(btn);
+
+    const bg = new PIXI.Graphics();
+    bg.beginFill(0xE91E63, 0.92);
+    bg.lineStyle(4, 0xFFFFFF, 0.95);
+    bg.drawCircle(0, 0, 44);
+    bg.endFill();
+    btn.addChild(bg);
+
+    const label = new PIXI.Text('GM', new PIXI.TextStyle({
+      fontSize: 28,
+      fill: 0xFFFFFF,
+      fontWeight: 'bold',
+      fontFamily: 'Arial',
+      stroke: 0x6A002E,
+      strokeThickness: 4,
+    }));
+    label.anchor.set(0.5, 0.55);
+    btn.addChild(label);
+
+    btn.on('pointerdown', () => {
+      btn.scale.set(0.92);
+      this._openGmOverlay();
+    });
+    btn.on('pointerup', () => btn.scale.set(1));
+    btn.on('pointerupoutside', () => btn.scale.set(1));
+  }
+
+  private _openGmOverlay(): void {
+    if (!this._gmOverlay) {
+      this._gmOverlay = new GmOverlay();
+      this.container.addChild(this._gmOverlay);
+    } else {
+      this.container.addChild(this._gmOverlay);
+    }
+    this._gmOverlay.show();
   }
 }

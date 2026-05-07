@@ -1,6 +1,7 @@
 import { LEVEL_PROGRESS_KEY } from '@/config/CloudConfig';
 import { TOTAL_LEVELS, getLevelStars } from '@/config/LevelConfig';
 import { PersistService } from '@/core/PersistService';
+import { LeaderboardManager } from './LeaderboardManager';
 
 interface LevelRecord {
   stars: number;
@@ -65,6 +66,11 @@ class LevelManagerClass {
     }
 
     this._save();
+    void LeaderboardManager.submitLevelProgress({
+      totalStars: this.getTotalStars(),
+      totalScore: this.getTotalBestScore(),
+      maxUnlocked: this._progress.maxUnlocked,
+    });
     return stars;
   }
 
@@ -74,6 +80,23 @@ class LevelManagerClass {
       total += this._progress.levels[key].stars;
     }
     return total;
+  }
+
+  getTotalBestScore(): number {
+    let total = 0;
+    for (const key in this._progress.levels) {
+      total += Number(this._progress.levels[key].bestScore || 0);
+    }
+    return total;
+  }
+
+  /** GM：一键解锁全部关卡（仅供模拟器使用）。
+   *  仅推进 maxUnlocked，不会篡改已存星级/最佳分数。 */
+  gmUnlockAllLevels(): void {
+    if (this._progress.maxUnlocked < TOTAL_LEVELS) {
+      this._progress.maxUnlocked = TOTAL_LEVELS;
+      this._save();
+    }
   }
 
   private _load(): void {

@@ -13,6 +13,9 @@ import { RankManager } from '@/managers/RankManager';
 import { SkinManager } from '@/managers/SkinManager';
 import { PropManager } from '@/managers/PropManager';
 import { CloudSyncManager } from '@/managers/CloudSyncManager';
+import { LeaderboardManager } from '@/managers/LeaderboardManager';
+import { UserProfileManager } from '@/managers/UserProfileManager';
+import { BackendService } from '@/core/BackendService';
 import { Platform } from '@/core/PlatformService';
 import { AudioManager } from '@/core/AudioManager';
 import { loadPropIcons } from '@/utils/iconLoader';
@@ -87,6 +90,8 @@ async function main(): Promise<void> {
     SkinManager.init();
     PropManager.init();
     PropManager.grantStarterPack();
+    UserProfileManager.init(BackendService.userId);
+    LeaderboardManager.init();
 
     // Preload assets after skin state is available, so orb textures use the selected row.
     await Promise.all([

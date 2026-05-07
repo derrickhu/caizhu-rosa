@@ -1,7 +1,13 @@
 import {
   BACKEND_ANON_ID_KEY,
   BACKEND_BASE_URL,
+  BACKEND_LB_CLASSIC_SUBMIT_PATH,
+  BACKEND_LB_CLASSIC_WORLD_PATH,
+  BACKEND_LB_LEVEL_SUBMIT_PATH,
+  BACKEND_LB_LEVEL_WORLD_PATH,
   BACKEND_LOGIN_PATH,
+  BACKEND_PROFILE_GET_PATH,
+  BACKEND_PROFILE_UPDATE_PATH,
   BACKEND_PULL_PATH,
   BACKEND_PUSH_PATH,
   BACKEND_REQUEST_TIMEOUT_MS,
@@ -34,6 +40,62 @@ export interface BackendPushResult {
   savedAt: number;
   mode: 'insert' | 'update';
   sizeBytes: number;
+}
+
+export interface LeaderboardClassicEntry {
+  rank: number;
+  isMe: boolean;
+  userId: string;
+  nickname: string;
+  avatarUrl: string;
+  bestScore: number;
+  updatedAt: number;
+}
+
+export interface LeaderboardLevelEntry {
+  rank: number;
+  isMe: boolean;
+  userId: string;
+  nickname: string;
+  avatarUrl: string;
+  totalStars: number;
+  totalScore: number;
+  maxUnlocked: number;
+  updatedAt: number;
+}
+
+export interface LeaderboardWorldResult<T> {
+  items: T[];
+  me: T | null;
+  total: number;
+}
+
+export interface LeaderboardSubmitProfile {
+  nickname?: string;
+  avatarUrl?: string;
+}
+
+export interface ClassicSubmitResult {
+  userId: string;
+  bestScore: number;
+  savedAt: number;
+  improved: boolean;
+}
+
+export interface LevelSubmitResult {
+  userId: string;
+  totalStars: number;
+  totalScore: number;
+  maxUnlocked: number;
+  savedAt: number;
+  improved: boolean;
+}
+
+export interface ProfileUpdateResult {
+  userId: string;
+  nickname: string;
+  avatarUrl: string;
+  savedAt: number;
 }
 
 interface StoredToken {
@@ -94,6 +156,53 @@ class BackendServiceClass {
 
   pushSave(snapshot: BackendPushPayload): Promise<BackendPushResult> {
     return this.callWithAuth<BackendPushResult>(BACKEND_PUSH_PATH, snapshot);
+  }
+
+  submitClassicScore(
+    score: number,
+    profile?: LeaderboardSubmitProfile,
+  ): Promise<ClassicSubmitResult> {
+    return this.callWithAuth<ClassicSubmitResult>(BACKEND_LB_CLASSIC_SUBMIT_PATH, {
+      score: Math.floor(Math.max(0, score)),
+      ...(profile || {}),
+    });
+  }
+
+  submitLevelProgress(
+    payload: { totalStars: number; totalScore: number; maxUnlocked: number },
+    profile?: LeaderboardSubmitProfile,
+  ): Promise<LevelSubmitResult> {
+    return this.callWithAuth<LevelSubmitResult>(BACKEND_LB_LEVEL_SUBMIT_PATH, {
+      totalStars: Math.max(0, Math.floor(payload.totalStars)),
+      totalScore: Math.max(0, Math.floor(payload.totalScore)),
+      maxUnlocked: Math.max(1, Math.floor(payload.maxUnlocked)),
+      ...(profile || {}),
+    });
+  }
+
+  fetchClassicWorld(limit = 100): Promise<LeaderboardWorldResult<LeaderboardClassicEntry>> {
+    return this.callWithAuth<LeaderboardWorldResult<LeaderboardClassicEntry>>(
+      BACKEND_LB_CLASSIC_WORLD_PATH,
+      { limit: Math.max(1, Math.min(200, Math.floor(limit))) },
+    );
+  }
+
+  fetchLevelWorld(limit = 100): Promise<LeaderboardWorldResult<LeaderboardLevelEntry>> {
+    return this.callWithAuth<LeaderboardWorldResult<LeaderboardLevelEntry>>(
+      BACKEND_LB_LEVEL_WORLD_PATH,
+      { limit: Math.max(1, Math.min(200, Math.floor(limit))) },
+    );
+  }
+
+  updateProfile(profile: LeaderboardSubmitProfile): Promise<ProfileUpdateResult> {
+    return this.callWithAuth<ProfileUpdateResult>(BACKEND_PROFILE_UPDATE_PATH, {
+      nickname: String(profile.nickname || '').slice(0, 32),
+      avatarUrl: String(profile.avatarUrl || '').slice(0, 512),
+    });
+  }
+
+  fetchProfile(): Promise<{ userId: string; nickname: string; avatarUrl: string; exists: boolean }> {
+    return this.callWithAuth(BACKEND_PROFILE_GET_PATH, {});
   }
 
   clearToken(): void {

@@ -1,5 +1,12 @@
 const { handleLogin } = require('./lib/auth');
 const { handlePull, handlePush } = require('./lib/save');
+const {
+  handleClassicSubmit,
+  handleLevelSubmit,
+  handleClassicWorld,
+  handleLevelWorld,
+} = require('./lib/leaderboard');
+const { handleProfileUpdate, handleProfileGet } = require('./lib/profile');
 const { respond, parseEvent, preflight } = require('./lib/http');
 
 const ROUTES = {
@@ -7,6 +14,15 @@ const ROUTES = {
   'POST /login': handleLogin,
   'POST /save/pull': handlePull,
   'POST /save/push': handlePush,
+  'POST /leaderboard/classic/submit': handleClassicSubmit,
+  'POST /leaderboard/level/submit': handleLevelSubmit,
+  'POST /leaderboard/classic/world': handleClassicWorld,
+  'POST /leaderboard/level/world': handleLevelWorld,
+  'GET /leaderboard/classic/world': handleClassicWorld,
+  'GET /leaderboard/level/world': handleLevelWorld,
+  'POST /profile/update': handleProfileUpdate,
+  'POST /profile/get': handleProfileGet,
+  'GET /profile/get': handleProfileGet,
 };
 
 exports.main = async (event, context) => {

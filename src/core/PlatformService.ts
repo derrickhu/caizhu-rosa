@@ -40,6 +40,23 @@ class PlatformServiceClass {
   get canUseBackend(): boolean { return this.isWechat || this.isDouyin || !this.isMinigame; }
   get api(): any { return this._api; }
 
+  /** 是否运行在模拟器/开发工具环境（非真机）。
+   *  - 微信/抖音开发工具：platform === 'devtools'
+   *  - 浏览器或非小游戏环境：直接判定为模拟器
+   *  GM 工具用此判断决定是否启用。 */
+  get isSimulator(): boolean {
+    if (!this.isMinigame) return true;
+    try {
+      const info = this._api?.getSystemInfoSync?.();
+      const platform = String(info?.platform || '').toLowerCase();
+      if (platform === 'devtools') return true;
+      const env = String(info?.environment || info?.host?.env || '').toLowerCase();
+      return env === 'devtools';
+    } catch {
+      return false;
+    }
+  }
+
   getStorageSync(key: string): string | null {
     try { return this._api?.getStorageSync(key) || null; } catch { return null; }
   }
@@ -146,6 +163,204 @@ class PlatformServiceClass {
 
   showToast(title: string, icon: 'success' | 'none' | 'error' = 'none'): void {
     try { this._api?.showToast?.({ title, icon, duration: 2000 }); } catch {}
+  }
+
+  // ─── User profile / open-data domain (WeChat Mini Game) ───────────────
+
+  /** 是否支持开放数据域（仅微信小游戏支持） */
+  get supportsOpenData(): boolean {
+    return this.isWechat && typeof this._api?.getOpenDataContext === 'function';
+  }
+
+  /** 调起头像昵称填写能力（chooseAvatar 流程通常需要 button 触发，这里仅做兜底）。
+   *  现代合规方案优先用 button[type=avatar] + nickname input；
+   *  我们额外提供一个 resolve 接口，让 UI 层把按钮选择出的结果传回来。 */
+  setUserCloudStorage(KVDataList: Array<{ key: string; value: string }>): Promise<void> {
+    return new Promise((resolve) => {
+      try {
+        if (!this._api?.setUserCloudStorage) {
+          resolve();
+          return;
+        }
+        this._api.setUserCloudStorage({
+          KVDataList,
+          success: () => resolve(),
+          fail: () => resolve(),
+          complete: () => undefined,
+        });
+      } catch {
+        resolve();
+      }
+    });
+  }
+
+  removeUserCloudStorage(keyList: string[]): Promise<void> {
+    return new Promise((resolve) => {
+      try {
+        if (!this._api?.removeUserCloudStorage) {
+          resolve();
+          return;
+        }
+        this._api.removeUserCloudStorage({
+          keyList,
+          success: () => resolve(),
+          fail: () => resolve(),
+          complete: () => undefined,
+        });
+      } catch {
+        resolve();
+      }
+    });
+  }
+
+  /** 获取开放数据域的 OpenDataContext（仅微信小游戏） */
+  getOpenDataContext(): any {
+    try {
+      if (!this.supportsOpenData) return null;
+      return this._api.getOpenDataContext();
+    } catch {
+      return null;
+    }
+  }
+
+  /** 获取共享 canvas（用于 PIXI 主域采样开放数据域绘制结果） */
+  getSharedCanvas(): any {
+    try {
+      const ctx = this.getOpenDataContext();
+      return ctx?.canvas || null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** 通知开放数据域子项目刷新好友榜 */
+  postOpenDataMessage(message: any): boolean {
+    try {
+      const ctx = this.getOpenDataContext();
+      if (!ctx?.postMessage) return false;
+      ctx.postMessage(message);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** 创建头像/昵称填写按钮（小游戏端） */
+  createUserInfoButton(opts: {
+    type?: 'image' | 'text';
+    text?: string;
+    image?: string;
+    style: { left: number; top: number; width: number; height: number };
+    withCredentials?: boolean;
+    lang?: string;
+  }): any {
+    try {
+      if (!this._api?.createUserInfoButton) return null;
+      return this._api.createUserInfoButton({
+        type: opts.type || 'text',
+        text: opts.text || '',
+        image: opts.image,
+        style: {
+          left: opts.style.left,
+          top: opts.style.top,
+          width: opts.style.width,
+          height: opts.style.height,
+          backgroundColor: '#00000000',
+          color: '#FFFFFF',
+          textAlign: 'center',
+          fontSize: 16,
+          borderRadius: 8,
+        },
+        withCredentials: opts.withCredentials ?? true,
+        lang: opts.lang || 'zh_CN',
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  /** 调用 wx.getUserProfile 获取用户信息（旧版 SDK 兼容；新版基础库推荐用按钮触发的头像昵称填写能力）。 */
+  getUserProfile(desc = '用于完善排行榜资料'): Promise<{ nickName: string; avatarUrl: string } | null> {
+    return new Promise((resolve) => {
+      try {
+        if (!this._api?.getUserProfile) {
+          resolve(null);
+          return;
+        }
+        this._api.getUserProfile({
+          desc,
+          success: (res: any) => {
+            const info = res?.userInfo;
+            if (!info) {
+              resolve(null);
+              return;
+            }
+            resolve({
+              nickName: String(info.nickName || ''),
+              avatarUrl: String(info.avatarUrl || ''),
+            });
+          },
+          fail: () => resolve(null),
+        });
+      } catch {
+        resolve(null);
+      }
+    });
+  }
+
+  /** 请求微信好友关系链授权，用于开放数据域好友排行榜。 */
+  authorizeWxFriendInteraction(): Promise<boolean> {
+    return new Promise((resolve) => {
+      try {
+        if (!this.isWechat || !this._api?.authorize) {
+          resolve(true);
+          return;
+        }
+        this._api.authorize({
+          scope: 'scope.WxFriendInteraction',
+          success: () => resolve(true),
+          fail: () => resolve(false),
+        });
+      } catch {
+        resolve(false);
+      }
+    });
+  }
+
+  /** 把头像 URL 下载为本地路径（小游戏环境），失败时返回原 URL。 */
+  downloadAvatar(url: string): Promise<string> {
+    return new Promise((resolve) => {
+      try {
+        if (!url) {
+          resolve('');
+          return;
+        }
+        if (!this._api?.downloadFile) {
+          resolve(url);
+          return;
+        }
+        this._api.downloadFile({
+          url,
+          success: (res: any) => {
+            const local = String(res?.tempFilePath || '');
+            resolve(local || url);
+          },
+          fail: () => resolve(url),
+        });
+      } catch {
+        resolve(url);
+      }
+    });
+  }
+
+  /** 微信基础库版本号 (e.g. "2.27.3") */
+  getSDKVersion(): string {
+    try {
+      const info = this._api?.getSystemInfoSync?.();
+      return String(info?.SDKVersion || '');
+    } catch {
+      return '';
+    }
   }
 }
 

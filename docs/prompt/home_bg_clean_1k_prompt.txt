@@ -1,0 +1,27 @@
+Create a high-resolution 1K vertical 9:16 mobile game background for the Chinese casual game "彩珠五连" (Color Beads Five-in-a-Row), using the attached prototype image only as style/background reference.
+
+Goal:
+Generate ONLY the background art, no UI panels, no title, no text, no buttons, no avatars, no leaderboard cards, no phone frame, no notch, no status bar.
+
+Art direction:
+- Bright candy-cartoon mobile game style, polished and glossy.
+- Purple-to-blue radial gradient background with a vivid cyan/aqua glow in the center.
+- Rich purple edges, deeper blue-violet corners, soft magical light rays from bottom center.
+- Colorful glossy 3D bead/balloon orbs around the border only: red, orange, yellow, green, cyan, blue, purple.
+- Keep the center play area mostly empty and readable, with no large decorations in the middle.
+- Add small golden sparkle stars and tiny white star glints scattered lightly around the edges.
+- The orbs should have strong white highlights, soft shadows, and a friendly toy-like feel.
+- Match the prototype's background density and mood: festive, clean, high-saturation, suitable behind a home menu.
+
+Composition:
+- Portrait 9:16, designed for a 750x1334 logical canvas.
+- Top center must leave safe empty space for game logo/title.
+- Middle center must be clean for the main buttons.
+- Bottom corners can contain more colorful orbs, but do not cover the center.
+- No repeated visible tiling, no blur, no pixelation.
+
+Strict exclusions:
+- NO TEXT, no labels, no captions, no Chinese characters, no English words.
+- NO UI widgets, no leaderboard panels, no medals, no buttons.
+- NO characters or faces.
+- NO realistic photos; keep it fully illustrated cartoon game art.

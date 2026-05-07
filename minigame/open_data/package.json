@@ -1,0 +1,8 @@
+{
+  "name": "caizhu-open-data",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "index.js",
+  "description": "WeChat Mini Game open-data sub-context for friend leaderboard rendering."
+}

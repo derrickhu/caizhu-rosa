@@ -12,6 +12,7 @@ import { BEST_SCORE_KEY } from '@/config/CloudConfig';
 import { computeBoardLayout, PLAYFIELD_VERTICAL_OFFSET } from '@/config/GameConfig';
 import { PersistService } from '@/core/PersistService';
 import { RankManager } from '@/managers/RankManager';
+import { LeaderboardManager } from '@/managers/LeaderboardManager';
 import { SkinManager } from '@/managers/SkinManager';
 import { createBgSprite } from '@/utils/bgHelper';
 import { BallSprite } from '@/gameobjects/BallSprite';
@@ -102,6 +103,7 @@ export class ClassicScene implements Scene {
   private _onGameOver = (score: number) => {
     this._saveBestScore();
     RankManager.addClassicScore(score);
+    void LeaderboardManager.submitClassicScore(score);
     this._gameOverOverlay.show(score, BoardManager.bestScore);
   };
 

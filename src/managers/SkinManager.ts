@@ -23,12 +23,17 @@ interface SkinState {
   adUnlockedIds: string[];
 }
 
+/** GM 一键解锁标记，仅本地保存，不参与云同步。 */
+const GM_SKIN_UNLOCK_KEY = 'caizhu_gm_skin_unlock';
+
 class SkinManagerClass {
   private _state: SkinState = {
     selectedOrbSkinId: DEFAULT_ORB_SKIN_ID,
     selectedBackgroundSkinId: DEFAULT_BACKGROUND_SKIN_ID,
     adUnlockedIds: [],
   };
+
+  private _gmAllUnlocked = false;
 
   private _adResolve: ((granted: boolean) => void) | null = null;
 
@@ -43,6 +48,7 @@ class SkinManagerClass {
 
   init(): void {
     this._load();
+    this._loadGmFlag();
     this._repairSelection();
   }
 
@@ -86,6 +92,7 @@ class SkinManagerClass {
   }
 
   isUnlocked(skin: SkinDef): boolean {
+    if (this._gmAllUnlocked) return true;
     const condition = skin.unlock;
     switch (condition.type) {
       case 'default':
@@ -99,6 +106,24 @@ class SkinManagerClass {
       case 'future':
         return false;
     }
+  }
+
+  /** GM：开启/关闭全部皮肤解锁（仅供模拟器使用，仅本地保存，不参与云同步）。 */
+  gmSetAllUnlocked(enabled: boolean): void {
+    this._gmAllUnlocked = !!enabled;
+    if (this._gmAllUnlocked) {
+      Platform.setStorageSync(GM_SKIN_UNLOCK_KEY, '1');
+    } else {
+      Platform.removeStorageSync(GM_SKIN_UNLOCK_KEY);
+    }
+  }
+
+  isGmAllUnlocked(): boolean {
+    return this._gmAllUnlocked;
+  }
+
+  private _loadGmFlag(): void {
+    this._gmAllUnlocked = Platform.getStorageSync(GM_SKIN_UNLOCK_KEY) === '1';
   }
 
   getUnlockText(skin: SkinDef): string {

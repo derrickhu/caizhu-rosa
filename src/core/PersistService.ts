@@ -8,6 +8,7 @@ import {
   PROP_INVENTORY_KEY,
   SEEN_SPECIAL_INTROS_KEY,
   SKIN_STATE_KEY,
+  USER_PROFILE_KEY,
 } from '@/config/CloudConfig';
 import { Platform } from '@/core/PlatformService';
 
@@ -273,7 +274,27 @@ class PersistServiceClass {
     this.mergeSkinState(next, remotePayload);
     this.mergePropInventory(next, remotePayload);
     this.mergeSeenIntros(next, remotePayload);
+    this.mergeUserProfile(next, remotePayload);
     return next;
+  }
+
+  private mergeUserProfile(next: Record<string, unknown>, remotePayload: Record<string, unknown>): void {
+    const local = this.parseJSONValue<{ nickname?: string; avatarUrl?: string; updatedAt?: number }>(
+      this.readRaw(USER_PROFILE_KEY),
+    );
+    const remote = this.parseJSONValue<{ nickname?: string; avatarUrl?: string; updatedAt?: number }>(
+      remotePayload[USER_PROFILE_KEY],
+    );
+    if (!local && !remote) return;
+    const localTs = Number(local?.updatedAt || 0);
+    const remoteTs = Number(remote?.updatedAt || 0);
+    const winner = remoteTs > localTs ? remote : (localTs > 0 ? local : remote || local);
+    if (!winner) return;
+    next[USER_PROFILE_KEY] = JSON.stringify({
+      nickname: String(winner.nickname || ''),
+      avatarUrl: String(winner.avatarUrl || ''),
+      updatedAt: Math.max(localTs, remoteTs),
+    });
   }
 
   private mergeLevelProgress(next: Record<string, unknown>, remotePayload: Record<string, unknown>): void {

@@ -135,6 +135,15 @@ class PropManagerClass {
     });
   }
 
+  /** GM：一键将所有道具补满至指定数量（仅供模拟器使用） */
+  gmRestockAll(count: number = 99): void {
+    for (const type of Object.values(PropType)) {
+      this._inventory[type] = count;
+      EventBus.emit('prop:stockChanged', type, this._inventory[type]);
+    }
+    this._save();
+  }
+
   /** Give initial free props to new players */
   grantStarterPack(): void {
     if (this._inventory['_starterGranted']) return;

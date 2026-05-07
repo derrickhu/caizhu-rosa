@@ -13,6 +13,10 @@ const TAB_ACTIVE_PATH = 'subpkg_assets/images/skin_tab_active.png';
 const TAB_INACTIVE_PATH = 'subpkg_assets/images/skin_tab_inactive.png';
 const CARD_PATH = 'subpkg_assets/images/skin_card_empty.png';
 
+/** 卡片资源原始比例（与皮肤面板美术对齐） */
+const CARD_BASE_W = 186;
+const CARD_BASE_H = 238;
+
 export class SkinScene implements Scene {
   readonly name = 'skin';
   readonly container = new PIXI.Container();
@@ -27,9 +31,26 @@ export class SkinScene implements Scene {
   private _scrollY = 0;
   private _minScrollY = 0;
   private _dragging = false;
-  private _dragStartY = 0;
-  private _dragStartScrollY = 0;
   private _unlockingId: string | null = null;
+  private _boundScrollMove!: (e: PIXI.FederatedPointerEvent) => void;
+  private _boundScrollUp!: () => void;
+  /** 按下时指针的全局 Y（渲染坐标），与 mapPositionToPoint / e.global 一致 */
+  private _scrollDragStartGlobalY = 0;
+  private _scrollDragStartScrollY = 0;
+  /** 皮肤页在小游戏上额外挂 wx 触摸（部分机型上子节点按下后 stage 收不到 pointermove） */
+  private _wxSkinTouchBound = false;
+
+  constructor() {
+    this._boundScrollMove = (e: PIXI.FederatedPointerEvent) => {
+      if (!this._dragging) return;
+      const dy = (e.global.y - this._scrollDragStartGlobalY) / Game.scale;
+      this._scrollY = this._clampScroll(this._scrollDragStartScrollY + dy);
+      this._scrollContent.y = this._scrollY;
+    };
+    this._boundScrollUp = () => {
+      this._dragging = false;
+    };
+  }
 
   onEnter(): void {
     this.container.removeChildren();
@@ -39,12 +60,17 @@ export class SkinScene implements Scene {
 
     const W = Game.logicWidth;
     const H = Game.logicHeight;
+    this.container.eventMode = 'static';
+    this.container.hitArea = new PIXI.Rectangle(0, 0, W, H);
     this.container.addChild(createBgSprite('subpkg_assets/images/home_bg_clean.png', W, H, 0x1C9DE6));
 
     const panelW = Math.min(704, W - 34);
     const panelH = Math.round(panelW * (1038 / 704));
     const panelX = (W - panelW) / 2;
-    const panelY = Math.max(Game.safeTop + 36, 42);
+    /** 相对原位置整体下移，避免面板视觉上过靠上；矮屏则贴底留白 */
+    const panelDrop = 90;
+    const basePanelY = Math.max(Game.safeTop + 36, 42);
+    const panelY = Math.min(basePanelY + panelDrop, H - panelH - 16);
 
     const panelHolder = new PIXI.Container();
     panelHolder.x = panelX;
@@ -86,9 +112,69 @@ export class SkinScene implements Scene {
     this._viewport.addChild(this._scrollContent);
     this._enableScroll(viewportW, viewportH);
     this._renderCards(viewportW, viewportH);
+    this._registerWxSkinScroll();
   }
 
-  onExit(): void {}
+  private _onScrollPointerDown = (e: PIXI.FederatedPointerEvent): void => {
+    this._dragging = true;
+    this._scrollDragStartGlobalY = e.global.y;
+    this._scrollDragStartScrollY = this._scrollY;
+  };
+
+  private _registerWxSkinScroll(): void {
+    const api = Platform.api as any;
+    if (!Platform.isMinigame || !api?.onTouchMove || this._wxSkinTouchBound) return;
+    this._wxSkinTouchBound = true;
+    api.onTouchMove(this._onWxTouchMove);
+    api.onTouchEnd(this._onWxTouchEnd);
+    api.onTouchCancel?.(this._onWxTouchEnd);
+  }
+
+  private _unregisterWxSkinScroll(): void {
+    const api = Platform.api as any;
+    if (!this._wxSkinTouchBound || !api) return;
+    this._wxSkinTouchBound = false;
+    api.offTouchMove?.(this._onWxTouchMove);
+    api.offTouchEnd?.(this._onWxTouchEnd);
+    api.offTouchCancel?.(this._onWxTouchEnd);
+  }
+
+  private _onWxTouchMove = (e: any): void => {
+    if (!this._dragging || !this._scrollContent) return;
+    const t = e.changedTouches?.[0] ?? e.touches?.[0];
+    if (!t) return;
+    const ev = (Game.app?.renderer as any)?.events;
+    let y: number;
+    if (ev?.mapPositionToPoint) {
+      const pt = new PIXI.Point();
+      ev.mapPositionToPoint(pt, t.clientX, t.clientY);
+      y = pt.y;
+    } else {
+      const rh = Game.app?.renderer?.height || 1;
+      const sh = Game.screenHeight || 1;
+      y = t.clientY * (rh / sh);
+    }
+    const dy = (y - this._scrollDragStartGlobalY) / Game.scale;
+    this._scrollY = this._clampScroll(this._scrollDragStartScrollY + dy);
+    this._scrollContent.y = this._scrollY;
+  };
+
+  private _onWxTouchEnd = (): void => {
+    this._boundScrollUp();
+  };
+
+  onExit(): void {
+    this._dragging = false;
+    this._unregisterWxSkinScroll();
+    const vo = this._viewport;
+    if (vo) {
+      vo.off('pointerdown', this._onScrollPointerDown);
+      vo.off('pointermove', this._boundScrollMove);
+      vo.off('pointerup', this._boundScrollUp);
+      vo.off('pointerupoutside', this._boundScrollUp);
+      vo.off('pointercancel', this._boundScrollUp);
+    }
+  }
 
   private _createTitle(W: number, panelY: number): void {
     const title = new PIXI.Text('我的皮肤', new PIXI.TextStyle({
@@ -171,20 +257,19 @@ export class SkinScene implements Scene {
   }
 
   private _enableScroll(viewportW: number, viewportH: number): void {
-    this._viewport.eventMode = 'static';
-    this._viewport.hitArea = new PIXI.Rectangle(0, 0, viewportW, viewportH);
-    this._viewport.on('pointerdown', (e) => {
-      this._dragging = true;
-      this._dragStartY = e.global.y;
-      this._dragStartScrollY = this._scrollY;
-    });
-    this._viewport.on('pointermove', (e) => {
-      if (!this._dragging) return;
-      this._scrollY = this._clampScroll(this._dragStartScrollY + e.global.y - this._dragStartY);
-      this._scrollContent.y = this._scrollY;
-    });
-    this._viewport.on('pointerup', () => { this._dragging = false; });
-    this._viewport.on('pointerupoutside', () => { this._dragging = false; });
+    const vo = this._viewport;
+    vo.eventMode = 'static';
+    vo.hitArea = new PIXI.Rectangle(0, 0, viewportW, viewportH);
+    vo.off('pointerdown', this._onScrollPointerDown);
+    vo.off('pointermove', this._boundScrollMove);
+    vo.off('pointerup', this._boundScrollUp);
+    vo.off('pointerupoutside', this._boundScrollUp);
+    vo.off('pointercancel', this._boundScrollUp);
+    vo.on('pointerdown', this._onScrollPointerDown);
+    vo.on('pointermove', this._boundScrollMove);
+    vo.on('pointerup', this._boundScrollUp);
+    vo.on('pointerupoutside', this._boundScrollUp);
+    vo.on('pointercancel', this._boundScrollUp);
   }
 
   private _renderCards(viewportW: number, viewportH: number): void {
@@ -193,23 +278,29 @@ export class SkinScene implements Scene {
       ? SkinManager.getOrbSkins()
       : SkinManager.getBackgroundSkins();
     const cols = 3;
-    const cardW = 186;
-    const cardH = 238;
-    const gapX = Math.max(12, (viewportW - cols * cardW) / (cols - 1));
-    const gapY = 24;
+    const gapX = 4;
+    const gapY = 16;
+    // 不超过美术基准尺寸，避免被拉宽导致贴边/溢出；过窄时再缩小
+    const cardW = Math.min(
+      CARD_BASE_W,
+      Math.max(130, Math.floor((viewportW - gapX * (cols - 1)) / cols)),
+    );
+    const cardH = Math.round(cardW * (CARD_BASE_H / CARD_BASE_W));
+    const rowW = cols * cardW + (cols - 1) * gapX;
+    const startX = Math.max(0, (viewportW - rowW) / 2);
 
     skins.forEach((skin, index) => {
       const card = this._createCard(skin, cardW, cardH);
       const col = index % cols;
       const row = Math.floor(index / cols);
-      card.x = col * (cardW + gapX);
+      card.x = startX + col * (cardW + gapX);
       card.y = row * (cardH + gapY);
       this._scrollContent.addChild(card);
     });
 
     const rows = Math.ceil(skins.length / cols);
     const contentH = rows * cardH + Math.max(0, rows - 1) * gapY;
-    this._minScrollY = Math.min(0, viewportH - contentH - 14);
+    this._minScrollY = Math.min(0, viewportH - contentH - 8);
     this._scrollY = this._clampScroll(this._scrollY);
     this._scrollContent.y = this._scrollY;
   }
@@ -218,61 +309,85 @@ export class SkinScene implements Scene {
     const card = new PIXI.Container();
     card.eventMode = 'static';
     card.cursor = 'pointer';
-    card.hitArea = new PIXI.RoundedRectangle(0, 0, w, h, 20);
+    const hitR = Math.max(12, Math.round(20 * Math.min(w / CARD_BASE_W, h / CARD_BASE_H)));
+    card.hitArea = new PIXI.RoundedRectangle(0, 0, w, h, hitR);
 
     loadImageTexture(CARD_PATH).then((texture) => {
       if (!texture || card.destroyed) return;
       const sprite = new PIXI.Sprite(texture);
+      sprite.eventMode = 'none';
       sprite.width = w;
       sprite.height = h;
       card.addChildAt(sprite, 0);
     });
 
     if (skin.category === 'orb') {
-      this._drawOrbPreview(card, skin);
+      this._drawOrbPreview(card, skin, w, h);
     } else {
-      this._drawBackgroundPreview(card, skin);
+      this._drawBackgroundPreview(card, skin, w, h);
     }
 
     this._drawCardText(card, skin, w, h);
     this._drawCardState(card, skin, w, h);
 
+    card.on('pointerdown', this._onScrollPointerDown);
+    card.on('pointermove', this._boundScrollMove);
+    card.on('pointerup', this._boundScrollUp);
+    card.on('pointerupoutside', this._boundScrollUp);
+    card.on('pointercancel', this._boundScrollUp);
     card.on('pointertap', () => {
       void this._handleSkinTap(skin);
     });
 
+    this._muteCardSubtreeForHit(card);
     return card;
   }
 
-  private _drawOrbPreview(card: PIXI.Container, skin: OrbSkinDef): void {
+  /** 避免 Text/Sprite 抢走命中，保证滚动手势落在卡片容器上 */
+  private _muteCardSubtreeForHit(root: PIXI.Container): void {
+    for (const ch of root.children) {
+      ch.eventMode = 'none';
+      if (ch instanceof PIXI.Container) this._muteCardSubtreeForHit(ch);
+    }
+  }
+
+  private _drawOrbPreview(card: PIXI.Container, skin: OrbSkinDef, w: number, h: number): void {
+    const sx = w / CARD_BASE_W;
+    const sy = h / CARD_BASE_H;
     const colors = [0, 2, 3];
     colors.forEach((colorIndex, i) => {
       const tex = getOrbSkinTexture(skin.sheetRow, colorIndex);
+      const baseX = 54 + i * 40;
+      const baseY = 70;
       if (!tex) {
         const dot = new PIXI.Graphics();
         dot.beginFill([0xF45A5A, 0x2D8BFF, 0x44C95F][i]);
-        dot.drawCircle(0, 0, 24);
+        dot.drawCircle(0, 0, 24 * sx);
         dot.endFill();
-        dot.x = 54 + i * 40;
-        dot.y = 70;
+        dot.x = baseX * sx;
+        dot.y = baseY * sy;
         card.addChild(dot);
         return;
       }
       const sprite = new PIXI.Sprite(tex);
       sprite.anchor.set(0.5, 0.5);
-      sprite.width = 58;
-      sprite.height = 58;
-      sprite.x = 54 + i * 40;
-      sprite.y = 70;
+      const size = 58 * sx;
+      sprite.width = size;
+      sprite.height = size;
+      sprite.x = baseX * sx;
+      sprite.y = baseY * sy;
       card.addChild(sprite);
     });
   }
 
-  private _drawBackgroundPreview(card: PIXI.Container, skin: BackgroundSkinDef): void {
-    const previewX = 18;
-    const previewY = 17;
-    const previewW = 150;
-    const previewH = 96;
+  private _drawBackgroundPreview(card: PIXI.Container, skin: BackgroundSkinDef, w: number, h: number): void {
+    const sx = w / CARD_BASE_W;
+    const sy = h / CARD_BASE_H;
+    const previewX = Math.round(18 * sx);
+    const previewY = Math.round(17 * sy);
+    const previewW = Math.round(150 * sx);
+    const previewH = Math.round(96 * sy);
+    const corner = Math.max(6, Math.round(12 * sx));
     const holder = new PIXI.Container();
     holder.x = previewX;
     holder.y = previewY;
@@ -280,7 +395,7 @@ export class SkinScene implements Scene {
 
     const mask = new PIXI.Graphics();
     mask.beginFill(0xFFFFFF);
-    mask.drawRoundedRect(previewX, previewY, previewW, previewH, 12);
+    mask.drawRoundedRect(previewX, previewY, previewW, previewH, corner);
     mask.endFill();
     mask.renderable = false;
     card.addChild(mask);
@@ -288,14 +403,23 @@ export class SkinScene implements Scene {
 
     loadImageTexture(skin.previewPath).then((texture) => {
       if (!texture || card.destroyed) return;
+      const tw = texture.width;
+      const th = texture.height;
+      const coverScale = Math.max(previewW / tw, previewH / th);
       const sprite = new PIXI.Sprite(texture);
-      sprite.width = previewW;
-      sprite.height = previewH;
+      sprite.anchor.set(0.5, 0.5);
+      sprite.x = previewW / 2;
+      sprite.y = previewH / 2;
+      sprite.width = tw * coverScale;
+      sprite.height = th * coverScale;
+      sprite.eventMode = 'none';
       holder.addChild(sprite);
     });
   }
 
   private _drawCardText(card: PIXI.Container, skin: SkinDef, w: number, h: number): void {
+    const nameY = Math.round(132 * (h / CARD_BASE_H));
+    const statusY = h - Math.round(76 * (h / CARD_BASE_H));
     const unlocked = SkinManager.isUnlocked(skin);
     const name = new PIXI.Text(skin.name, new PIXI.TextStyle({
       fontSize: 24,
@@ -310,7 +434,7 @@ export class SkinScene implements Scene {
     }));
     name.anchor.set(0.5, 0);
     name.x = w / 2;
-    name.y = 132;
+    name.y = nameY;
     card.addChild(name);
 
     const statusText = SkinManager.isSelected(skin)
@@ -330,38 +454,46 @@ export class SkinScene implements Scene {
     }));
     status.anchor.set(0.5, 0);
     status.x = w / 2;
-    status.y = h - 76;
+    status.y = statusY;
     card.addChild(status);
   }
 
   private _drawCardState(card: PIXI.Container, skin: SkinDef, w: number, h: number): void {
+    const sx = w / CARD_BASE_W;
+    const sy = h / CARD_BASE_H;
+    const rr = Math.max(12, Math.round(20 * Math.min(sx, sy)));
+
     if (SkinManager.isSelected(skin)) {
       const border = new PIXI.Graphics();
       border.lineStyle(6, 0x5EF041, 1);
-      border.drawRoundedRect(4, 4, w - 8, h - 8, 20);
+      border.drawRoundedRect(4, 4, w - 8, h - 8, rr);
       card.addChild(border);
     }
 
     if (!SkinManager.isUnlocked(skin)) {
       const cover = new PIXI.Graphics();
       cover.beginFill(0x0A2452, 0.45);
-      cover.drawRoundedRect(16, 14, w - 32, 108, 14);
+      const cx = Math.round(16 * sx);
+      const cy = Math.round(14 * sy);
+      const cw = w - Math.round(32 * sx);
+      const ch = Math.round(108 * sy);
+      cover.drawRoundedRect(cx, cy, cw, ch, Math.round(14 * sx));
       cover.endFill();
       card.addChild(cover);
 
       const lock = new PIXI.Graphics();
       lock.lineStyle(6, 0xE9F4FF, 1);
-      lock.arc(0, -8, 20, Math.PI, Math.PI * 2);
+      lock.arc(0, -8, 20 * sx, Math.PI, Math.PI * 2);
       lock.beginFill(0xDCEBFA, 1);
-      lock.drawRoundedRect(-26, -6, 52, 38, 8);
+      lock.drawRoundedRect(-26 * sx, -6 * sy, 52 * sx, 38 * sy, 8 * sx);
       lock.endFill();
       lock.lineStyle(0);
       lock.beginFill(0x6D7F98, 1);
-      lock.drawCircle(0, 10, 5);
-      lock.drawRect(-2, 11, 4, 11);
+      lock.drawCircle(0, 10 * sy, 5 * sx);
+      lock.drawRect(-2 * sx, 11 * sy, 4 * sx, 11 * sy);
       lock.endFill();
       lock.x = w / 2;
-      lock.y = 72;
+      lock.y = 72 * sy;
       card.addChild(lock);
     }
   }

@@ -1,0 +1,15 @@
+Shared style for the approved 1K background skin set:
+High quality 1K vertical 9:16 pure gameplay background for a polished 2D/2.5D casual marble puzzle mobile game. Match the approved `bg_style_test_marble_wave_1k.png` direction: bright luminous blue-purple gradients, glossy colored marbles, smooth flowing wave ribbons, sparkle dust, layered depth, crisp highlights, arcade puzzle feeling. Clear empty center for gameplay board. The image must be a pure background only.
+
+Strict negative requirements:
+NO TEXT, no letters, no numbers, no UI panels, no buttons, no icons, no chessboard, no grid, no gameplay board, no characters, no central frame, no rectangular panel, no border box, no architecture, no arches, no columns, no buildings, no doorway, no portal. NOT realistic, NOT photo, NOT 3D render, NOT flat, NOT dark, NOT overly cute, NOT feminine.
+
+Generated backgrounds:
+1. bg_skin_arcade_wave_1k: aqua wave arcade, cyan and violet light currents on both sides, glossy marbles embedded along side wave ribbons, stylized blue wave swirls near bottom.
+2. bg_skin_starlight_stream_1k: flowing nebula-like light curves along the side edges, small glossy orb marbles and star sparkles around edges, brighter center glow.
+3. bg_skin_crystal_tide_1k: translucent cyan and violet crystal shards only along side edges and bottom corners, glossy marbles sitting on wave ribbons, flowing aqua currents.
+4. bg_skin_neon_bubble_1k: translucent bubbles and glossy marbles along side edges, glowing ribbon currents crossing near top and bottom edges only.
+5. bg_skin_emerald_flow_1k: green-cyan wave ribbons along side edges, marbles embedded in edge ribbons, subtle aqua glow and bright center.
+6. bg_skin_sunset_splash_1k: warm golden light gradients with blue wave ribbons at bottom and side edges, colorful marbles along edge curves.
+7. bg_skin_prism_orbit_1k: bright blue purple cyan gradient, glossy colored marbles, prism light trails, curved orbital ribbons flowing only along edges.
+8. bg_skin_aurora_surf_1k: aurora light ribbons flowing at top and side edges, stylized wave curls at bottom, marbles along edge paths.

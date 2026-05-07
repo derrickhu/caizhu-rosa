@@ -1,0 +1,28 @@
+Shared requirements for all 8 gameplay background skins:
+Create a high-quality 9:16 vertical background for a colorful casual marble puzzle mobile game. Soft pastel lighting, polished cute game art, gentle depth, subtle decorative elements, clear empty center area suitable for placing a game board and HUD. The background should match a glossy candy/gem UI style but should NOT be too saturated or visually noisy. Use smooth gradients, soft glow, and friendly shapes. Pure background only.
+
+Strict negative requirements for every image: NO TEXT, no labels, no letters, no numbers, no captions, no UI panels, no buttons, no icons, no chessboard, no grid, no gameplay board, no score area, no characters, no foreground objects blocking the center.
+
+1. bg_skin_cloud_candy:
+Soft cloud candy sky world. Pale blue to lavender sky gradient, fluffy cream clouds, tiny translucent candy bubbles, faint rainbow mist near corners, gentle sparkle dust. Keep the center calm and uncluttered.
+
+2. bg_skin_moon_forest:
+Moonlit magical forest. Soft teal and indigo gradient, rounded fantasy leaves at the edges, distant glowing mushrooms and firefly dots, subtle moonbeam haze. Cozy and calm, not dark or scary.
+
+3. bg_skin_crystal_cave:
+Dreamy crystal cave. Pale aqua, periwinkle and soft violet crystals along side edges, translucent gem facets, diffused light beams, smooth polished floor reflection near bottom. Keep brightness soft.
+
+4. bg_skin_sakura_garden:
+Pastel sakura garden. Warm blush pink sky, light peach clouds, blurred garden silhouettes, soft falling petals near edges, a faint curved path texture at the bottom. Elegant, gentle, not crowded.
+
+5. bg_skin_pearl_bay:
+Soft pearl bay. Light turquoise sea and pearl sand colors, gentle wave gradients, small shells and pearls hinted near lower corners, underwater sparkle bubbles, dreamy coastal light.
+
+6. bg_skin_stardust_night:
+Soft stardust night. Deep but gentle navy to purple gradient, tiny star dust, distant nebula haze, subtle circular glow behind the center for readability. Magical but low saturation.
+
+7. bg_skin_mint_dream:
+Mint dessert dream. Mint green and cream gradient, soft jelly shapes, marshmallow-like curves at edges, pale candy sprinkles very subtle, fresh and clean with lots of empty space.
+
+8. bg_skin_warm_toy:
+Warm toy-room glow. Soft apricot, beige and pastel orange lighting, blurred rounded toy blocks and glass marbles only at the edges, cozy warm bokeh, center kept clean for gameplay.
