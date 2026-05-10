@@ -1,0 +1,20 @@
+---
+description: Game asset generation and storage conventions
+alwaysApply: true
+---
+
+# Game Asset Pipeline
+
+- Generated art assets for this project must be saved under `/Users/rosa/rosa_games/game_assets/caizhu-rosa/assets`.
+- Use the existing asset pipeline folders:
+  - `raw/`: original AI-generated images and sprite sheets.
+  - `split/`: extracted cells from generated sheets.
+  - `nobg/`: background-removed transparent PNGs.
+  - `final/`: cropped, trimmed, ready-to-use project resources.
+- For generated assets that need transparency, run `rembg` before final delivery:
+  - Prefer `birefnet-general-lite` for UI panels/buttons generated on checkerboard or light backgrounds.
+  - Use `isnet-anime` for cartoon character/item art when it keeps cleaner edges.
+  - Save rembg output to `nobg/`, then crop/trim with padding into `final/`.
+- Do not leave generated image assets in `.cursor` project temp folders except transient attachments supplied by the user.
+- When generating multiple states of the same UI component, generate them in one sheet first so lighting, outlines, and scale stay consistent.
+- Only copy final approved assets into `minigame/subpkg_assets/images/` when implementing them in the game.

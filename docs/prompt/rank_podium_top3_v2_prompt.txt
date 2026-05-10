@@ -1,0 +1,13 @@
+Single isolated game UI asset: THIRD PLACE podium card matching the same game family as gold (1st) and silver (2nd) leaderboard pods.
+
+Visual goals — STRONG 3D / stereoscopic look:
+- Compact card similar height to second place, bronze copper metal frame, warm sand/champagne panel, thick bevel, strong depth and specular sparks on metal.
+- Bottom-left: bronze medal disc with soft relief (no legible "3" — tiny triangle motif or plain seal), teal-tinged ribbons with folds.
+
+Layout (EMPTY):
+- Blank circular avatar zone; empty nickname and score areas on matte panel.
+
+CRITICAL — clean cutout:
+- Flat uniform solid #E8EAED backdrop only; no gradients; crisp edges; zero white fringe or outer glow.
+
+Forbidden: any text, Chinese, digits, watermark, duplicate of other ranks in one image, full leaderboard.

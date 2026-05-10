@@ -1,0 +1,54 @@
+Create a single 3 columns x 2 rows sprite sheet for a polished mobile puzzle game UI. Each cell is one complete prop information panel for the same game, with consistent frame, lighting, palette, border thickness, icon scale, and composition.
+
+Overall art direction:
+- Bright glossy casual puzzle game style, matching a colorful jewel / marble board game.
+- Rounded turquoise glass panel frame, soft cyan body, orange-blue title plaque, white content card.
+- Premium mobile game UI, clean, playful, readable at phone size.
+- Transparent-looking glass, subtle highlights, soft shadows, crisp edges.
+- Panel shape should match all five cells exactly: same portrait panel, same margins, same title area, same illustration area, same large blank description area, same empty bottom action area.
+- Keep a large clean blank white description area inside the content card under the illustration. This blank area must be big enough for 2-3 lines of runtime Chinese text.
+- Keep a clean empty bottom band for runtime UI overlays: no stock number, no bottom button label, no call-to-action text.
+- The five generated panels must look like one coherent UI set.
+
+Canvas layout:
+- 3 columns x 2 rows.
+- First row: Position Preview, Undo One Move, Remove Ball.
+- Second row: Reroll Colors, Extra Chance, one duplicate/blank style sample panel.
+- Leave small gutters between cells, no perspective, front-facing orthographic UI.
+
+Panel 1: Position Preview
+- Title text in Simplified Chinese: 落点预览
+- Main diagram: mini 9x9 jewel board with exactly 3 translucent ghost landing circles, no more than 3. Show exactly 3 next balls at the top of the mini board and exactly 3 subtle arrows pointing to exactly 3 landing positions.
+- No description text. Leave the description area completely blank.
+
+Panel 2: Undo One Move
+- Title text in Simplified Chinese: 撤回一步
+- Main diagram: purple jewel moved backward with a curved rewind arrow over a mini board.
+- No description text. Leave the description area completely blank.
+
+Panel 3: Remove Ball
+- Title text in Simplified Chinese: 移除珠子
+- Main diagram: red jewel on a board with a clear remove/cross sparkle effect, showing one ball being removed.
+- No description text. Leave the description area completely blank.
+
+Panel 4: Reroll Colors
+- Title text in Simplified Chinese: 重选颜色
+- Main diagram: two rows of exactly 3 glossy jewels each. Top row shows exactly 3 current next jewels. Bottom row shows exactly 3 rerolled next jewels. Total jewels in this diagram must be exactly 6, no more and no less.
+- Use three downward arrows from the top row to the bottom row, plus one small refresh icon in the center. Do not draw extra placeholder circles, empty circles, grey circles, bead slots, or additional jewels.
+- The top row can be red, yellow, blue. The bottom row can be green, orange, cyan. These are examples, but the diagram must have exactly 3 top jewels and exactly 3 bottom jewels.
+- Jewel colors must only use this existing game palette: red #DC3545, yellow #FFC107, blue #0D6EFD, green #198754, purple #8B5CF6, orange #FD7E14, cyan #0DCAF0. Do not use rainbow, pink, gradient multi-color, black, white, or any other jewel color.
+- No description text. Leave the description area completely blank.
+
+Panel 5: Extra Chance
+- Title text in Simplified Chinese: 续命
+- Main diagram: red shield / heart-like support badge with plus symbol, small step and timer symbols.
+- No description text. Leave the description area completely blank.
+
+Panel 6: Duplicate style sample
+- Use the same frame and empty layout, no unique prop needed, keep it visually consistent.
+
+Important text requirements:
+- Use only the exact Simplified Chinese title text listed above.
+- Title text must be large, clean, centered, and legible.
+- No description text, no English, no random symbols, no watermark, no numbers, no logo.
+- The large description area and the bottom dynamic overlay area must contain no text.

@@ -12,6 +12,7 @@ import { LevelCompleteOverlay } from '@/ui/LevelCompleteOverlay';
 import { LevelFailOverlay } from '@/ui/LevelFailOverlay';
 import { SpecialPieceIntroOverlay } from '@/ui/SpecialPieceIntroOverlay';
 import { PropBar } from '@/ui/PropBar';
+import { PropInfoOverlay } from '@/ui/PropInfoOverlay';
 import { getLevelDef, getLevelStars, getMaxStarScore, getPassScore, TOTAL_LEVELS, type LevelDef } from '@/config/LevelConfig';
 import { getSpecialPieceIntros, hasSeenSpecialPieceIntro, markSpecialPieceIntroSeen, type SpecialPieceIntroDef } from '@/config/SpecialPieceIntroConfig';
 import { PropType, EXTRA_STEPS, EXTRA_TIME } from '@/config/PropConfig';
@@ -31,6 +32,7 @@ export class LevelScene implements Scene {
   private _completeOverlay!: LevelCompleteOverlay;
   private _failOverlay!: LevelFailOverlay;
   private _introOverlay!: SpecialPieceIntroOverlay;
+  private _propInfoOverlay!: PropInfoOverlay;
   private _levelDef!: LevelDef;
 
   private _timerActive = false;
@@ -103,6 +105,9 @@ export class LevelScene implements Scene {
 
     this._introOverlay = new SpecialPieceIntroOverlay();
     this.container.addChild(this._introOverlay);
+
+    this._propInfoOverlay = new PropInfoOverlay();
+    this.container.addChild(this._propInfoOverlay);
 
     // Init board with level config
     BoardManager.initLevel({
@@ -264,20 +269,27 @@ export class LevelScene implements Scene {
   private _onPropRequest = (type: PropType) => {
     if (this._finished) return;
 
-    // Sync path: use from stock directly
-    if (PropManager.canUse(type)) {
+    const canDirectUse = PropManager.canUse(type);
+    this._propInfoOverlay.show(type, canDirectUse, () => this._confirmPropUse(type, canDirectUse));
+  };
+
+  private _confirmPropUse(type: PropType, canDirectUse: boolean): void {
+    if (this._finished) return;
+
+    // 确认时再次校验库存，避免面板打开期间数据变化。
+    if (canDirectUse && PropManager.canUse(type)) {
       PropManager.use(type);
       this._executeProp(type);
       return;
     }
 
-    // Async path: need ad to get the prop
+    // 库存不足或本局普通次数已达上限时，通过激励视频获得本次使用。
     PropManager.requestUse(type).then((granted) => {
       if (granted && !this._finished) {
         this._executeProp(type);
       }
     });
-  };
+  }
 
   private _executeProp(type: PropType): void {
     switch (type) {

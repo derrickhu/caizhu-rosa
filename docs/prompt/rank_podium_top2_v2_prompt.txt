@@ -1,0 +1,16 @@
+Single isolated game UI asset: SECOND PLACE podium card for the same cute colorful mobile puzzle game leaderboard as the gold first-place style.
+
+Visual goals — STRONG 3D / stereoscopic look:
+- Shorter card than a champion tower: compact portrait medal stand, silver chrome + cool white/ice-blue panel, thick beveled frame, deep extrusion, glossy highlights.
+- Bottom-left: silver medal disc with subtle relief (no legible "2" text — use small twin-star emboss or blank seal), crimson ribbons with dimensional folds.
+- Ice silver trim, cool highlights, softer shadows — clearly reads "second" without text.
+
+Layout (EMPTY for code):
+- Circular blank avatar zone upper area.
+- Plain panel for nickname + score below.
+
+CRITICAL — clean cutout:
+- Only this object on flat uniform solid #E8EAED background, no gradient, no glow into background.
+- Crisp silhouette; no white halos, no dirty edges.
+
+Forbidden: any text, Chinese, names, scores, watermark, other rank cards, full UI screen.

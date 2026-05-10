@@ -1,0 +1,18 @@
+Single isolated game UI asset: FIRST PLACE champion podium card for a cute colorful mobile puzzle game leaderboard.
+
+Visual goals — STRONG 3D / stereoscopic look:
+- Thick beveled frame like molded plastic or resin trophy, deep extrusion, clear highlights and shadow sides (NOT flat illustration).
+- Glossy gold + warm cream/ivory face panel, subtle ambient occlusion in corners, soft studio light from top-left.
+- Large ornate 3D golden crown sitting ON TOP of the card (integrated, same lighting), red ruby centerpiece, dimensional metal folds.
+- Bottom-left: integrated gold medal disc with embossed "1" feel (no readable text — use a simple star or blank round seal if needed to avoid typography), flowing red satin ribbons with folds and shadows.
+- Premium toy-like collectible aesthetic, PBR-ish specular highlights, rounded corners.
+
+Layout (EMPTY for code overlay):
+- Large blank circular placeholder zone for avatar in upper half (no face, no icon).
+- Empty area below for dynamic nickname and score (keep panel plain).
+
+CRITICAL — clean edges for cutout:
+- Place ONLY this one object on a perfectly flat, uniform solid background color #E8EAED (light neutral gray), NO gradient, NO vignette, NO particles behind the card.
+- Hard separation between object and background; crisp anti-aliased silhouette; ZERO white halo, ZERO light fringe, ZERO outer glow, ZERO contact shadow on the backdrop.
+
+Forbidden: any text, numbers, Chinese, player name, score digits, watermark, UI mockup, phone frame, full leaderboard scene, extra cards.

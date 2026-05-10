@@ -1,0 +1,22 @@
+You are given a REFERENCE image: it is an existing in-game “prop info” panel from our puzzle game (title may be 撤回一步 or similar). Your output must be ONE new PNG panel.
+
+Hard requirements — match the reference EXACTLY:
+- Same outer turquoise glass frame, same corner radius, same border thickness, same inner highlights and shadows.
+- Same orange title plaque shape, size, position, outline, and typography style as the reference title — only replace the characters so the title reads exactly: 移除珠子
+- Same inner white rounded card, same recessed diagram box size and position, same large blank white description area below the diagram (keep completely empty, no text).
+- Same bottom footer band height and color as the reference (keep empty, no button art, no text).
+
+Only change the illustration inside the upper diagram square:
+- Dark teal checkerboard mini board like the reference style.
+- Exactly one glossy red jewel ball using #DC3545.
+- One bold integrated red “X” / remove mark clearly on the ball (not a separate flat UI icon).
+- Subtle white sparkles around the ball; no extra balls, no arrows, no other icons outside that diagram square.
+
+Do NOT:
+- Change overall canvas size or crop differently from the reference.
+- Invent a new frame style, new palette, or new layout.
+- Add English, watermark, logo, or numbers.
+
+Background: keep the same flat neutral gray around the panel as in the reference (for easy background removal).
+
+Output: single image, same aspect and composition as the reference.

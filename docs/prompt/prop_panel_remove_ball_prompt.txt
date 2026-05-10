@@ -1,0 +1,31 @@
+Create one polished mobile game prop information panel asset for a colorful casual puzzle game.
+
+This asset must match the existing prop panel set style:
+- Bright glossy turquoise glass panel frame.
+- Rounded portrait card, front-facing orthographic UI.
+- Orange-blue title plaque at the top.
+- White inner content card with a large blank description area below the diagram.
+- Empty bottom action band for runtime button and stock text.
+- Same lighting, border thickness, palette, and proportions as a premium casual jewel puzzle game.
+
+Required title:
+- Simplified Chinese title text: 移除珠子
+- The title must be large, clean, centered, and legible.
+
+Required diagram:
+- In the upper diagram area, show a small dark teal checkerboard puzzle board.
+- In the center of that board, show one glossy red jewel ball using the game palette red #DC3545.
+- Clearly show this ball is being removed by integrating a bold red X / remove mark directly over the ball.
+- The X should be part of the generated illustration, visually polished, centered, and easy to understand.
+- Add subtle white sparkle/glow around the red jewel and X.
+- Do not draw extra balls, no extra icons outside the board, no random symbols.
+
+Blank areas:
+- Leave the white description area under the diagram completely blank, with no text.
+- Leave the bottom action band completely blank, with no text.
+
+Important:
+- No text except the exact title 移除珠子.
+- No English, no watermark, no logo, no numbers.
+- Put the whole panel on a plain flat neutral gray background for easy background removal.
+- Single panel only.

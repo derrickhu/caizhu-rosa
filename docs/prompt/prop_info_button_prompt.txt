@@ -1,0 +1,15 @@
+Create one polished textless mobile game button asset for a colorful casual puzzle game.
+
+Art direction:
+- Bright glossy orange rounded pill button.
+- No text, no icon, no logo, no watermark.
+- Thick warm yellow highlight border and subtle darker orange lower rim.
+- Soft cyan outer glow so it matches turquoise glass UI panels.
+- Front-facing orthographic UI, clean PNG-like game asset.
+- The button should be centered on a plain flat neutral gray background for easy background removal.
+- Leave a small margin around the button, but the button should fill most of the canvas width.
+
+Important:
+- Absolutely no words or letters anywhere.
+- Single button only.
+- Rounded pill shape, suitable for overlaying runtime text such as 使用 or 看广告使用.
