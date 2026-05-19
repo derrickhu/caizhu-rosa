@@ -1,0 +1,25 @@
+Create one game-ready bomb marble special piece icon for a colorful Chinese casual marble puzzle mobile game.
+
+Style:
+- Cute polished 2D cartoon game asset style.
+- Glossy high saturation, clean thick outline, bright specular highlights.
+- Must match the existing colorful glass marble pieces and special item icons.
+
+Icon design:
+- A round black/purple glossy bomb marble with a warm orange starburst glow inside.
+- Small golden fuse cap and short fuse at the top-right, with a tiny spark.
+- The bomb must fit comfortably inside a 96x96 game cell.
+- Leave generous transparent/magenta padding around the whole icon; no part may touch the image edge.
+- Fuse and spark should stay inside the square bounds, not clipped.
+- Single centered icon only.
+
+Output/background:
+- Square image.
+- Flat pure magenta background (#ff00ff) outside the bomb icon, for clean color-key transparency removal.
+- No checkerboard transparency pattern.
+
+Strict requirements:
+NO TEXT, no labels, no captions, no writing anywhere in the image.
+No board cell background.
+No extra duplicate bombs.
+No cropped edges.

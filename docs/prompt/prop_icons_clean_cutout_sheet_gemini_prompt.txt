@@ -1,0 +1,24 @@
+Create a horizontal sprite sheet of exactly THREE clean game prop button icons for a colorful marble puzzle mobile game.
+
+Layout:
+- 3 columns x 1 row.
+- One square rounded button icon per cell.
+- All three buttons have identical size, identical yellow-orange bevel frame, identical front-facing orthographic camera, perfectly aligned.
+
+Critical cutout requirements:
+- Background must be a solid flat medium gray color #888888 across the whole sheet.
+- No shadow outside the button shape.
+- No glow outside the button shape.
+- No soft drop shadow, no cast shadow, no ambient shadow around buttons.
+- Keep crisp hard edges so the gray background can be removed cleanly.
+- The button itself can have internal glossy highlights and bevels, but nothing should extend outside the rounded-square silhouette.
+
+Icons from left to right:
+1. Color Blast: red glass marble with a compact burst symbol behind it, implying clearing all marbles of one color.
+2. Cross Clear: small marble grid with a bright cyan row-and-column cross beam through the center.
+3. Wild Next: rainbow wild marble with three small colored upcoming marbles transforming into rainbow light.
+
+Style:
+- Polished 2D casual mobile game UI.
+- Saturated candy colors, thick clean outlines, readable at 80x80 px.
+- NO TEXT, no labels, no captions, no writing, no numbers, no badges.

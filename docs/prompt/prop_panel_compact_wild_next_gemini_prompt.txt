@@ -1,0 +1,29 @@
+Use the reference image as the strict style and layout template.
+
+Create ONE compact game prop information panel artwork for a colorful marble puzzle mobile game.
+
+Keep exactly the same as the reference:
+- Same compact panel height and width.
+- Same turquoise/cyan rounded frame.
+- Same orange blank title plaque position and size.
+- Same upper illustration box position and size.
+- Same compact white description area size and position.
+- Same bottom turquoise footer band size and position.
+- Same front-facing orthographic UI style, lighting, border thickness, and proportions.
+- Same solid flat medium gray #888888 background for clean cutout.
+- No cast shadow outside the panel, no glow outside the panel silhouette, no soft external shadow.
+
+Change only the central illustration:
+- Wild Next prop.
+- Show three small colored upcoming glass marbles transforming into one or more glowing rainbow wild marbles.
+- Use a curved arrow, rainbow glow, and magical particles.
+- The visual meaning should be that the next marbles become wild pieces that match any color.
+
+Important constraints:
+- NO TEXT, no labels, no captions, no writing anywhere.
+- No Chinese characters, no English letters, no numbers, no fake writing.
+- Title plaque must be completely blank.
+- White description area must be completely blank.
+- Footer/button band must be completely blank.
+- Do not make the white area taller than in the reference.
+- Do not make the panel taller than in the reference.

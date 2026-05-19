@@ -146,13 +146,12 @@ class PropManagerClass {
 
   /** Give initial free props to new players */
   grantStarterPack(): void {
-    if (this._inventory['_starterGranted']) return;
-    this.addStock(PropType.Undo, 3);
-    this.addStock(PropType.RemoveBall, 2);
-    this.addStock(PropType.RerollColors, 3);
-    this.addStock(PropType.PositionPreview, 2);
-    this.addStock(PropType.ExtraLimit, 2);
+    if (this._inventory['_starterGrantedV2']) return;
+    this.addStock(PropType.ColorBlast, 2);
+    this.addStock(PropType.CrossClear, 2);
+    this.addStock(PropType.WildNext, 3);
     this._inventory['_starterGranted'] = 1;
+    this._inventory['_starterGrantedV2'] = 1;
     this._save();
   }
 

@@ -1,0 +1,14 @@
+Create a clean 3-column by 1-row game prop icon sheet for a colorful casual mobile puzzle game.
+
+Canvas: landscape 3:1 sheet, three equal square cells, one icon per cell, centered, consistent scale.
+Style: glossy rounded-square yellow-orange button frames, thick golden bevel, soft blue shadow, saturated candy colors, polished 2D mobile game UI, matching a bright bubble/ocean puzzle game.
+
+Cell 1, Color Blast: red glass marble with a bright explosive burst and sparkles, implying clearing all marbles of one color.
+Cell 2, Cross Clear: cyan-blue cross-shaped beam clearing a row and a column across a small grid, strong plus/cross silhouette.
+Cell 3, Wild Next: rainbow wild marble with three small upcoming marbles transforming into rainbow light, implying the next balls become wild.
+
+Important constraints:
+- NO TEXT, no labels, no captions, no writing anywhere in the image.
+- Do not include numbers, badges, UI counters, or Chinese characters.
+- Each icon must be isolated inside its square button and visually readable at 80x80 px.
+- Keep the three icons stylistically identical and aligned on one horizontal sheet.

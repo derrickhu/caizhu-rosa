@@ -7,6 +7,8 @@ import { LevelManager } from '@/managers/LevelManager';
 import { TOTAL_LEVELS } from '@/config/LevelConfig';
 import { createBgSprite } from '@/utils/bgHelper';
 import { addImageSprite, loadImageTexture } from '@/utils/imageTexture';
+import { AudioManager } from '@/core/AudioManager';
+import { AUDIO_ASSETS, AUDIO_VOLUME } from '@/config/AudioConfig';
 
 const NODE_SIZE = 64;
 const CURRENT_NODE_SIZE = 76;
@@ -44,6 +46,7 @@ export class LevelSelectScene implements Scene {
 
   onEnter(): void {
     this.container.removeChildren();
+    AudioManager.playBGM(AUDIO_ASSETS.bgmLevel, AUDIO_VOLUME.bgmLevel);
     this._unbindNativeEditorTouch();
     this._editableCells = [];
     this.container.eventMode = 'static';
@@ -160,6 +163,7 @@ export class LevelSelectScene implements Scene {
     });
 
     btn.on('pointerdown', () => {
+      AudioManager.play('button');
       this._page += direction === 'next' ? 1 : -1;
       this.onEnter();
     });
@@ -223,6 +227,7 @@ export class LevelSelectScene implements Scene {
           this._startDrag(cell, event);
           return;
         }
+        AudioManager.play('button');
         LevelManager.currentLevelId = levelId;
         SceneManager.switchTo('level');
       });
@@ -398,7 +403,10 @@ export class LevelSelectScene implements Scene {
     });
     btn.hitArea = new PIXI.Circle(37, 37, 37);
 
-    btn.on('pointerdown', () => SceneManager.switchTo('home'));
+    btn.on('pointerdown', () => {
+      AudioManager.play('button');
+      SceneManager.switchTo('home');
+    });
     return btn;
   }
 }

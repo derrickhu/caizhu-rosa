@@ -7,6 +7,8 @@ import { createBgSprite } from '@/utils/bgHelper';
 import { addImageSprite, loadImageTexture } from '@/utils/imageTexture';
 import { getOrbSkinTexture, refreshOrbTextures } from '@/utils/orbLoader';
 import type { SkinCategory, SkinDef, OrbSkinDef, BackgroundSkinDef } from '@/config/SkinConfig';
+import { AudioManager } from '@/core/AudioManager';
+import { AUDIO_ASSETS, AUDIO_VOLUME } from '@/config/AudioConfig';
 
 const PANEL_PATH = 'subpkg_assets/images/skin_panel.png';
 const TAB_ACTIVE_PATH = 'subpkg_assets/images/skin_tab_active.png';
@@ -54,6 +56,7 @@ export class SkinScene implements Scene {
 
   onEnter(): void {
     this.container.removeChildren();
+    AudioManager.playBGM(AUDIO_ASSETS.bgmClassic, AUDIO_VOLUME.bgmClassic);
     this._activeTab = 'orb';
     this._scrollY = 0;
     this._unlockingId = null;
@@ -200,7 +203,10 @@ export class SkinScene implements Scene {
     btn.cursor = 'pointer';
     btn.hitArea = new PIXI.Circle(34, 34, 34);
 
-    btn.on('pointerdown', () => SceneManager.switchTo('home'));
+    btn.on('pointerdown', () => {
+      AudioManager.play('button');
+      SceneManager.switchTo('home');
+    });
     this.container.addChild(btn);
   }
 
@@ -247,6 +253,7 @@ export class SkinScene implements Scene {
 
     tab.on('pointerdown', () => {
       if (this._activeTab === category) return;
+      AudioManager.play('button');
       this._activeTab = category;
       this._scrollY = 0;
       this._renderTabs(Game.logicWidth, y, Math.min(704, Game.logicWidth - 34));

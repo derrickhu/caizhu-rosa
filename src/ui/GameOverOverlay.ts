@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 import { Game } from '@/core/Game';
 import { TweenManager, Ease } from '@/core/TweenManager';
 import { EventBus } from '@/core/EventBus';
+import { AudioManager } from '@/core/AudioManager';
 
 export class GameOverOverlay extends PIXI.Container {
   private _panel: PIXI.Container;
@@ -86,7 +87,10 @@ export class GameOverOverlay extends PIXI.Container {
     text.anchor.set(0.5, 0.5);
     btn.addChild(text);
 
-    btn.on('pointerdown', onClick);
+    btn.on('pointerdown', () => {
+      AudioManager.play('button');
+      onClick();
+    });
     this._panel.addChild(btn);
   }
 

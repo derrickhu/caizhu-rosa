@@ -5,15 +5,22 @@ import { Platform } from '@/core/PlatformService';
 import { createBgSprite } from '@/utils/bgHelper';
 import { addImageSprite } from '@/utils/imageTexture';
 import { GmOverlay } from '@/ui/GmOverlay';
+import { SettingsOverlay } from '@/ui/SettingsOverlay';
+import { AudioManager } from '@/core/AudioManager';
+import { AUDIO_ASSETS, AUDIO_VOLUME } from '@/config/AudioConfig';
 
 export class HomeScene implements Scene {
   readonly name = 'home';
   readonly container = new PIXI.Container();
 
   private _gmOverlay: GmOverlay | null = null;
+  private _settingsOverlay: SettingsOverlay | null = null;
+  private _gameClubButton: any = null;
 
   onEnter(): void {
+    this._destroyGameClubButton();
     this.container.removeChildren();
+    AudioManager.playBGM(AUDIO_ASSETS.bgmClassic, AUDIO_VOLUME.bgmClassic);
     const W = Game.logicWidth;
     const H = Game.logicHeight;
 
@@ -32,13 +39,16 @@ export class HomeScene implements Scene {
     this._createHotspot(W * 0.26, H * 0.525, W * 0.74, H * 0.615, () => SceneManager.switchTo('classic'));
     this._createHotspot(W * 0.09, H * 0.665, W * 0.49, H * 0.78, () => SceneManager.switchTo('rank'));
     this._createHotspot(W * 0.51, H * 0.665, W * 0.91, H * 0.78, () => SceneManager.switchTo('skin'));
-    this._createHotspot(W * 0.09, H * 0.785, W * 0.49, H * 0.90, () => this._showComingSoon('设置功能即将开放'));
-    this._createHotspot(W * 0.51, H * 0.785, W * 0.91, H * 0.90, () => this._showComingSoon('福利功能即将开放'));
+    this._createHotspot(W * 0.09, H * 0.785, W * 0.49, H * 0.90, () => this._openSettingsOverlay());
+    this._createHotspot(W * 0.51, H * 0.785, W * 0.91, H * 0.90, () => this._handleRewardsTap());
+    this._createGameClubButton(W * 0.51, H * 0.785, W * 0.91, H * 0.90);
 
     this._maybeAddGmEntry();
   }
 
-  onExit(): void {}
+  onExit(): void {
+    this._destroyGameClubButton();
+  }
 
   private _addImage(path: string, x: number, y: number, width: number): void {
     const holder = new PIXI.Container();
@@ -63,12 +73,57 @@ export class HomeScene implements Scene {
     hotspot.endFill();
     hotspot.eventMode = 'static';
     hotspot.cursor = 'pointer';
-    hotspot.on('pointerdown', onClick);
+    hotspot.on('pointerdown', () => {
+      AudioManager.play('button');
+      onClick();
+    });
     this.container.addChild(hotspot);
   }
 
   private _showComingSoon(message: string): void {
     Platform.showToast(message);
+  }
+
+  private _handleRewardsTap(): void {
+    if (this._gameClubButton) return;
+    Platform.showToast(Platform.isWechat ? '当前微信版本暂不支持游戏圈' : '请在微信小游戏中打开游戏圈');
+  }
+
+  private _createGameClubButton(x1: number, y1: number, x2: number, y2: number): void {
+    if (!Platform.supportsGameClubButton) return;
+
+    const rect = this._logicRectToScreenStyle(x1, y1, x2, y2);
+    this._gameClubButton = Platform.createGameClubButton({
+      type: 'text',
+      text: '',
+      style: {
+        ...rect,
+        backgroundColor: '#00000000',
+        borderColor: '#00000000',
+        borderWidth: 0,
+        borderRadius: Math.round(rect.height / 2),
+        color: '#00000000',
+        fontSize: 1,
+        lineHeight: rect.height,
+      },
+    });
+
+    try { this._gameClubButton?.show?.(); } catch {}
+  }
+
+  private _logicRectToScreenStyle(x1: number, y1: number, x2: number, y2: number): { left: number; top: number; width: number; height: number } {
+    const ratio = Game.screenWidth / Game.logicWidth;
+    return {
+      left: Math.round(x1 * ratio),
+      top: Math.round(y1 * ratio),
+      width: Math.round((x2 - x1) * ratio),
+      height: Math.round((y2 - y1) * ratio),
+    };
+  }
+
+  private _destroyGameClubButton(): void {
+    try { this._gameClubButton?.destroy?.(); } catch {}
+    this._gameClubButton = null;
   }
 
   private _maybeAddGmEntry(): void {
@@ -100,6 +155,7 @@ export class HomeScene implements Scene {
     btn.addChild(label);
 
     btn.on('pointerdown', () => {
+      AudioManager.play('button');
       btn.scale.set(0.92);
       this._openGmOverlay();
     });
@@ -115,5 +171,20 @@ export class HomeScene implements Scene {
       this.container.addChild(this._gmOverlay);
     }
     this._gmOverlay.show();
+  }
+
+  private _openSettingsOverlay(): void {
+    this._destroyGameClubButton();
+    if (!this._settingsOverlay) {
+      this._settingsOverlay = new SettingsOverlay(() => {
+        const W = Game.logicWidth;
+        const H = Game.logicHeight;
+        this._createGameClubButton(W * 0.51, H * 0.785, W * 0.91, H * 0.90);
+      });
+      this.container.addChild(this._settingsOverlay);
+    } else {
+      this.container.addChild(this._settingsOverlay);
+    }
+    this._settingsOverlay.show();
   }
 }

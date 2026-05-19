@@ -5,20 +5,15 @@ import { PropType, PROP_DEFS } from '@/config/PropConfig';
 import { PropManager } from '@/managers/PropManager';
 import { addImageSprite } from '@/utils/imageTexture';
 
-/** 面板图最大显示区域（等比缩放，不拉伸变形） */
-const PANEL_MAX_W = 400;
-const PANEL_MAX_H = 640;
-
 /** 确认按钮图最大显示区域（等比缩放） */
 const BUTTON_MAX_W = 300;
 const BUTTON_MAX_H = 80;
+const PANEL_ART_SCALE = 1.35;
 
 const PANEL_ASSETS: Record<PropType, string> = {
-  [PropType.PositionPreview]: 'subpkg_assets/images/prop_panel_position_preview.png',
-  [PropType.Undo]: 'subpkg_assets/images/prop_panel_undo.png',
-  [PropType.RemoveBall]: 'subpkg_assets/images/prop_panel_remove_ball.png',
-  [PropType.RerollColors]: 'subpkg_assets/images/prop_panel_reroll_colors.png',
-  [PropType.ExtraLimit]: 'subpkg_assets/images/prop_panel_extra_limit.png',
+  [PropType.ColorBlast]: 'subpkg_assets/images/prop_panel_color_blast.png',
+  [PropType.CrossClear]: 'subpkg_assets/images/prop_panel_cross_clear.png',
+  [PropType.WildNext]: 'subpkg_assets/images/prop_panel_wild_next.png',
 };
 
 const BUTTON_ASSET = 'subpkg_assets/images/prop_info_button.png';
@@ -32,7 +27,7 @@ const STATUS_STYLE = new PIXI.TextStyle({
   fontFamily: 'PingFang SC, Microsoft YaHei, Arial',
   align: 'center',
   wordWrap: true,
-  wordWrapWidth: 310,
+  wordWrapWidth: 270,
   breakWords: true,
 });
 
@@ -45,9 +40,19 @@ const DESC_STYLE = new PIXI.TextStyle({
   fontFamily: 'PingFang SC, Microsoft YaHei, Arial',
   align: 'center',
   wordWrap: true,
-  wordWrapWidth: 285,
+  wordWrapWidth: 245,
   breakWords: true,
   lineHeight: 30,
+});
+
+const TITLE_STYLE = new PIXI.TextStyle({
+  fontSize: 36,
+  fill: 0xFFFFFF,
+  stroke: 0x9B4B00,
+  strokeThickness: 6,
+  fontWeight: 'bold',
+  fontFamily: 'PingFang SC, Microsoft YaHei, Arial',
+  align: 'center',
 });
 
 const BUTTON_STYLE = new PIXI.TextStyle({
@@ -62,6 +67,7 @@ const BUTTON_STYLE = new PIXI.TextStyle({
 export class PropInfoOverlay extends PIXI.Container {
   private _panel: PIXI.Container;
   private _imageLayer: PIXI.Container;
+  private _titleText: PIXI.Text;
   private _descText: PIXI.Text;
   private _statusText: PIXI.Text;
   private _confirmText: PIXI.Text;
@@ -86,23 +92,28 @@ export class PropInfoOverlay extends PIXI.Container {
     this._imageLayer = new PIXI.Container();
     this._panel.addChild(this._imageLayer);
 
+    this._titleText = new PIXI.Text('', TITLE_STYLE);
+    this._titleText.anchor.set(0.5, 0.5);
+    this._titleText.y = -288;
+    this._panel.addChild(this._titleText);
+
     this._descText = new PIXI.Text('', DESC_STYLE);
     this._descText.anchor.set(0.5, 0.5);
-    this._descText.y = 112;
+    this._descText.y = 116;
     this._panel.addChild(this._descText);
 
     this._statusText = new PIXI.Text('', STATUS_STYLE);
     this._statusText.anchor.set(0.5, 0.5);
-    this._statusText.y = 202;
+    this._statusText.y = 216;
     this._panel.addChild(this._statusText);
 
-    this._createCloseButton();
     this._createConfirmButton();
   }
 
   show(type: PropType, canDirectUse: boolean, onConfirm: () => void): void {
     this._activeType = type;
     this._onConfirm = onConfirm;
+    this._titleText.text = PROP_DEFS[type].name;
     this._descText.text = getPropDescription(type);
     this._statusText.text = this._getStatusText(type, canDirectUse);
     this._confirmText.text = canDirectUse ? '使用' : '看广告使用';
@@ -114,7 +125,12 @@ export class PropInfoOverlay extends PIXI.Container {
     this._panel.alpha = 0;
     this.visible = true;
 
-    TweenManager.to({ target: this._panel.scale, props: { x: 1, y: 1 }, duration: 0.3, ease: Ease.easeOutBack });
+    TweenManager.to({
+      target: this._panel.scale,
+      props: { x: 1, y: 1 },
+      duration: 0.3,
+      ease: Ease.easeOutBack,
+    });
     TweenManager.to({ target: this._panel, props: { alpha: 1 }, duration: 0.2 });
   }
 
@@ -131,40 +147,13 @@ export class PropInfoOverlay extends PIXI.Container {
         return;
       }
       sprite.anchor.set(0.5, 0.5);
-      fitSpriteToMax(sprite, PANEL_MAX_W, PANEL_MAX_H);
+      sprite.scale.set(PANEL_ART_SCALE);
     });
-  }
-
-  private _createCloseButton(): void {
-    const btn = new PIXI.Container();
-    btn.x = 190;
-    btn.y = -275;
-    btn.eventMode = 'static';
-    btn.cursor = 'pointer';
-
-    const bg = new PIXI.Graphics();
-    bg.beginFill(0xFF6B5A);
-    bg.lineStyle(4, 0xFFFFFF, 1);
-    bg.drawCircle(0, 0, 25);
-    bg.endFill();
-    btn.addChild(bg);
-
-    const text = new PIXI.Text('×', new PIXI.TextStyle({
-      fontSize: 32,
-      fill: 0xFFFFFF,
-      fontWeight: 'bold',
-      fontFamily: 'Arial',
-    }));
-    text.anchor.set(0.5, 0.54);
-    btn.addChild(text);
-
-    btn.on('pointerdown', () => this.hide());
-    this._panel.addChild(btn);
   }
 
   private _createConfirmButton(): void {
     const btn = new PIXI.Container();
-    btn.y = 276;
+    btn.y = 297;
     btn.eventMode = 'static';
     btn.cursor = 'pointer';
 
@@ -196,7 +185,7 @@ export class PropInfoOverlay extends PIXI.Container {
     const stock = PropManager.getStock(type);
     const limit = PROP_DEFS[type].maxPerGame;
     if (canDirectUse) {
-      return `当前库存 ${stock}，本局可直接使用`;
+      return `当前库存 ${stock}`;
     }
     if (stock <= 0) {
       return '库存不足，看完广告可立即使用一次';
@@ -217,15 +206,11 @@ function fitSpriteToMax(sprite: PIXI.Sprite, maxW: number, maxH: number): void {
 
 function getPropDescription(type: PropType): string {
   switch (type) {
-    case PropType.PositionPreview:
-      return '显示下一轮新珠子的落点，提前规划移动路线';
-    case PropType.Undo:
-      return '撤销最近一次移动，回到上一步棋盘状态';
-    case PropType.RemoveBall:
-      return '点击棋盘任意珠子，将它直接移除';
-    case PropType.RerollColors:
-      return '重新随机下一轮出现的珠子颜色';
-    case PropType.ExtraLimit:
-      return '限步关增加3步，限时关增加15秒';
+    case PropType.ColorBlast:
+      return '随机选中棋盘上一种颜色，并消除该颜色的全部珠子';
+    case PropType.CrossClear:
+      return '点击任意格子，消除它所在横排和竖排的所有珠子';
+    case PropType.WildNext:
+      return '把下一轮待出现珠子变成万能珠，更容易接出五连';
   }
 }

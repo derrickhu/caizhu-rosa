@@ -1,11 +1,11 @@
 /** Prop types available in-game */
 export enum PropType {
-  PositionPreview = 'positionPreview',
-  Undo = 'undo',
-  RemoveBall = 'removeBall',
-  RerollColors = 'rerollColors',
-  ExtraLimit = 'extraLimit',
+  ColorBlast = 'colorBlast',
+  CrossClear = 'crossClear',
+  WildNext = 'wildNext',
 }
+
+export const PROP_REWARDED_AD_UNIT_ID = 'adunit-fab969e9ff8cd7d7';
 
 export interface PropDef {
   type: PropType;
@@ -19,49 +19,30 @@ export interface PropDef {
 }
 
 export const PROP_DEFS: Record<PropType, PropDef> = {
-  [PropType.PositionPreview]: {
-    type: PropType.PositionPreview,
-    name: '落点预览',
-    icon: '👁',
-    description: '查看下轮新球的落点位置',
+  [PropType.ColorBlast]: {
+    type: PropType.ColorBlast,
+    name: '同色爆破',
+    icon: '💥',
+    description: '随机消除棋盘上一种颜色的全部珠子',
     maxPerGame: 1,
-    adUnitId: 'adunit-preview',
+    adUnitId: PROP_REWARDED_AD_UNIT_ID,
   },
-  [PropType.Undo]: {
-    type: PropType.Undo,
-    name: '撤回一步',
-    icon: '↩',
-    description: '撤销上一步移动',
+  [PropType.CrossClear]: {
+    type: PropType.CrossClear,
+    name: '十字清场',
+    icon: '✚',
+    description: '点击一个格子，消除所在行和列的珠子',
     maxPerGame: 1,
-    adUnitId: 'adunit-undo',
+    adUnitId: PROP_REWARDED_AD_UNIT_ID,
   },
-  [PropType.RemoveBall]: {
-    type: PropType.RemoveBall,
-    name: '移除珠子',
-    icon: '✖',
-    description: '点击移除任意一颗珠子',
-    maxPerGame: 1,
-    adUnitId: 'adunit-remove',
-  },
-  [PropType.RerollColors]: {
-    type: PropType.RerollColors,
-    name: '重选颜色',
-    icon: '🔄',
-    description: '重新随机下轮球的颜色',
+  [PropType.WildNext]: {
+    type: PropType.WildNext,
+    name: '万能预备',
+    icon: '🌈',
+    description: '把下一轮出现的珠子全部变成万能珠',
     maxPerGame: 2,
-    adUnitId: 'adunit-reroll',
-  },
-  [PropType.ExtraLimit]: {
-    type: PropType.ExtraLimit,
-    name: '续命',
-    icon: '➕',
-    description: '限步关+3步 / 限时关+15秒',
-    maxPerGame: 1,
-    adUnitId: 'adunit-extra',
+    adUnitId: PROP_REWARDED_AD_UNIT_ID,
   },
 };
-
-export const EXTRA_STEPS = 3;
-export const EXTRA_TIME = 15;
 
 export const ALL_PROPS = Object.values(PROP_DEFS);

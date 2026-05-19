@@ -5,12 +5,13 @@ import { loadImageTexture } from './imageTexture';
 declare const wx: any;
 declare const tt: any;
 
-const _avatarTextureCache = new Map<string, PIXI.Texture | null>();
+const _avatarTextureCache = new Map<string, PIXI.Texture>();
 const _pendingAvatar = new Map<string, Promise<PIXI.Texture | null>>();
 
 function loadRemoteAvatar(url: string): Promise<PIXI.Texture | null> {
-  if (_avatarTextureCache.has(url)) {
-    return Promise.resolve(_avatarTextureCache.get(url) ?? null);
+  const cached = _avatarTextureCache.get(url);
+  if (cached) {
+    return Promise.resolve(cached);
   }
   const pending = _pendingAvatar.get(url);
   if (pending) return pending;
@@ -20,7 +21,9 @@ function loadRemoteAvatar(url: string): Promise<PIXI.Texture | null> {
       : typeof tt !== 'undefined' ? tt : null;
 
     const finish = (tex: PIXI.Texture | null) => {
-      _avatarTextureCache.set(url, tex);
+      if (tex) {
+        _avatarTextureCache.set(url, tex);
+      }
       _pendingAvatar.delete(url);
       resolve(tex);
     };
@@ -67,10 +70,10 @@ export function createAvatarSprite(avatarUrl: string, radius: number): PIXI.Cont
 
   const url = avatarUrl || DEFAULT_AVATAR_PATH;
   const useRemote = /^(https?:|wxfile:|http:|blob:)/i.test(url);
-  const loader = useRemote ? loadRemoteAvatar(url) : loadImageTexture(url);
+  const primaryLoader = useRemote ? loadRemoteAvatar(url) : loadImageTexture(url);
 
-  void loader.then((texture) => {
-    if (!texture || container.destroyed) return;
+  const mountTexture = (texture: PIXI.Texture | null): boolean => {
+    if (!texture || container.destroyed) return false;
     const sprite = new PIXI.Sprite(texture);
     sprite.width = diameter;
     sprite.height = diameter;
@@ -90,6 +93,15 @@ export function createAvatarSprite(avatarUrl: string, radius: number): PIXI.Cont
     container.addChild(ring);
 
     placeholder.visible = false;
+    return true;
+  };
+
+  void primaryLoader.then((texture) => {
+    if (mountTexture(texture)) return;
+    if (url === DEFAULT_AVATAR_PATH) return;
+    void loadImageTexture(DEFAULT_AVATAR_PATH).then((fallback) => {
+      mountTexture(fallback);
+    });
   });
 
   return container;

@@ -4,11 +4,9 @@ import { PropType } from '@/config/PropConfig';
 const ICON_SIZE = 80;
 
 const PROP_ICON_INDEX: Record<PropType, number> = {
-  [PropType.PositionPreview]: 0,
-  [PropType.Undo]: 1,
-  [PropType.RemoveBall]: 2,
-  [PropType.RerollColors]: 3,
-  [PropType.ExtraLimit]: 4,
+  [PropType.ColorBlast]: 0,
+  [PropType.CrossClear]: 1,
+  [PropType.WildNext]: 2,
 };
 
 let _sheetTexture: PIXI.BaseTexture | null = null;

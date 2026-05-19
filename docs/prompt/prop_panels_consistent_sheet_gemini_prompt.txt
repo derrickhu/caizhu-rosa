@@ -1,0 +1,40 @@
+Create a single horizontal sprite sheet containing exactly THREE matching game prop information panels in one image.
+
+Layout:
+- 3 columns x 1 row.
+- Each column contains one complete vertical popup panel.
+- All three panels must use the EXACT SAME panel template, same size, same border shape, same title plaque position, same illustration box position, same blank text box position, same footer, same lighting, same camera angle.
+- The only difference between the three panels is the central illustration inside the upper illustration area.
+- Background must be a solid flat medium gray color #888888 across the whole sheet for clean background removal.
+- No shadow outside the panel silhouette. No cast shadow around panels. Keep crisp cutout edges.
+
+Panel template:
+- Glossy turquoise/cyan rounded mobile game popup card.
+- Thick rounded outer frame with bright highlights and soft drop shadow.
+- Orange rounded title plaque at the top, completely blank.
+- Large pale aqua illustration area in the upper middle.
+- Large clean white rounded rectangle area in the lower middle for runtime text, completely blank.
+- Turquoise footer area at the bottom, blank.
+- Cute polished 2D mobile game UI style, bright candy/ocean puzzle game look.
+
+Panel 1 central illustration, Color Blast:
+- A red glass marble with a bright friendly explosive burst, sparkles, and several matching red marbles being cleared.
+- It should imply clearing every marble of one selected color.
+
+Panel 2 central illustration, Cross Clear:
+- A small square marble board/grid with a glowing cyan horizontal beam and vertical beam crossing through the selected center cell.
+- Marbles along the row and column dissolve into sparkles.
+- Strong plus/cross visual.
+
+Panel 3 central illustration, Wild Next:
+- Three upcoming colored glass marbles transforming into rainbow wild marbles.
+- Use a curved arrow, rainbow glow, and magical particles.
+- It should imply the next marbles become wild pieces.
+
+Important constraints:
+- NO TEXT, no labels, no captions, no writing anywhere in the image.
+- No Chinese characters, no English letters, no numbers, no fake writing.
+- Title plaques must be completely blank because the game renders Chinese titles at runtime.
+- Lower white text areas must be completely blank because the game renders descriptions at runtime.
+- Do not crop off any panel edges.
+- Keep every panel perfectly aligned and identical in template.

@@ -17,6 +17,8 @@ import { PersistService } from '@/core/PersistService';
 import { createBgSprite } from '@/utils/bgHelper';
 import { createAvatarSprite } from '@/utils/avatarSprite';
 import { addImageSprite, loadImageTexture } from '@/utils/imageTexture';
+import { AudioManager } from '@/core/AudioManager';
+import { AUDIO_ASSETS, AUDIO_VOLUME } from '@/config/AudioConfig';
 
 type ModeTab = 'classic' | 'level';
 type ScopeTab = 'world' | 'friends';
@@ -25,6 +27,12 @@ const ROW_HEIGHT = 76;
 const ROW_GAP = 8;
 const LIST_PADDING_X = 30;
 const RANK_ASSET_PREFIX = 'subpkg_assets/images/';
+const RANK_PODIUM_SHEET = `${RANK_ASSET_PREFIX}rank_top_podium_sheet.png`;
+const RANK_PODIUM_FRAMES = {
+  top2: { x: 4, y: 88, w: 451, h: 663 },
+  top1: { x: 467, y: 4, w: 494, h: 832 },
+  top3: { x: 973, y: 104, w: 436, h: 632 },
+} as const;
 const MODE_TAB_W = 230;
 const MODE_TAB_H = 106;
 const SCOPE_TAB_W = 118;
@@ -62,6 +70,7 @@ export class RankScene implements Scene {
 
   onEnter(): void {
     this.container.removeChildren();
+    AudioManager.playBGM(AUDIO_ASSETS.bgmClassic, AUDIO_VOLUME.bgmClassic);
     this._modeTab = 'classic';
     this._scopeTab = 'world';
 
@@ -153,7 +162,10 @@ export class RankScene implements Scene {
       c.eventMode = 'static';
       c.cursor = 'pointer';
       c.hitArea = new PIXI.RoundedRectangle(0, 0, MODE_TAB_W, MODE_TAB_H, 26);
-      c.on('pointerdown', () => this._switchMode(tab));
+      c.on('pointerdown', () => {
+        AudioManager.play('button');
+        this._switchMode(tab);
+      });
 
       const bg = new PIXI.Graphics();
       c.addChild(bg);
@@ -207,7 +219,10 @@ export class RankScene implements Scene {
       c.eventMode = 'static';
       c.cursor = 'pointer';
       c.hitArea = new PIXI.RoundedRectangle(0, 0, SCOPE_TAB_W, SCOPE_TAB_H, 18);
-      c.on('pointerdown', () => { void this._switchScope(tab); });
+      c.on('pointerdown', () => {
+        AudioManager.play('button');
+        void this._switchScope(tab);
+      });
 
       const bg = new PIXI.Graphics();
       c.addChild(bg);
@@ -340,16 +355,9 @@ export class RankScene implements Scene {
       return;
     }
 
-    const podium = this._createTop3Podium([], W);
-    podium.x = 18;
-    podium.y = 0;
-    this._listArea.addChild(podium);
-
     const sharedCanvas = Platform.getSharedCanvas();
     if (!sharedCanvas) {
-      const empty = this._renderEmpty('正在加载好友榜...', W);
-      empty.y = 300;
-      this._listArea.addChild(empty);
+      this._listArea.addChild(this._renderEmpty('正在加载好友榜...', W));
       return;
     }
 
@@ -358,7 +366,7 @@ export class RankScene implements Scene {
       const texture = new PIXI.Texture(baseTexture);
       const sprite = new PIXI.Sprite(texture);
       sprite.x = LIST_PADDING_X;
-      sprite.y = 300;
+      sprite.y = 0;
       const targetW = W - LIST_PADDING_X * 2;
       const screenScale = sharedCanvas.width > 0 ? targetW / sharedCanvas.width : 1;
       sprite.scale.set(screenScale, screenScale);
@@ -388,7 +396,7 @@ export class RankScene implements Scene {
       tab: this._modeTab,
       viewport: {
         width: 750,
-        height: Math.max(900, Math.floor(targetW * 1.4)),
+        height: Math.max(1100, Math.floor(targetW * 1.8)),
         startY: 28,
       },
     });
@@ -470,10 +478,15 @@ export class RankScene implements Scene {
     const centerX = W / 2 - centerW / 2;
     const rightX = W - sideW - 64;
     const placements = [
-      { item: items[1], x: leftX, y: 80, asset: 'rank_top2_panel.png', w: sideW },
-      { item: items[0], x: centerX, y: 0, asset: 'rank_top1_panel.png', w: centerW },
-      { item: items[2], x: rightX, y: 78, asset: 'rank_top3_panel.png', w: sideW },
+      { item: items[1], x: leftX, y: 80, frame: 'top2' as const, w: sideW },
+      { item: items[0], x: centerX, y: 0, frame: 'top1' as const, w: centerW },
+      { item: items[2], x: rightX, y: 78, frame: 'top3' as const, w: sideW },
     ];
+
+    const podiumFrameRatio = (k: keyof typeof RANK_PODIUM_FRAMES) => {
+      const f = RANK_PODIUM_FRAMES[k];
+      return f.h / f.w;
+    };
 
     for (const p of placements) {
       const card = new PIXI.Container();
@@ -482,21 +495,46 @@ export class RankScene implements Scene {
       c.addChild(card);
 
       const panelHolder = new PIXI.Container();
+      const panelH = p.w * podiumFrameRatio(p.frame);
+
+      if (!p.item) {
+        card.addChild(panelHolder);
+        this._addPodiumFrameSprite(panelHolder, p.frame, p.w);
+        continue;
+      }
+
+      const value = this._modeTab === 'classic'
+        ? `${(p.item as LeaderboardClassicEntry).bestScore}`
+        : `★ ${(p.item as LeaderboardLevelEntry).totalStars}`;
+      const score = new PIXI.Text(value, new PIXI.TextStyle({
+        fontSize: p.frame === 'top1' ? 26 : 22,
+        fill: 0xFFF8E7,
+        fontWeight: 'bold',
+        fontFamily: 'PingFang SC, Microsoft YaHei, Arial',
+        stroke: 0x7A3A08,
+        strokeThickness: 5,
+        dropShadow: true,
+        dropShadowColor: 0x1A0F05,
+        dropShadowBlur: 3,
+        dropShadowDistance: 2,
+        dropShadowAlpha: 0.45,
+      }));
+      score.anchor.set(1, 1);
+      score.x = p.w - 8;
+      score.y = panelH - 10;
+
       card.addChild(panelHolder);
-      addImageSprite(panelHolder, RANK_ASSET_PREFIX + p.asset, (sprite) => {
-        sprite.width = p.w;
-        sprite.height = p.w * (sprite.texture.height / sprite.texture.width);
-      });
+      this._addPodiumFrameSprite(panelHolder, p.frame, p.w);
+      card.addChild(score);
 
-      if (!p.item) continue;
-
-      const avatar = createAvatarSprite(p.item.avatarUrl, p.asset === 'rank_top1_panel.png' ? 32 : 27);
-      avatar.x = p.w / 2 - (p.asset === 'rank_top1_panel.png' ? 32 : 27);
-      avatar.y = p.asset === 'rank_top1_panel.png' ? 82 : 30;
+      const avatarR = p.frame === 'top1' ? 40 : 34;
+      const avatar = createAvatarSprite(p.item.avatarUrl, avatarR);
+      avatar.x = p.w / 2 - avatarR;
+      avatar.y = p.frame === 'top1' ? 100 : 50;
       card.addChild(avatar);
 
       const name = new PIXI.Text(this._truncateNickname(p.item.nickname || '玩家'), new PIXI.TextStyle({
-        fontSize: p.asset === 'rank_top1_panel.png' ? 20 : 17,
+        fontSize: p.frame === 'top1' ? 20 : 17,
         fill: 0x1E3A5F,
         fontWeight: 'bold',
         fontFamily: 'Arial',
@@ -505,24 +543,8 @@ export class RankScene implements Scene {
       }));
       name.anchor.set(0.5, 0);
       name.x = p.w / 2;
-      name.y = p.asset === 'rank_top1_panel.png' ? 154 : 96;
+      name.y = avatar.y + avatarR * 2 + 8;
       card.addChild(name);
-
-      const value = this._modeTab === 'classic'
-        ? `${(p.item as LeaderboardClassicEntry).bestScore}`
-        : `★ ${(p.item as LeaderboardLevelEntry).totalStars}`;
-      const score = new PIXI.Text(value, new PIXI.TextStyle({
-        fontSize: p.asset === 'rank_top1_panel.png' ? 22 : 18,
-        fill: 0xB45309,
-        fontWeight: 'bold',
-        fontFamily: 'Arial',
-        stroke: 0xFFF2B8,
-        strokeThickness: 2,
-      }));
-      score.anchor.set(0.5, 0);
-      score.x = p.w / 2;
-      score.y = p.asset === 'rank_top1_panel.png' ? 184 : 124;
-      card.addChild(score);
     }
 
     return c;
@@ -728,9 +750,12 @@ export class RankScene implements Scene {
     this._meBarAvatarHolder.addChild(createAvatarSprite(profile.avatarUrl, 38));
 
     if (this._scopeTab === 'friends') {
+      const localValue = this._localFallbackValue();
       this._meBarRankText.text = '好友榜';
       this._meBarNameText.text = this._truncateNickname(profile.nickname || '我');
-      this._meBarScoreText.text = Platform.supportsOpenData ? '微信提供' : '不可用';
+      this._meBarScoreText.text = Platform.supportsOpenData
+        ? this._modeTab === 'classic' ? `${localValue} 分` : `★ ${localValue}`
+        : '不可用';
       return;
     }
 
@@ -904,6 +929,25 @@ export class RankScene implements Scene {
     return c;
   }
 
+  private _addPodiumFrameSprite(
+    parent: PIXI.Container,
+    frameKey: keyof typeof RANK_PODIUM_FRAMES,
+    width: number,
+  ): void {
+    void loadImageTexture(RANK_PODIUM_SHEET).then((texture) => {
+      if (!texture || parent.destroyed) return;
+      const frame = RANK_PODIUM_FRAMES[frameKey];
+      const cropped = new PIXI.Texture(
+        texture.baseTexture,
+        new PIXI.Rectangle(frame.x, frame.y, frame.w, frame.h),
+      );
+      const sprite = new PIXI.Sprite(cropped);
+      sprite.width = width;
+      sprite.height = width * (frame.h / frame.w);
+      parent.addChild(sprite);
+    });
+  }
+
   private _addNineSlicePanel(
     parent: PIXI.Container,
     path: string,
@@ -999,7 +1043,10 @@ export class RankScene implements Scene {
       sprite.height = 54;
     });
 
-    btn.on('pointerdown', () => SceneManager.switchTo('home'));
+    btn.on('pointerdown', () => {
+      AudioManager.play('button');
+      SceneManager.switchTo('home');
+    });
     return btn;
   }
 }

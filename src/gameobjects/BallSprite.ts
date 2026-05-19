@@ -58,7 +58,6 @@ export class BallSprite extends PIXI.Container {
       this._drawWildBall(this._gfx);
       this._drawImageSprite('subpkg_assets/images/special_wild.png');
     } else if (this._piece.kind === 'bomb') {
-      this._drawBombBall(this._gfx);
       this._drawImageSprite('subpkg_assets/images/special_bomb.png');
     } else if (this._piece.kind === 'block') {
       this._drawBlock(this._gfx);

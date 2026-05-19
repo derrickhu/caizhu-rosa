@@ -1,0 +1,29 @@
+Create ONE empty settings dialog panel background for a colorful Chinese casual puzzle mobile game.
+
+Match the supplied game references:
+- Saturated blue/cyan glossy cartoon UI, like the "skin" screen panel.
+- Thick rounded plastic frame, bright cyan rim, dark royal-blue outer shadow, white specular highlights.
+- Playful bubble-game polish, high contrast, clean mobile game icon style.
+- The panel should feel like it belongs in the same game as the home screen buttons and the blue skin panel.
+
+Panel design:
+- One standalone vertical rounded rectangle panel, centered.
+- Main body: bright blue gradient, from deep azure at the edges to lighter cyan-blue inside.
+- Border: layered cyan/white highlights, dark blue drop shadow, glossy beveled edge.
+- Top title tab: large curved glossy blue/cyan tab attached to the panel, completely blank.
+- Optional decorative circular close-button socket at upper right, blue glossy circle only, completely blank. Do not draw an X.
+- Interior must remain clean and open so runtime code can draw rows, text, switches, and copy button later.
+- You may include very subtle empty inset zones or glossy reflections, but no functional controls.
+
+Output requirements:
+- Portrait UI asset, roughly 560 x 680 proportions.
+- Panel only, no background scene.
+- Prefer transparent background outside the panel. If transparency is unavailable, place the panel on a flat solid pure magenta background (#ff00ff) so it can be removed cleanly.
+- Crisp PNG-like edges, high quality, ready for a WeChat mini game UI.
+
+Strict negative requirements:
+NO TEXT, no labels, no captions, no writing anywhere in the image.
+No Chinese characters, no title text, no settings text.
+No music labels, no sound labels, no user id text, no usrid text.
+No copy button, no toggle switch, no row controls, no gear icon.
+No checkerboard transparency pattern.

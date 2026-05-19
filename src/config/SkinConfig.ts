@@ -28,6 +28,8 @@ export interface BackgroundSkinDef extends BaseSkinDef {
 
 export type SkinDef = OrbSkinDef | BackgroundSkinDef;
 
+export const SKIN_REWARDED_AD_UNIT_ID = 'adunit-d75361ec8061cdff';
+
 export const DEFAULT_ORB_SKIN_ID = 'glass';
 export const DEFAULT_BACKGROUND_SKIN_ID = 'default-bg';
 
@@ -65,7 +67,7 @@ export const ORB_SKINS: readonly OrbSkinDef[] = [
     name: '糖果缤纷',
     description: '看广告解锁',
     sheetRow: 3,
-    unlock: { type: 'ad', adUnitId: 'ad_skin_orb_candy' },
+    unlock: { type: 'ad', adUnitId: SKIN_REWARDED_AD_UNIT_ID },
   },
   {
     id: 'ocean',
@@ -97,7 +99,7 @@ export const ORB_SKINS: readonly OrbSkinDef[] = [
     name: '花漾琉璃',
     description: '看广告解锁',
     sheetRow: 7,
-    unlock: { type: 'ad', adUnitId: 'ad_skin_orb_flower' },
+    unlock: { type: 'ad', adUnitId: SKIN_REWARDED_AD_UNIT_ID },
   },
   {
     id: 'lava',
@@ -162,7 +164,7 @@ export const BACKGROUND_SKINS: readonly BackgroundSkinDef[] = [
     description: '看广告解锁',
     imagePath: 'subpkg_assets/images/bg_skin_emerald_flow_1k.png',
     previewPath: 'subpkg_assets/images/bg_skin_emerald_flow_1k.png',
-    unlock: { type: 'ad', adUnitId: 'ad_skin_bg_emerald_flow' },
+    unlock: { type: 'ad', adUnitId: SKIN_REWARDED_AD_UNIT_ID },
   },
   {
     id: 'sunset-splash',
@@ -180,7 +182,7 @@ export const BACKGROUND_SKINS: readonly BackgroundSkinDef[] = [
     description: '看广告解锁',
     imagePath: 'subpkg_assets/images/bg_skin_prism_orbit_1k.png',
     previewPath: 'subpkg_assets/images/bg_skin_prism_orbit_1k.png',
-    unlock: { type: 'ad', adUnitId: 'ad_skin_bg_prism_orbit' },
+    unlock: { type: 'ad', adUnitId: SKIN_REWARDED_AD_UNIT_ID },
   },
   {
     id: 'aurora-surf',
@@ -198,7 +200,7 @@ export const BACKGROUND_SKINS: readonly BackgroundSkinDef[] = [
     description: '看广告解锁',
     imagePath: 'subpkg_assets/images/bg_skin_cloud_candy_2d_1k_test.png',
     previewPath: 'subpkg_assets/images/bg_skin_cloud_candy_2d_1k_test.png',
-    unlock: { type: 'ad', adUnitId: 'ad_skin_bg_cloud_candy_dream' },
+    unlock: { type: 'ad', adUnitId: SKIN_REWARDED_AD_UNIT_ID },
   },
   {
     id: 'warm-toy-glow',
@@ -207,7 +209,7 @@ export const BACKGROUND_SKINS: readonly BackgroundSkinDef[] = [
     description: '看广告解锁',
     imagePath: 'subpkg_assets/images/bg_skin_warm_toy_1k_test.png',
     previewPath: 'subpkg_assets/images/bg_skin_warm_toy_1k_test.png',
-    unlock: { type: 'ad', adUnitId: 'ad_skin_bg_warm_toy_glow' },
+    unlock: { type: 'ad', adUnitId: SKIN_REWARDED_AD_UNIT_ID },
   },
 ];
 

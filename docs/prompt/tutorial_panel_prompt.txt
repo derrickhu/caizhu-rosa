@@ -1,0 +1,27 @@
+Tutorial Panel Asset Prompt
+===========================
+
+Target file: minigame/subpkg_assets/images/tutorial_panel.png
+Display size in game: 600 x 296 (aspect ~2.03:1)
+Source render size: 1200 x 540 (post crop & resize)
+
+Prompt
+------
+A single empty tutorial speech bubble panel for a cartoon mobile puzzle game UI.
+Landscape rectangular shape with strongly rounded corners, aspect ratio about 5:2 (very wide).
+Thick warm orange-gold cartoon outline border with bold dark blue cartoon outline edge,
+glossy plastic candy game aesthetic. Inside: clean light cream / off-white background with
+very subtle vertical gradient and a soft inner glow highlight near the top edge,
+a thin secondary inner border for depth. Vibrant kawaii candy game art style matching a
+Match-3 / Lines puzzle game. Completely empty inside — NO text, NO labels, NO symbols,
+NO icons, NO writing of any kind anywhere in the image. Centered single panel on a
+flat solid green chroma background (#00FF00) for easy chroma keying, full bleed green
+outside the panel, no checkerboard, no transparency. Soft ambient drop shadow under
+panel. High resolution, crisp edges.
+
+Pipeline notes
+--------------
+1. Generated with Cursor's built-in image generation (chroma green background).
+2. Removed background using `rembg birefnet-general-lite` (best for white-on-green art).
+3. Trimmed transparent margins, then resized to 1200x540.
+4. Delivered to `minigame/subpkg_assets/images/tutorial_panel.png`.

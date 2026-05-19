@@ -1,0 +1,34 @@
+Create ONE compact game prop information panel artwork for a colorful marble puzzle mobile game.
+
+Goal:
+- This is the approved template candidate for a set of prop info panels.
+- Make the panel noticeably SHORTER and more compact than a tall phone card.
+- The lower white text area must be moderate, not huge: about 26% to 30% of the panel height.
+- The bottom turquoise button/footer band must be visible but compact.
+
+Canvas and background:
+- Single centered vertical panel on a solid flat medium gray #888888 background for clean cutout.
+- No cast shadow outside the panel, no glow outside the panel silhouette, no soft external shadow.
+- Crisp clean edge suitable for background removal.
+
+Panel template:
+- Glossy turquoise/cyan rounded mobile game popup card.
+- Cute polished 2D casual puzzle game UI, bright candy/ocean style.
+- Orange rounded title plaque at the top, completely blank.
+- Upper illustration area: pale aqua rounded rectangle, large enough for the prop illustration.
+- Middle/lower description area: clean white rounded rectangle, blank, compact, NOT oversized.
+- Bottom turquoise footer/button band: blank, compact.
+- Front-facing orthographic UI, no perspective.
+
+Central illustration:
+- Color Blast prop.
+- Red glass marble with a compact cheerful explosion burst and several matching red marbles being cleared.
+- Clear visual meaning: eliminate all marbles of one selected color.
+
+Important constraints:
+- NO TEXT, no labels, no captions, no writing anywhere.
+- No Chinese characters, no English letters, no numbers, no fake writing.
+- Title plaque must be completely blank.
+- White description area must be completely blank.
+- Footer/button band must be completely blank.
+- Keep all important panel edges fully visible, do not crop off the panel.

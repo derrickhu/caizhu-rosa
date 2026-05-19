@@ -1,0 +1,17 @@
+Create one vertical game prop information panel artwork for a colorful casual mobile puzzle game.
+
+Canvas: portrait panel, same style as a glossy turquoise mobile game popup card. The panel has:
+- rounded cyan/turquoise outer frame with glossy highlights and soft drop shadow
+- an orange rounded title plaque at the top, but completely blank with no text
+- a large pale aqua illustration area in the upper-middle
+- a large clean white rounded rectangle area below for runtime text, completely blank
+- a turquoise footer area at the bottom, blank
+
+Central illustration: "Cross Clear" prop. Show a small 5x5 puzzle grid with a bright horizontal beam and vertical beam crossing at one selected cell, clearing marbles along the row and column. Use glowing cyan-blue plus/cross energy and a few glass marbles dissolving into sparkles.
+
+Important constraints:
+- NO TEXT, no labels, no captions, no writing anywhere in the image.
+- Do not include fake Chinese characters, letters, numbers, or button text.
+- Leave the title plaque blank so the game can render the Chinese title at runtime.
+- Leave the lower description/status area blank and clean for runtime text.
+- Polished 2D mobile game UI, bright candy colors, friendly and readable.

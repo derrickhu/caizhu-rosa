@@ -42,8 +42,11 @@ class LeaderboardManagerClass {
 
   /** 上报经典模式分数。失败时静默重试（仅记录日志），不阻塞 UI。 */
   async submitClassicScore(score: number): Promise<void> {
-    if (!BackendService.available) return;
     if (!Number.isFinite(score) || score <= 0) return;
+    await this._writeWxFriendStorage([
+      { key: WX_FRIEND_CLASSIC_KEY, value: String(Math.floor(score)) },
+    ]);
+    if (!BackendService.available) return;
     if (score <= this._lastSubmittedClassic) return;
     try {
       await BackendService.ensureToken();
@@ -51,7 +54,7 @@ class LeaderboardManagerClass {
       const result = await BackendService.submitClassicScore(score, profile);
       this._lastSubmittedClassic = Math.max(this._lastSubmittedClassic, result.bestScore);
       this._classicCache = null;
-      this._writeWxFriendStorage([
+      void this._writeWxFriendStorage([
         { key: WX_FRIEND_CLASSIC_KEY, value: String(result.bestScore) },
       ]);
     } catch (error) {
@@ -65,6 +68,10 @@ class LeaderboardManagerClass {
     totalScore: number;
     maxUnlocked: number;
   }): Promise<void> {
+    await this._writeWxFriendStorage([
+      { key: WX_FRIEND_LEVEL_STARS_KEY, value: String(Math.max(0, Math.floor(payload.totalStars || 0))) },
+      { key: WX_FRIEND_LEVEL_SCORE_KEY, value: String(Math.max(0, Math.floor(payload.totalScore || 0))) },
+    ]);
     if (!BackendService.available) return;
     if (
       payload.totalStars <= this._lastSubmittedLevelStars
@@ -79,7 +86,7 @@ class LeaderboardManagerClass {
       this._lastSubmittedLevelStars = Math.max(this._lastSubmittedLevelStars, result.totalStars);
       this._lastSubmittedLevelScore = Math.max(this._lastSubmittedLevelScore, result.totalScore);
       this._levelCache = null;
-      this._writeWxFriendStorage([
+      void this._writeWxFriendStorage([
         { key: WX_FRIEND_LEVEL_STARS_KEY, value: String(result.totalStars) },
         { key: WX_FRIEND_LEVEL_SCORE_KEY, value: String(result.totalScore) },
       ]);
@@ -169,13 +176,13 @@ class LeaderboardManagerClass {
     }
   }
 
-  private _writeWxFriendStorage(KVDataList: Array<{ key: string; value: string }>): void {
+  private async _writeWxFriendStorage(KVDataList: Array<{ key: string; value: string }>): Promise<void> {
     if (!Platform.isWechat) return;
     const safe = KVDataList
       .filter((item) => item && item.key && item.value !== undefined && item.value !== null)
       .map((item) => ({ key: String(item.key), value: String(item.value) }));
     if (safe.length === 0) return;
-    void Platform.setUserCloudStorage(safe);
+    await Platform.setUserCloudStorage(safe);
   }
 
   private _logError(scope: string, error: unknown): void {

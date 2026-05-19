@@ -93,6 +93,69 @@ class PlatformServiceClass {
     try { return this._api?.createInterstitialAd?.({ adUnitId }); } catch { return null; }
   }
 
+  createCustomAd(adUnitId: string, style: any, adIntervals = 30): any {
+    try {
+      return this._api?.createCustomAd?.({
+        adUnitId,
+        adIntervals,
+        style,
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  get supportsGameClubButton(): boolean {
+    return this.isWechat && typeof this._api?.createGameClubButton === 'function';
+  }
+
+  createGameClubButton(opts: {
+    type?: 'image' | 'text';
+    text?: string;
+    image?: string;
+    icon?: 'green' | 'white' | 'dark' | 'light';
+    style: {
+      left: number;
+      top: number;
+      width: number;
+      height: number;
+      backgroundColor?: string;
+      borderColor?: string;
+      borderWidth?: number;
+      borderRadius?: number;
+      color?: string;
+      textAlign?: 'left' | 'center' | 'right';
+      fontSize?: number;
+      lineHeight?: number;
+    };
+  }): any {
+    try {
+      if (!this.supportsGameClubButton) return null;
+      return this._api.createGameClubButton({
+        type: opts.type || 'text',
+        text: opts.text || '',
+        image: opts.image,
+        icon: opts.icon,
+        style: {
+          left: opts.style.left,
+          top: opts.style.top,
+          width: opts.style.width,
+          height: opts.style.height,
+          backgroundColor: opts.style.backgroundColor || '#00000000',
+          borderColor: opts.style.borderColor || '#00000000',
+          borderWidth: opts.style.borderWidth || 0,
+          borderRadius: opts.style.borderRadius || 0,
+          color: opts.style.color || '#00000000',
+          textAlign: opts.style.textAlign || 'center',
+          fontSize: opts.style.fontSize || 1,
+          lineHeight: opts.style.lineHeight || opts.style.height,
+        },
+      });
+    } catch {
+      return null;
+    }
+  }
+
   shareAppMessage(opts: { title: string; imageUrl?: string; query?: string }): void {
     try { this._api?.shareAppMessage?.(opts); } catch {}
   }
@@ -163,6 +226,26 @@ class PlatformServiceClass {
 
   showToast(title: string, icon: 'success' | 'none' | 'error' = 'none'): void {
     try { this._api?.showToast?.({ title, icon, duration: 2000 }); } catch {}
+  }
+
+  setClipboardData(data: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      try {
+        if (this._api?.setClipboardData) {
+          this._api.setClipboardData({
+            data,
+            success: () => resolve(true),
+            fail: () => resolve(false),
+          });
+          return;
+        }
+        if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+          navigator.clipboard.writeText(data).then(() => resolve(true)).catch(() => resolve(false));
+          return;
+        }
+      } catch {}
+      resolve(false);
+    });
   }
 
   // ─── User profile / open-data domain (WeChat Mini Game) ───────────────
@@ -312,15 +395,51 @@ class PlatformServiceClass {
   authorizeWxFriendInteraction(): Promise<boolean> {
     return new Promise((resolve) => {
       try {
-        if (!this.isWechat || !this._api?.authorize) {
+        if (!this.isWechat) {
           resolve(true);
           return;
         }
-        this._api.authorize({
-          scope: 'scope.WxFriendInteraction',
-          success: () => resolve(true),
-          fail: () => resolve(false),
-        });
+        const scope = 'scope.WxFriendInteraction';
+        const openSetting = () => {
+          if (!this._api?.openSetting) {
+            resolve(false);
+            return;
+          }
+          this._api.openSetting({
+            success: (res: any) => resolve(res?.authSetting?.[scope] === true),
+            fail: () => resolve(false),
+          });
+        };
+        const requestAuthorize = () => {
+          if (!this._api?.authorize) {
+            openSetting();
+            return;
+          }
+          this._api.authorize({
+            scope,
+            success: () => resolve(true),
+            fail: () => openSetting(),
+          });
+        };
+
+        if (this._api?.getSetting) {
+          this._api.getSetting({
+            success: (res: any) => {
+              const state = res?.authSetting?.[scope];
+              if (state === true) {
+                resolve(true);
+              } else if (state === false) {
+                openSetting();
+              } else {
+                requestAuthorize();
+              }
+            },
+            fail: () => requestAuthorize(),
+          });
+          return;
+        }
+
+        requestAuthorize();
       } catch {
         resolve(false);
       }

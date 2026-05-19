@@ -1,0 +1,32 @@
+Create a two-cell sprite sheet for overlay icons in a colorful Chinese casual marble puzzle mobile game.
+
+Style:
+- Cute polished 2D cartoon game asset style.
+- Glossy, high saturation, thick clean outline, white specular highlights.
+- Must match the existing glass marble game UI and current special item overlay style.
+- Each icon is an overlay frame that will sit on top of a colored marble, so the center must be fully empty.
+
+Canvas and layout:
+- 2 columns x 1 row sprite sheet.
+- Each cell is a square icon, centered, same size, same lighting direction.
+- Flat pure magenta background (#ff00ff) everywhere outside the icon AND inside the hollow center. This magenta will be removed later.
+
+Cell 1, left: frozen overlay
+- A crystalline icy ring frame.
+- Blue-white transparent ice facets around the edge.
+- Thick enough to read at 96x96 pixels.
+- Inner hole must be open and clean: no white fill, no fog, no checkerboard, no glass disk, no center highlight.
+- The ring should look like an ice shell that surrounds a marble but does not cover the marble center.
+
+Cell 2, right: chain overlay
+- A golden chain ring frame with a small gold lock at bottom center.
+- Bright gold links, orange shadows, white highlights, polished cartoon style.
+- Inner hole must be open and clean: no gray fill, no white fill, no disk, no background inside.
+- The chain should surround a marble while leaving the marble center visible.
+
+Strict requirements:
+- NO TEXT, no labels, no captions, no writing anywhere in the image.
+- Do not draw marbles inside the rings.
+- Do not draw any opaque center fill.
+- Do not use checkerboard transparency pattern.
+- Use only flat pure magenta for removable empty areas.

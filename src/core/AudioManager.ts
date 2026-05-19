@@ -3,14 +3,18 @@ declare const tt: any;
 
 const _api = typeof wx !== 'undefined' ? wx : typeof tt !== 'undefined' ? tt : null;
 const THROTTLE_MS = 50;
+const MUSIC_MUTED_KEY = 'caizhu_audio_music_muted';
+const SFX_MUTED_KEY = 'caizhu_audio_sfx_muted';
 
 interface SoundEntry { src: string; volume: number; }
 
 class AudioManagerClass {
   private _sounds: Map<string, SoundEntry> = new Map();
   private _bgm: any = null;
-  private _muted = false;
+  private _musicMuted = this._readMuted(MUSIC_MUTED_KEY);
+  private _sfxMuted = this._readMuted(SFX_MUTED_KEY);
   private _bgmPending: { src: string; volume: number } | null = null;
+  private _bgmSrc = '';
   private _lastPlayTime: Map<string, number> = new Map();
 
   register(name: string, src: string, volume = 1): void {
@@ -18,7 +22,7 @@ class AudioManagerClass {
   }
 
   play(name: string): void {
-    if (this._muted || !_api) return;
+    if (this._sfxMuted || !_api) return;
     const entry = this._sounds.get(name);
     if (!entry) return;
 
@@ -42,23 +46,40 @@ class AudioManagerClass {
 
   playBGM(src: string, volume = 0.5): void {
     if (!_api) return;
+    if (this._bgm && this._bgmSrc === src) {
+      try { this._bgm.volume = volume; } catch {}
+      if (!this._musicMuted) {
+        try { this._bgm.play(); } catch {}
+      }
+      return;
+    }
+    if (!this._bgm && this._bgmPending?.src === src) {
+      this._bgmPending.volume = volume;
+      return;
+    }
     this.stopBGM();
     this._bgmPending = { src, volume };
     try {
       this._bgm = _api.createInnerAudioContext();
       if (!this._bgm) return;
+      this._bgmSrc = src;
       this._bgm.loop = true;
       this._bgm.volume = volume;
-      this._bgm.onError(() => { try { this._bgm?.destroy?.(); } catch {} this._bgm = null; });
+      this._bgm.onError(() => {
+        try { this._bgm?.destroy?.(); } catch {}
+        this._bgm = null;
+        this._bgmSrc = '';
+      });
       this._bgm.onPlay(() => { this._bgmPending = null; });
       this._bgm.src = src;
-      if (!this._muted) {
+      if (!this._musicMuted) {
         try { this._bgm.play(); } catch {}
       }
     } catch { this._bgm = null; }
   }
 
   resumeOnInteraction(): void {
+    if (this._musicMuted) return;
     if (this._bgmPending && !this._bgm) {
       this.playBGM(this._bgmPending.src, this._bgmPending.volume);
     } else if (this._bgm && this._bgmPending) {
@@ -72,12 +93,45 @@ class AudioManagerClass {
       try { this._bgm.stop(); this._bgm.destroy(); } catch {}
       this._bgm = null;
     }
+    this._bgmSrc = '';
   }
 
-  get muted(): boolean { return this._muted; }
+  get muted(): boolean { return this._musicMuted && this._sfxMuted; }
   set muted(val: boolean) {
-    this._muted = val;
+    this.musicMuted = val;
+    this.sfxMuted = val;
+  }
+
+  get musicMuted(): boolean { return this._musicMuted; }
+  set musicMuted(val: boolean) {
+    this._musicMuted = val;
+    this._writeMuted(MUSIC_MUTED_KEY, val);
     if (this._bgm) { try { val ? this._bgm.pause() : this._bgm.play(); } catch {} }
+  }
+
+  get sfxMuted(): boolean { return this._sfxMuted; }
+  set sfxMuted(val: boolean) {
+    this._sfxMuted = val;
+    this._writeMuted(SFX_MUTED_KEY, val);
+  }
+
+  private _readMuted(key: string): boolean {
+    try {
+      const api = _api || (typeof localStorage !== 'undefined' ? localStorage : null);
+      const value = api?.getStorageSync ? api.getStorageSync(key) : api?.getItem?.(key);
+      return value === '1' || value === 'true';
+    } catch {
+      return false;
+    }
+  }
+
+  private _writeMuted(key: string, muted: boolean): void {
+    try {
+      const api = _api || (typeof localStorage !== 'undefined' ? localStorage : null);
+      const value = muted ? '1' : '0';
+      if (api?.setStorageSync) api.setStorageSync(key, value);
+      else api?.setItem?.(key, value);
+    } catch {}
   }
 }
 

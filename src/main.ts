@@ -23,6 +23,7 @@ import { loadOrbTextures } from '@/utils/orbLoader';
 import { preloadImageAssets } from '@/utils/assetPreloader';
 import { loadImageTexture } from '@/utils/imageTexture';
 import { GAME_DISPLAY_NAME } from '@/config/GameConfig';
+import { AUDIO_ASSETS, AUDIO_VOLUME } from '@/config/AudioConfig';
 
 declare const wx: any;
 declare const tt: any;
@@ -69,16 +70,20 @@ async function main(): Promise<void> {
     SceneManager.switchTo('loading');
 
     await loadWechatSubpackage('assets');
+    await loadWechatSubpackage('audio');
 
     Platform.onShareAppMessage(() => ({
       title: GAME_DISPLAY_NAME,
     }));
 
-    // Register audio (placeholder paths - will add actual audio files later)
-    AudioManager.register('move', 'audio/move.mp3', 0.6);
-    AudioManager.register('eliminate', 'audio/eliminate.mp3', 0.8);
-    AudioManager.register('select', 'audio/select.mp3', 0.5);
-    AudioManager.register('gameover', 'audio/gameover.mp3', 0.7);
+    AudioManager.register('eliminate', AUDIO_ASSETS.eliminate, AUDIO_VOLUME.eliminate);
+    AudioManager.register('eliminateBig', AUDIO_ASSETS.eliminateBig, AUDIO_VOLUME.eliminateBig);
+    AudioManager.register('moveLand', AUDIO_ASSETS.moveLand, AUDIO_VOLUME.moveLand);
+    AudioManager.register('nextBalls', AUDIO_ASSETS.nextBalls, AUDIO_VOLUME.nextBalls);
+    AudioManager.register('button', AUDIO_ASSETS.button, AUDIO_VOLUME.button);
+    AudioManager.register('propSuccess', AUDIO_ASSETS.propSuccess, AUDIO_VOLUME.propSuccess);
+    AudioManager.register('victory', AUDIO_ASSETS.victory, AUDIO_VOLUME.victory);
+    AudioManager.register('select', AUDIO_ASSETS.button, AUDIO_VOLUME.button);
 
     CloudSyncManager.prewarm();
     const cloudStartup = await CloudSyncManager.awaitStartupSync();

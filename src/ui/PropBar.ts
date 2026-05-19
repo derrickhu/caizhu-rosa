@@ -4,6 +4,7 @@ import { PropManager } from '@/managers/PropManager';
 import { EventBus } from '@/core/EventBus';
 import { TweenManager, Ease } from '@/core/TweenManager';
 import { getPropIconTexture } from '@/utils/iconLoader';
+import { AudioManager } from '@/core/AudioManager';
 
 /** Slot width per prop (icon + label) */
 const BTN_SIZE = 114;
@@ -137,6 +138,7 @@ class PropButton extends PIXI.Container {
     this.cursor = 'pointer';
     this.hitArea = new PIXI.RoundedRectangle(0, 0, BTN_SIZE, BTN_SIZE, 18);
     this.on('pointerdown', () => {
+      AudioManager.play('button');
       EventBus.emit('prop:request', this._type);
     });
 

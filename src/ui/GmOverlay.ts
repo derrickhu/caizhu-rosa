@@ -3,6 +3,7 @@ import { Game } from '@/core/Game';
 import { Platform } from '@/core/PlatformService';
 import { TweenManager, Ease } from '@/core/TweenManager';
 import { GmManager } from '@/managers/GmManager';
+import { AudioManager } from '@/core/AudioManager';
 
 const PANEL_W = 560;
 const PANEL_H = 640;
@@ -121,7 +122,10 @@ export class GmOverlay extends PIXI.Container {
     close.y = -PANEL_H / 2 + 36;
     close.eventMode = 'static';
     close.cursor = 'pointer';
-    close.on('pointerdown', () => this.hide());
+    close.on('pointerdown', () => {
+      AudioManager.play('button');
+      this.hide();
+    });
     this._panel.addChild(close);
 
     const closeBg = new PIXI.Graphics();
@@ -234,6 +238,7 @@ export class GmOverlay extends PIXI.Container {
     btn.addChild(label);
 
     btn.on('pointerdown', () => {
+      AudioManager.play('button');
       btn.scale.set(0.95);
       try {
         const msg = spec.onPress();

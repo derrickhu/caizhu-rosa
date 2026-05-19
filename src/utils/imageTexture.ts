@@ -1,11 +1,12 @@
 import * as PIXI from 'pixi.js';
 
-const _textureCache = new Map<string, PIXI.Texture | null>();
+const _textureCache = new Map<string, PIXI.Texture>();
 const _pendingLoads = new Map<string, Promise<PIXI.Texture | null>>();
 
 export function loadImageTexture(path: string): Promise<PIXI.Texture | null> {
-  if (_textureCache.has(path)) {
-    return Promise.resolve(_textureCache.get(path) ?? null);
+  const cached = _textureCache.get(path);
+  if (cached) {
+    return Promise.resolve(cached);
   }
 
   const pending = _pendingLoads.get(path);
@@ -13,7 +14,9 @@ export function loadImageTexture(path: string): Promise<PIXI.Texture | null> {
 
   const loadPromise = new Promise<PIXI.Texture | null>((resolve) => {
     const finish = (texture: PIXI.Texture | null) => {
-      _textureCache.set(path, texture);
+      if (texture) {
+        _textureCache.set(path, texture);
+      }
       _pendingLoads.delete(path);
       resolve(texture);
     };

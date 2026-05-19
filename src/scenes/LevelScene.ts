@@ -11,15 +11,22 @@ import { LevelHud } from '@/ui/LevelHud';
 import { LevelCompleteOverlay } from '@/ui/LevelCompleteOverlay';
 import { LevelFailOverlay } from '@/ui/LevelFailOverlay';
 import { SpecialPieceIntroOverlay } from '@/ui/SpecialPieceIntroOverlay';
+import { LevelTutorialOverlay } from '@/ui/LevelTutorialOverlay';
 import { PropBar } from '@/ui/PropBar';
 import { PropInfoOverlay } from '@/ui/PropInfoOverlay';
 import { getLevelDef, getLevelStars, getMaxStarScore, getPassScore, TOTAL_LEVELS, type LevelDef } from '@/config/LevelConfig';
+import { LEVEL1_TUTORIAL_LAYOUT } from '@/config/Level1TutorialLayout';
 import { getSpecialPieceIntros, hasSeenSpecialPieceIntro, markSpecialPieceIntroSeen, type SpecialPieceIntroDef } from '@/config/SpecialPieceIntroConfig';
-import { PropType, EXTRA_STEPS, EXTRA_TIME } from '@/config/PropConfig';
+import { PropType } from '@/config/PropConfig';
+import { LEVEL1_TUTORIAL_KEY } from '@/config/CloudConfig';
 import { createBgSprite } from '@/utils/bgHelper';
 import { BallSprite } from '@/gameobjects/BallSprite';
 import { addImageSprite } from '@/utils/imageTexture';
 import { SkinManager } from '@/managers/SkinManager';
+import { PersistService } from '@/core/PersistService';
+import { AudioManager } from '@/core/AudioManager';
+import { AUDIO_ASSETS, AUDIO_VOLUME } from '@/config/AudioConfig';
+import type { Point } from '@/systems/PathFinder';
 
 export class LevelScene implements Scene {
   readonly name = 'level';
@@ -33,19 +40,21 @@ export class LevelScene implements Scene {
   private _failOverlay!: LevelFailOverlay;
   private _introOverlay!: SpecialPieceIntroOverlay;
   private _propInfoOverlay!: PropInfoOverlay;
+  private _tutorialOverlay!: LevelTutorialOverlay;
   private _levelDef!: LevelDef;
 
   private _timerActive = false;
   private _timeRemaining = 0;
   private _tickerCallback: (() => void) | null = null;
   private _finished = false;
-  private _extraLimitUsed = false;
+  private _tutorialActive = false;
 
   onEnter(): void {
     this.container.removeChildren();
+    AudioManager.playBGM(AUDIO_ASSETS.bgmLevel, AUDIO_VOLUME.bgmLevel);
     BallSprite.useTextures = true;
     this._finished = false;
-    this._extraLimitUsed = false;
+    this._tutorialActive = false;
 
     const levelId = LevelManager.currentLevelId;
     const def = getLevelDef(levelId);
@@ -54,6 +63,7 @@ export class LevelScene implements Scene {
       return;
     }
     this._levelDef = def;
+    this._tutorialActive = this._shouldRunLevel1Tutorial(def.id);
 
     PropManager.resetSession();
 
@@ -109,8 +119,11 @@ export class LevelScene implements Scene {
     this._propInfoOverlay = new PropInfoOverlay();
     this.container.addChild(this._propInfoOverlay);
 
+    this._tutorialOverlay = new LevelTutorialOverlay();
+    this.container.addChild(this._tutorialOverlay);
+
     // Init board with level config
-    BoardManager.initLevel({
+    const levelConfig = {
       colorCount: def.colorCount,
       initialBalls: def.initialBalls,
       ballsPerTurn: def.ballsPerTurn,
@@ -122,7 +135,12 @@ export class LevelScene implements Scene {
       blockChance: def.blockChance,
       guaranteedInitialPieces: def.guaranteedInitialPieces,
       guaranteedNextPieces: def.guaranteedNextPieces,
-    });
+    };
+    if (this._tutorialActive) {
+      BoardManager.initLevelWithLayout(levelConfig, LEVEL1_TUTORIAL_LAYOUT);
+    } else {
+      BoardManager.initLevel(levelConfig);
+    }
     this._boardView.syncWithBoard();
     this._hud.updateScore(0);
 
@@ -138,6 +156,9 @@ export class LevelScene implements Scene {
   onExit(): void {
     this._unbindEvents();
     this._timerActive = false;
+    this._tutorialActive = false;
+    this._boardView?.setTutorialGate(null);
+    this._tutorialOverlay?.hide();
     if (this._tickerCallback) {
       Game.ticker.remove(this._tickerCallback);
       this._tickerCallback = null;
@@ -178,8 +199,18 @@ export class LevelScene implements Scene {
   };
 
   private _onMoveComplete = () => {
-    if (this._finished || this._levelDef.type !== 'steps') return;
-    this._hud.updateSteps(BoardManager.stepsUsed);
+    if (this._finished) return;
+
+    if (this._levelDef.type === 'steps') {
+      this._hud.updateSteps(BoardManager.stepsUsed);
+    }
+
+    if (this._tutorialActive) {
+      if (this._tutorialOverlay.currentStep === 'move') {
+        this._tutorialOverlay.setStep('complete');
+      }
+      return;
+    }
 
     if (this._levelDef.stepLimit && BoardManager.stepsUsed >= this._levelDef.stepLimit) {
       this._settleByFinalScore();
@@ -203,7 +234,7 @@ export class LevelScene implements Scene {
     const intros = getSpecialPieceIntros(this._levelDef.id)
       .filter(intro => !hasSeenSpecialPieceIntro(intro.id));
     if (intros.length === 0) {
-      this._startTimerIfNeeded();
+      this._startTutorialOrTimer();
       return;
     }
 
@@ -217,9 +248,59 @@ export class LevelScene implements Scene {
       if (rest.length > 0) {
         this._showIntroQueue(rest);
       } else {
-        this._startTimerIfNeeded();
+        this._startTutorialOrTimer();
       }
     });
+  }
+
+  private _startTutorialOrTimer(): void {
+    if (this._tutorialActive) {
+      this._startLevel1Tutorial();
+      return;
+    }
+    this._startTimerIfNeeded();
+  }
+
+  private _startLevel1Tutorial(): void {
+    const previewAnchor = new PIXI.Point(
+      this._previewPanel.x,
+      this._previewPanel.y + 14,
+    );
+    const sourceLocal = this._boardView.getCellCenter(
+      LEVEL1_TUTORIAL_LAYOUT.source.row,
+      LEVEL1_TUTORIAL_LAYOUT.source.col,
+    );
+    const targetLocal = this._boardView.getCellCenter(
+      LEVEL1_TUTORIAL_LAYOUT.target.row,
+      LEVEL1_TUTORIAL_LAYOUT.target.col,
+    );
+    const sourceAnchor = new PIXI.Point(
+      this._boardView.x + sourceLocal.x,
+      this._boardView.y + sourceLocal.y,
+    );
+    const targetAnchor = new PIXI.Point(
+      this._boardView.x + targetLocal.x,
+      this._boardView.y + targetLocal.y,
+    );
+
+    this._boardView.setTutorialGate((cell) => (
+      this._tutorialOverlay.allowsCell(cell, LEVEL1_TUTORIAL_LAYOUT.source, LEVEL1_TUTORIAL_LAYOUT.target)
+    ));
+    this._tutorialOverlay.show({
+      preview: previewAnchor,
+      source: sourceAnchor,
+      target: targetAnchor,
+      cellSize: this._boardView.cellSize,
+      ballRadius: this._boardView.ballRadius,
+      previewBanner: { width: 560, height: 101 },
+    }, () => this._completeLevel1Tutorial());
+  }
+
+  private _completeLevel1Tutorial(): void {
+    PersistService.writeJSON(LEVEL1_TUTORIAL_KEY, { completed: true, version: 1, completedAt: Date.now() });
+    this._tutorialActive = false;
+    this._boardView.setTutorialGate(null);
+    this._startTimerIfNeeded();
   }
 
   private _startTimerIfNeeded(): void {
@@ -251,6 +332,7 @@ export class LevelScene implements Scene {
     const score = BoardManager.score;
     const stars = getLevelStars(score, this._levelDef.starScores);
     LevelManager.recordCompletion(this._levelDef.id, score, this._levelDef.starScores);
+    AudioManager.play('victory');
 
     const isLast = this._levelDef.id >= TOTAL_LEVELS;
     this._completeOverlay.show(score, stars, isLast);
@@ -267,14 +349,14 @@ export class LevelScene implements Scene {
   // ─── Prop Handlers ───────────────────────────────────────
 
   private _onPropRequest = (type: PropType) => {
-    if (this._finished) return;
+    if (this._finished || this._tutorialActive) return;
 
     const canDirectUse = PropManager.canUse(type);
     this._propInfoOverlay.show(type, canDirectUse, () => this._confirmPropUse(type, canDirectUse));
   };
 
   private _confirmPropUse(type: PropType, canDirectUse: boolean): void {
-    if (this._finished) return;
+    if (this._finished || this._tutorialActive) return;
 
     // 确认时再次校验库存，避免面板打开期间数据变化。
     if (canDirectUse && PropManager.canUse(type)) {
@@ -293,69 +375,47 @@ export class LevelScene implements Scene {
 
   private _executeProp(type: PropType): void {
     switch (type) {
-      case PropType.PositionPreview:
-        this._usePropPositionPreview();
+      case PropType.ColorBlast:
+        void this._usePropColorBlast();
         break;
-      case PropType.Undo:
-        this._usePropUndo();
+      case PropType.CrossClear:
+        this._usePropCrossClear();
         break;
-      case PropType.RemoveBall:
-        this._usePropRemoveBall();
-        break;
-      case PropType.RerollColors:
-        this._usePropReroll();
-        break;
-      case PropType.ExtraLimit:
-        this._usePropExtraLimit();
+      case PropType.WildNext:
+        this._usePropWildNext();
         break;
     }
   }
 
-  private _usePropPositionPreview(): void {
-    const positions = BoardManager.getNextPositions();
-    const colors = BoardManager.nextColors;
-    this._boardView.showPositionPreview(positions, colors);
+  private async _usePropColorBlast(): Promise<void> {
+    const result = BoardManager.clearRandomColor();
+    await this._boardView.animatePropClear(result);
+    this._afterPropScoreChanged(result.score);
   }
 
-  private _usePropUndo(): void {
-    const success = BoardManager.undo();
-    if (success) {
-      this._boardView.syncWithBoard();
-      this._hud.updateScore(BoardManager.score);
-      if (this._levelDef.type === 'steps') {
-        this._hud.updateSteps(BoardManager.stepsUsed);
-      }
-    }
+  private _usePropCrossClear(): void {
+    this._boardView.setInteractionMode('crossClear');
   }
 
-  private _usePropRemoveBall(): void {
-    this._boardView.setInteractionMode('removeBall');
-  }
-
-  private _onRemoveBallDone = () => {
-    this._boardView.setInteractionMode('normal');
+  private _onCrossClearDone = (result: { score: number }) => {
+    this._afterPropScoreChanged(result.score);
   };
 
-  private _usePropReroll(): void {
-    BoardManager.rerollNextColors();
+  private _usePropWildNext(): void {
+    BoardManager.makeNextPiecesWild();
+    AudioManager.play('propSuccess');
   }
 
-  private _usePropExtraLimit(): void {
-    if (this._extraLimitUsed) return;
-    this._extraLimitUsed = true;
-
-    if (this._levelDef.type === 'steps') {
-      BoardManager.addExtraSteps(EXTRA_STEPS);
-      this._hud.updateSteps(BoardManager.stepsUsed);
-    } else if (this._levelDef.type === 'timed') {
-      this._timeRemaining += EXTRA_TIME;
-      this._hud.updateTime(this._timeRemaining);
-    }
+  private _afterPropScoreChanged(scoreDelta: number): void {
+    if (scoreDelta <= 0) return;
+    this._onScoreChanged(BoardManager.score, scoreDelta);
+    AudioManager.play('propSuccess');
   }
 
   // ─── Navigation Handlers ─────────────────────────────────
 
   private _onRetry = () => {
+    if (this._tutorialActive) return;
     SceneManager.switchTo('level');
   };
 
@@ -370,33 +430,48 @@ export class LevelScene implements Scene {
   };
 
   private _onBack = () => {
+    if (this._tutorialActive) return;
     SceneManager.switchTo('levelSelect');
   };
 
   // ─── Event Binding ───────────────────────────────────────
 
+  private _onBoardSelected = (_pos: Point) => {
+    if (!this._tutorialActive || this._tutorialOverlay.currentStep !== 'select') return;
+    this._tutorialOverlay.setStep('move');
+  };
+
+  private _onTutorialRejected = () => {
+    if (!this._tutorialActive) return;
+    this._tutorialOverlay.flashRejected();
+  };
+
   private _bindEvents(): void {
     EventBus.on('ui:scoreChanged', this._onScoreChanged);
     EventBus.on('ui:moveComplete', this._onMoveComplete);
     EventBus.on('board:eliminated', this._onBoardEliminated);
+    EventBus.on('board:selected', this._onBoardSelected);
     EventBus.on('game:over', this._onGameOver);
     EventBus.on('level:retry', this._onRetry);
     EventBus.on('level:next', this._onNext);
     EventBus.on('level:back', this._onBack);
     EventBus.on('prop:request', this._onPropRequest);
-    EventBus.on('prop:removeBallDone', this._onRemoveBallDone);
+    EventBus.on('prop:crossClearDone', this._onCrossClearDone);
+    EventBus.on('tutorial:rejected', this._onTutorialRejected);
   }
 
   private _unbindEvents(): void {
     EventBus.off('ui:scoreChanged', this._onScoreChanged);
     EventBus.off('ui:moveComplete', this._onMoveComplete);
     EventBus.off('board:eliminated', this._onBoardEliminated);
+    EventBus.off('board:selected', this._onBoardSelected);
     EventBus.off('game:over', this._onGameOver);
     EventBus.off('level:retry', this._onRetry);
     EventBus.off('level:next', this._onNext);
     EventBus.off('level:back', this._onBack);
     EventBus.off('prop:request', this._onPropRequest);
-    EventBus.off('prop:removeBallDone', this._onRemoveBallDone);
+    EventBus.off('prop:crossClearDone', this._onCrossClearDone);
+    EventBus.off('tutorial:rejected', this._onTutorialRejected);
   }
 
   private _createBackButton(): PIXI.Container {
@@ -410,7 +485,16 @@ export class LevelScene implements Scene {
     });
     btn.hitArea = new PIXI.Circle(36, 36, 36);
 
-    btn.on('pointerdown', () => SceneManager.switchTo('levelSelect'));
+    btn.on('pointerdown', () => {
+      if (this._tutorialActive) return;
+      SceneManager.switchTo('levelSelect');
+    });
     return btn;
+  }
+
+  private _shouldRunLevel1Tutorial(levelId: number): boolean {
+    if (levelId !== 1) return false;
+    const state = PersistService.readJSON<{ completed?: boolean }>(LEVEL1_TUTORIAL_KEY);
+    return state?.completed !== true;
   }
 }

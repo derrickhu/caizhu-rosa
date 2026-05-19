@@ -27,6 +27,7 @@ export const SKIN_STATE_KEY = `${GAME_KEY}_skin_state`;
 export const PROP_INVENTORY_KEY = `${GAME_KEY}_prop_inventory`;
 export const SEEN_SPECIAL_INTROS_KEY = `${GAME_KEY}_seen_special_piece_intros`;
 export const USER_PROFILE_KEY = `${GAME_KEY}_user_profile`;
+export const LEVEL1_TUTORIAL_KEY = `${GAME_KEY}_level1_tutorial_done`;
 
 export const DEFAULT_AVATAR_PATH = 'subpkg_assets/images/avatar_default.png';
 

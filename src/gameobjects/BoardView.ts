@@ -1,16 +1,18 @@
 import * as PIXI from 'pixi.js';
 import { BOARD_SIZE, CELL_GAP, BALL_PALETTE, computeBoardLayout, scoreForLine } from '@/config/GameConfig';
 import { BallSprite } from './BallSprite';
-import { BoardManager, type ChangedPiece, type NewBall } from '@/managers/BoardManager';
+import { BoardManager, type ChangedPiece, type NewBall, type PropClearResult } from '@/managers/BoardManager';
 import { EventBus } from '@/core/EventBus';
 import { TweenManager, Ease } from '@/core/TweenManager';
 import { Game } from '@/core/Game';
 import type { Point } from '@/systems/PathFinder';
 import { loadImageTexture } from '@/utils/imageTexture';
 import { getPieceDisplayColor, isMovablePiece, type Piece } from '@/config/PieceConfig';
+import { AudioManager } from '@/core/AudioManager';
 
-export type BoardInteractionMode = 'normal' | 'removeBall';
+export type BoardInteractionMode = 'normal' | 'crossClear';
 export type BoardTheme = 'classic' | 'level';
+export type BoardTutorialGate = (cell: Point) => boolean;
 
 type BoardPoint = { x: number; y: number };
 
@@ -30,6 +32,7 @@ export class BoardView extends PIXI.Container {
 
   private _interactionMode: BoardInteractionMode = 'normal';
   private _previewMarkers: PIXI.Graphics[] = [];
+  private _tutorialGate: BoardTutorialGate | null = null;
 
   constructor(theme: BoardTheme = 'classic') {
     super();
@@ -189,11 +192,24 @@ export class BoardView extends PIXI.Container {
     return null;
   }
 
+  getCellCenter(row: number, col: number): PIXI.Point {
+    const center = this._cellCenter(row, col);
+    return new PIXI.Point(center.x, center.y);
+  }
+
+  getCellCenterGlobal(row: number, col: number): PIXI.Point {
+    return this.toGlobal(this.getCellCenter(row, col));
+  }
+
   // ─── Interaction Mode ────────────────────────────────────
+
+  setTutorialGate(gate: BoardTutorialGate | null): void {
+    this._tutorialGate = gate;
+  }
 
   setInteractionMode(mode: BoardInteractionMode): void {
     this._interactionMode = mode;
-    if (mode === 'removeBall') {
+    if (mode === 'crossClear') {
       this._deselectBall();
       this._highlightAllBalls(true);
     } else {
@@ -269,8 +285,13 @@ export class BoardView extends PIXI.Container {
       const cell = this._posToCell(local.x, local.y);
       if (!cell) return;
 
-      if (this._interactionMode === 'removeBall') {
-        this._handleRemoveBall(cell);
+      if (this._tutorialGate && !this._tutorialGate(cell)) {
+        EventBus.emit('tutorial:rejected', cell);
+        return;
+      }
+
+      if (this._interactionMode === 'crossClear') {
+        void this._handleCrossClear(cell);
         return;
       }
 
@@ -295,23 +316,23 @@ export class BoardView extends PIXI.Container {
     });
   }
 
-  private _handleRemoveBall(pos: Point): void {
-    const grid = BoardManager.grid;
-    if (grid[pos.row][pos.col] === null) return;
-
-    const success = BoardManager.removeBallAt(pos);
-    if (success) {
-      const ball = this._balls[pos.row][pos.col];
-      if (ball) {
-        ball.animateEliminate(() => {
-          this._ballContainer.removeChild(ball);
-          ball.destroy();
-        });
-        this._balls[pos.row][pos.col] = null;
-      }
-      this.setInteractionMode('normal');
-      EventBus.emit('prop:removeBallDone');
+  private async _handleCrossClear(pos: Point): Promise<void> {
+    const result = BoardManager.clearCrossAt(pos);
+    if (result.positions.length === 0) {
+      this._flashCell(pos);
+      return;
     }
+
+    this.setInteractionMode('normal');
+    await this.animatePropClear(result);
+    EventBus.emit('prop:crossClearDone', result);
+  }
+
+  async animatePropClear(result: PropClearResult): Promise<void> {
+    if (result.positions.length === 0) return;
+    this._isAnimating = true;
+    await this._animateElimination(result.positions, result.score);
+    this._isAnimating = false;
   }
 
   private _selectBall(pos: Point): void {
@@ -406,6 +427,7 @@ export class BoardView extends PIXI.Container {
       let stepIndex = 1;
       const moveNext = () => {
         if (stepIndex >= path.length) {
+          AudioManager.play('moveLand');
           resolve();
           return;
         }
@@ -435,6 +457,7 @@ export class BoardView extends PIXI.Container {
         a.row !== b.row ? a.row - b.row : a.col - b.col
       );
       const lineGroups = this._groupEliminationLines(sorted);
+      AudioManager.play(eliminated.length >= 6 || scoreDelta >= 16 ? 'eliminateBig' : 'eliminate');
       lineGroups.forEach((line) => this._spawnLineGlow(line));
       if (scoreDelta > 0) {
         this._spawnScorePopup(sorted, scoreDelta);
@@ -873,6 +896,9 @@ export class BoardView extends PIXI.Container {
   }
 
   private _spawnBallSprites(newBalls: NewBall[]): void {
+    if (newBalls.length > 0) {
+      AudioManager.play('nextBalls');
+    }
     for (const ball of newBalls) {
       const center = this._cellCenter(ball.position.row, ball.position.col);
       const sprite = new BallSprite(ball.piece, this._ballRadius);
@@ -934,5 +960,6 @@ export class BoardView extends PIXI.Container {
   }
 
   get cellSize(): number { return this._cellSize; }
+  get ballRadius(): number { return this._ballRadius; }
   get boardPixelSize(): number { return this._boardPixelSize; }
 }

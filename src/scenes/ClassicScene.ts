@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 import { Game } from '@/core/Game';
 import { SceneManager, type Scene } from '@/core/SceneManager';
 import { EventBus } from '@/core/EventBus';
+import { Platform } from '@/core/PlatformService';
 import { BoardManager } from '@/managers/BoardManager';
 import { PropManager } from '@/managers/PropManager';
 import { BoardView } from '@/gameobjects/BoardView';
@@ -17,6 +18,10 @@ import { SkinManager } from '@/managers/SkinManager';
 import { createBgSprite } from '@/utils/bgHelper';
 import { BallSprite } from '@/gameobjects/BallSprite';
 import { addImageSprite } from '@/utils/imageTexture';
+import { AudioManager } from '@/core/AudioManager';
+import { AUDIO_ASSETS, AUDIO_VOLUME } from '@/config/AudioConfig';
+
+const CLASSIC_NATIVE_TEMPLATE_AD_UNIT_ID = 'adunit-d00b51d63418091a';
 
 export class ClassicScene implements Scene {
   readonly name = 'classic';
@@ -27,9 +32,11 @@ export class ClassicScene implements Scene {
   private _previewPanel!: PreviewPanel;
   private _gameOverOverlay!: GameOverOverlay;
   private _backBtn!: PIXI.Container;
+  private _nativeTemplateAd: any = null;
 
   onEnter(): void {
     this.container.removeChildren();
+    AudioManager.playBGM(AUDIO_ASSETS.bgmClassic, AUDIO_VOLUME.bgmClassic);
     BallSprite.useTextures = true;
 
     PropManager.resetSession();
@@ -86,11 +93,13 @@ export class ClassicScene implements Scene {
 
     this._loadBestScore();
     this._bindEvents();
+    this._showNativeTemplateAd();
   }
 
   onExit(): void {
     this._unbindEvents();
     this._saveBestScore();
+    this._destroyNativeTemplateAd();
   }
 
   private _onScoreChanged = (total: number, _delta: number) => {
@@ -103,7 +112,7 @@ export class ClassicScene implements Scene {
   private _onGameOver = (score: number) => {
     this._saveBestScore();
     RankManager.addClassicScore(score);
-    void LeaderboardManager.submitClassicScore(score);
+    void LeaderboardManager.submitClassicScore(BoardManager.bestScore);
     this._gameOverOverlay.show(score, BoardManager.bestScore);
   };
 
@@ -139,6 +148,7 @@ export class ClassicScene implements Scene {
     btn.hitArea = new PIXI.Circle(44, 44, 44);
 
     btn.on('pointerdown', () => {
+      AudioManager.play('button');
       this._saveBestScore();
       SceneManager.switchTo('home');
     });
@@ -170,5 +180,40 @@ export class ClassicScene implements Scene {
 
   private _saveBestScore(): void {
     PersistService.writeRaw(BEST_SCORE_KEY, String(BoardManager.bestScore));
+  }
+
+  private _showNativeTemplateAd(): void {
+    this._destroyNativeTemplateAd();
+    if (!Platform.isWechat) return;
+
+    const adWidth = Math.min(Game.screenWidth, 360);
+    const adHeight = 96;
+    const ad = Platform.createCustomAd(CLASSIC_NATIVE_TEMPLATE_AD_UNIT_ID, {
+      left: Math.max(0, (Game.screenWidth - adWidth) / 2),
+      top: Math.max(0, Game.screenHeight - adHeight),
+      width: adWidth,
+      fixed: true,
+    });
+    if (!ad) return;
+
+    ad.onLoad?.(() => {
+      console.log('[ClassicScene] native template ad loaded');
+    });
+    ad.onError?.((err: any) => {
+      console.warn('[ClassicScene] native template ad error', err);
+    });
+    this._nativeTemplateAd = ad;
+    ad.show?.().catch?.((err: any) => {
+      console.warn('[ClassicScene] native template ad show failed', err);
+    });
+  }
+
+  private _destroyNativeTemplateAd(): void {
+    if (!this._nativeTemplateAd) return;
+    try {
+      this._nativeTemplateAd.hide?.();
+      this._nativeTemplateAd.destroy?.();
+    } catch {}
+    this._nativeTemplateAd = null;
   }
 }

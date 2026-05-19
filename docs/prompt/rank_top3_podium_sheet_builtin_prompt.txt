@@ -1,0 +1,43 @@
+Create a single sprite sheet containing three isolated leaderboard top-3 podium card assets for a cute colorful mobile puzzle game.
+
+Canvas and layout:
+- 3 columns x 1 row sprite sheet, equal spacing, centered objects.
+- Left: second place card, middle: first place champion card, right: third place card.
+- Each asset must be fully isolated with generous padding, not touching the image edges.
+- Transparent background preferred. If transparency is not possible, use a perfectly flat uniform chroma green background (#00FF00), no gradient, no texture, no shadow on the background.
+
+Overall game style:
+- Vibrant cartoon mobile game UI, glossy rounded plastic, toy-like marbles/candy aesthetic, high saturation, thick outlines, soft bevels, strong readable silhouettes.
+- Match the existing leaderboard page mood: purple-blue candy balloon background, gold trim, rounded panels, cheerful WeChat mini game look.
+- Make the new podium cards richer and thicker than the current version: chunky molded-resin frame, visible side extrusion, layered rim, clear inner highlight, soft ambient occlusion inside the panel.
+- Clean professional mobile game asset, not a flat sticker, not thin paper, not washed out.
+
+Shared card structure:
+- Large rounded rectangle portrait card with blank cream/white inner content area for avatar, nickname and score added later by code.
+- No text, no Chinese, no numbers, no player names, no score, no icons that contain letters.
+- Medal/rank badge may use symbolic rank shapes only: one star for first, two small stars for second, three small stars for third. Avoid readable digits.
+- Bottom-left medal badge with folded ribbons, integrated into the card.
+- Crisp dark outer stroke plus warm highlight stroke, no fuzzy halo, no dirty cutout edges.
+
+First place card, middle:
+- Taller and more prestigious than the side cards.
+- Glossy gold frame with warm ivory inner panel.
+- Large dimensional golden crown sitting on top, red ruby centerpiece, thick dark brown outline, strong highlights and metal folds.
+- Gold medal badge and red ribbons at lower-left.
+
+Second place card, left:
+- Slightly shorter and narrower than first place.
+- Silver/chrome frame with cool white-blue inner panel.
+- Silver medal badge and red ribbons at lower-left.
+- Cool highlights, metallic bevels, thick outline.
+
+Third place card, right:
+- Same size family as second place.
+- Bronze/copper frame with warm cream/champagne inner panel.
+- Bronze medal badge and blue ribbons at lower-left.
+- Warm highlights, metallic bevels, thick outline.
+
+Critical quality requirements:
+- Game-ready UI asset style, clean silhouette, strong depth, thick border, no background scene.
+- No full leaderboard UI, no phone screenshot, no tabs, no title banner, no balloons behind the cards.
+- No watermark, no signature, no text, no labels, no readable digits.
