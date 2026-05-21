@@ -1,6 +1,5 @@
 import { DEFAULT_AVATAR_PATH, USER_PROFILE_KEY } from '@/config/CloudConfig';
 import { PersistService } from '@/core/PersistService';
-import { Platform } from '@/core/PlatformService';
 
 declare const GameGlobal: any;
 
@@ -85,7 +84,7 @@ class UserProfileManagerClass {
     };
   }
 
-  /** 由 UI 提供已经从微信按钮拿到的（昵称, 本地头像）写入存档 */
+  /** 由 UI 提供已经从微信拿到的昵称和头像 URL 写入存档。 */
   async updateProfile(nickname: string, avatarUrl: string): Promise<UserProfile> {
     const trimmedNick = String(nickname || '').trim().slice(0, 32);
     const trimmedAvatar = String(avatarUrl || '').trim();
@@ -93,18 +92,9 @@ class UserProfileManagerClass {
       return this._profile;
     }
 
-    let resolvedAvatar = trimmedAvatar || this._profile.avatarUrl;
-    if (trimmedAvatar && /^https?:/i.test(trimmedAvatar)) {
-      try {
-        resolvedAvatar = await Platform.downloadAvatar(trimmedAvatar);
-      } catch {
-        resolvedAvatar = trimmedAvatar;
-      }
-    }
-
     const next: UserProfile = {
       nickname: trimmedNick || this._profile.nickname || this._defaultNickname(this._userId),
-      avatarUrl: resolvedAvatar || DEFAULT_AVATAR_PATH,
+      avatarUrl: this._normalizeAvatarUrl(trimmedAvatar || this._profile.avatarUrl),
       updatedAt: Date.now(),
       authorized: true,
     };
@@ -142,15 +132,26 @@ class UserProfileManagerClass {
       return;
     }
     const nickname = String(raw.nickname || '').trim();
-    const avatarUrl = String(raw.avatarUrl || '').trim();
+    const avatarUrl = this._normalizeAvatarUrl(String(raw.avatarUrl || '').trim());
     const updatedAt = Number(raw.updatedAt || 0);
-    const authorized = Boolean(raw.authorized) || (nickname.length > 0 && !!avatarUrl);
+    const authorized = Boolean(raw.authorized && avatarUrl !== DEFAULT_AVATAR_PATH)
+      || (nickname.length > 0 && avatarUrl !== DEFAULT_AVATAR_PATH);
     this._profile = {
       nickname: nickname || this._defaultNickname(this._userId),
       avatarUrl: avatarUrl || DEFAULT_AVATAR_PATH,
       updatedAt,
       authorized,
     };
+  }
+
+  private _normalizeAvatarUrl(url: string): string {
+    const trimmed = String(url || '').trim();
+    if (!trimmed || this._isTemporaryAvatarUrl(trimmed)) return DEFAULT_AVATAR_PATH;
+    return trimmed;
+  }
+
+  private _isTemporaryAvatarUrl(url: string): boolean {
+    return /^(wxfile:|ttfile:|blob:)/i.test(url);
   }
 
   private _saveToStorage(): void {

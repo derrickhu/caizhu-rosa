@@ -288,13 +288,25 @@ class PersistServiceClass {
     if (!local && !remote) return;
     const localTs = Number(local?.updatedAt || 0);
     const remoteTs = Number(remote?.updatedAt || 0);
-    const winner = remoteTs > localTs ? remote : (localTs > 0 ? local : remote || local);
+    const localAvatar = this.sanitizeAvatarUrl(local?.avatarUrl);
+    const remoteAvatar = this.sanitizeAvatarUrl(remote?.avatarUrl);
+    const localValid = !!local && (!!String(local.nickname || '') || !!localAvatar);
+    const remoteValid = !!remote && (!!String(remote.nickname || '') || !!remoteAvatar);
+    const winner = remoteValid && (!localValid || remoteTs > localTs)
+      ? remote
+      : (localValid ? local : remote || local);
     if (!winner) return;
     next[USER_PROFILE_KEY] = JSON.stringify({
       nickname: String(winner.nickname || ''),
-      avatarUrl: String(winner.avatarUrl || ''),
+      avatarUrl: this.sanitizeAvatarUrl(winner.avatarUrl),
       updatedAt: Math.max(localTs, remoteTs),
     });
+  }
+
+  private sanitizeAvatarUrl(url: unknown): string {
+    const value = String(url || '').trim();
+    if (/^(wxfile:|ttfile:|blob:)/i.test(value)) return '';
+    return value;
   }
 
   private mergeLevelProgress(next: Record<string, unknown>, remotePayload: Record<string, unknown>): void {

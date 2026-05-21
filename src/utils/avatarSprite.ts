@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { DEFAULT_AVATAR_PATH } from '@/config/CloudConfig';
+import { Platform } from '@/core/PlatformService';
 import { loadImageTexture } from './imageTexture';
 
 declare const wx: any;
@@ -98,6 +99,19 @@ export function createAvatarSprite(avatarUrl: string, radius: number): PIXI.Cont
 
   void primaryLoader.then((texture) => {
     if (mountTexture(texture)) return;
+    if (/^https?:/i.test(url)) {
+      void Platform.downloadAvatar(url).then((localPath) => {
+        if (!localPath || localPath === url) return null;
+        return loadRemoteAvatar(localPath);
+      }).then((localTexture) => {
+        if (mountTexture(localTexture)) return;
+        if (url === DEFAULT_AVATAR_PATH) return;
+        void loadImageTexture(DEFAULT_AVATAR_PATH).then((fallback) => {
+          mountTexture(fallback);
+        });
+      });
+      return;
+    }
     if (url === DEFAULT_AVATAR_PATH) return;
     void loadImageTexture(DEFAULT_AVATAR_PATH).then((fallback) => {
       mountTexture(fallback);
