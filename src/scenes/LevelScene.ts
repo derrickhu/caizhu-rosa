@@ -351,21 +351,14 @@ export class LevelScene implements Scene {
   private _onPropRequest = (type: PropType) => {
     if (this._finished || this._tutorialActive) return;
 
-    const canDirectUse = PropManager.canUse(type);
-    this._propInfoOverlay.show(type, canDirectUse, () => this._confirmPropUse(type, canDirectUse));
+    const canRequestUse = PropManager.canRequestUse(type);
+    this._propInfoOverlay.show(type, canRequestUse, () => this._confirmPropUse(type));
   };
 
-  private _confirmPropUse(type: PropType, canDirectUse: boolean): void {
+  private _confirmPropUse(type: PropType): void {
     if (this._finished || this._tutorialActive) return;
 
-    // 确认时再次校验库存，避免面板打开期间数据变化。
-    if (canDirectUse && PropManager.canUse(type)) {
-      PropManager.use(type);
-      this._executeProp(type);
-      return;
-    }
-
-    // 库存不足或本局普通次数已达上限时，通过激励视频获得本次使用。
+    // 道具每次使用都必须看激励视频，并且每局每种道具只能使用一次。
     PropManager.requestUse(type).then((granted) => {
       if (granted && !this._finished) {
         this._executeProp(type);

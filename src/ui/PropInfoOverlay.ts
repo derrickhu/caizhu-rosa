@@ -2,7 +2,6 @@ import * as PIXI from 'pixi.js';
 import { Game } from '@/core/Game';
 import { TweenManager, Ease } from '@/core/TweenManager';
 import { PropType, PROP_DEFS } from '@/config/PropConfig';
-import { PropManager } from '@/managers/PropManager';
 import { addImageSprite } from '@/utils/imageTexture';
 
 /** 确认按钮图最大显示区域（等比缩放） */
@@ -110,13 +109,13 @@ export class PropInfoOverlay extends PIXI.Container {
     this._createConfirmButton();
   }
 
-  show(type: PropType, canDirectUse: boolean, onConfirm: () => void): void {
+  show(type: PropType, canRequestUse: boolean, onConfirm: () => void): void {
     this._activeType = type;
     this._onConfirm = onConfirm;
     this._titleText.text = PROP_DEFS[type].name;
     this._descText.text = getPropDescription(type);
-    this._statusText.text = this._getStatusText(type, canDirectUse);
-    this._confirmText.text = canDirectUse ? '使用' : '看广告使用';
+    this._statusText.text = this._getStatusText(type, canRequestUse);
+    this._confirmText.text = canRequestUse ? '看广告使用' : '本局已使用';
     this._showPanelAsset(type);
 
     this._panel.x = Game.logicWidth / 2;
@@ -181,16 +180,12 @@ export class PropInfoOverlay extends PIXI.Container {
     this._panel.addChild(btn);
   }
 
-  private _getStatusText(type: PropType, canDirectUse: boolean): string {
-    const stock = PropManager.getStock(type);
+  private _getStatusText(type: PropType, canRequestUse: boolean): string {
     const limit = PROP_DEFS[type].maxPerGame;
-    if (canDirectUse) {
-      return `当前库存 ${stock}`;
+    if (canRequestUse) {
+      return '每局限用一次，看完广告后立即使用';
     }
-    if (stock <= 0) {
-      return '库存不足，看完广告可立即使用一次';
-    }
-    return `本局普通使用已达上限 ${limit} 次，可看广告继续使用`;
+    return `本局已使用 ${limit} 次`;
   }
 }
 

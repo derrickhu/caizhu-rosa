@@ -31,20 +31,24 @@ class PropManagerClass {
   /** Reset per-game usage counters (call at start of each game) */
   resetSession(): void {
     this._sessionUsage = {};
+    EventBus.emit('prop:sessionReset');
   }
 
   /** Get current stock of a prop */
   getStock(type: PropType): number {
-    return this._inventory[type] ?? 0;
+    void type;
+    return 0;
   }
 
-  /** Check if a prop can be used this session */
+  /** Direct stock usage is disabled; props are ad-gated every game. */
   canUse(type: PropType): boolean {
-    const stock = this.getStock(type);
-    if (stock <= 0) return false;
-    const def = PROP_DEFS[type];
-    const used = this._sessionUsage[type] ?? 0;
-    return used < def.maxPerGame;
+    void type;
+    return false;
+  }
+
+  /** Check whether the prop can still be requested in this game session. */
+  canRequestUse(type: PropType): boolean {
+    return (this._sessionUsage[type] ?? 0) < PROP_DEFS[type].maxPerGame;
   }
 
   /** Consume one use of a prop. Returns true if successful. */
@@ -65,20 +69,16 @@ class PropManagerClass {
   }
 
   /** Request to use a prop with ad fallback.
-   *  If stock > 0, use directly. Otherwise trigger ad flow.
-   *  Returns a promise that resolves to true if prop was granted. */
+   *  Every use requires a rewarded ad, and each prop is limited per game. */
   async requestUse(type: PropType): Promise<boolean> {
-    if (this.canUse(type)) {
-      return this.use(type);
+    if (!this.canRequestUse(type)) {
+      Platform.showToast('本局该道具已使用');
+      return false;
     }
 
-    // No stock or session maxed — try watching an ad
     const adGranted = await this._showRewardedAd(type);
     if (adGranted) {
-      this.addStock(type, 1);
-      // Force consume: bypass session limit since user watched an ad
-      this._inventory[type] = Math.max(0, (this._inventory[type] ?? 0) - 1);
-      this._save();
+      this._sessionUsage[type] = (this._sessionUsage[type] ?? 0) + 1;
       EventBus.emit('prop:used', type);
       return true;
     }
@@ -144,12 +144,8 @@ class PropManagerClass {
     this._save();
   }
 
-  /** Give initial free props to new players */
+  /** Starter gifts are disabled; props are now always ad-gated. */
   grantStarterPack(): void {
-    if (this._inventory['_starterGrantedV2']) return;
-    this.addStock(PropType.ColorBlast, 2);
-    this.addStock(PropType.CrossClear, 2);
-    this.addStock(PropType.WildNext, 3);
     this._inventory['_starterGranted'] = 1;
     this._inventory['_starterGrantedV2'] = 1;
     this._save();

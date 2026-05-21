@@ -241,6 +241,7 @@ class BoardManagerClass {
       eliminated: [],
       score: autoResult.score, newBalls, gameOver, stepsUsed: this._stepsUsed,
       autoEliminated: autoExpanded.length > 0 ? autoExpanded : undefined,
+      autoBombCells: autoBombCells.length > 0 ? autoBombCells : undefined,
       autoChangedPieces: autoResult.changedPieces,
     };
   }
@@ -381,14 +382,12 @@ class BoardManagerClass {
   private _clearCellsForProp(positions: Point[]): PropClearResult {
     if (positions.length === 0) return { positions: [], score: 0 };
 
-    const score = positions.length * 2;
     for (const pos of positions) {
       this._grid[pos.row][pos.col] = null;
     }
-    this._score += score;
     this._nextPositions = null;
-    EventBus.emit('board:eliminated', positions, score);
-    return { positions, score };
+    EventBus.emit('board:eliminated', positions, 0);
+    return { positions, score: 0 };
   }
 
   private _spawnNextBalls(): NewBall[] {
@@ -447,7 +446,10 @@ class BoardManagerClass {
     this._nextPieces = [];
     for (let i = 0; i < this._ballsPerTurn; i++) {
       const kind = guaranteedKinds[i];
-      this._nextPieces.push(kind ? createSpecialPiece(kind, this._colorCount) : this._rollPiece());
+      this._nextPieces.push(kind && kind !== 'block'
+        ? createSpecialPiece(kind, this._colorCount)
+        : this._rollNextPiece()
+      );
     }
     this._nextPositions = null;
     EventBus.emit('board:nextColors', this._nextPieces);
@@ -456,6 +458,12 @@ class BoardManagerClass {
   /** Roll a piece, with chance for special pieces in level mode. */
   private _rollPiece(): Piece {
     return rollSpawnPiece(this._colorCount, this._isLevelMode ? this._specialChances : {});
+  }
+
+  /** Blocks are board obstacles, so they should only enter through initial setup. */
+  private _rollNextPiece(): Piece {
+    if (!this._isLevelMode) return rollSpawnPiece(this._colorCount);
+    return rollSpawnPiece(this._colorCount, { ...this._specialChances, blockChance: 0 });
   }
 
   revive(): void {
@@ -522,6 +530,8 @@ export interface MoveResult {
   autoEliminated?: Point[];
   /** Extra cells cleared by bomb explosions (subset of eliminated not in the line) */
   bombCells?: Point[];
+  /** Extra cells cleared by bomb explosions during automatic next-ball elimination */
+  autoBombCells?: Point[];
   changedPieces?: ChangedPiece[];
   autoChangedPieces?: ChangedPiece[];
   score: number;

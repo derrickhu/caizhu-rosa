@@ -57,8 +57,6 @@ export class BallSprite extends PIXI.Container {
     if (this._piece.kind === 'wild') {
       this._drawWildBall(this._gfx);
       this._drawImageSprite('subpkg_assets/images/special_wild.png');
-    } else if (this._piece.kind === 'bomb') {
-      this._drawImageSprite('subpkg_assets/images/special_bomb.png');
     } else if (this._piece.kind === 'block') {
       this._drawBlock(this._gfx);
       this._drawImageSprite('subpkg_assets/images/special_block.png');
@@ -77,6 +75,8 @@ export class BallSprite extends PIXI.Container {
       } else if (this._piece.kind === 'chain') {
         this._drawChainOverlay(this._gfx, this._piece.layers);
         this._drawImageSprite('subpkg_assets/images/special_chain_overlay.png');
+      } else if (this._piece.kind === 'bomb') {
+        this._drawBombBadgeSprite();
       }
     }
   }
@@ -100,6 +100,16 @@ export class BallSprite extends PIXI.Container {
       sprite.width = r * 2.12;
       sprite.height = r * 2.12;
       sprite.anchor.set(0.5, 0.5);
+    });
+  }
+
+  private _drawBombBadgeSprite(): void {
+    const r = this._radius;
+    addImageSprite(this._inner, 'subpkg_assets/images/special_bomb.png', (sprite) => {
+      sprite.width = r * 1.22;
+      sprite.height = r * 1.22;
+      sprite.anchor.set(0.5, 0.5);
+      sprite.position.set(r * 0.4, r * 0.38);
     });
   }
 
@@ -325,32 +335,25 @@ export class BallSprite extends PIXI.Container {
   animateEliminate(onComplete?: () => void): void {
     TweenManager.to({
       target: this.scale,
-      props: { x: 1.22, y: 1.22 },
-      duration: 0.055,
+      props: { x: 1.12, y: 1.12 },
+      duration: 0.08,
       ease: Ease.easeOutQuad,
       onComplete: () => {
         TweenManager.to({
           target: this.scale,
-          props: { x: 0.72, y: 0.72 },
-          duration: 0.055,
-          ease: Ease.easeInQuad,
-          onComplete: () => {
-            TweenManager.to({
-              target: this.scale,
-              props: { x: 2.15, y: 2.15 },
-              duration: 0.16,
-              ease: Ease.easeOutQuad,
-            });
-          },
-        });
-        TweenManager.to({
-          target: this,
-          props: { alpha: 0 },
+          props: { x: 0.08, y: 0.08 },
           duration: 0.18,
-          delay: 0.055,
-          onComplete,
+          ease: Ease.easeInQuad,
         });
       },
+    });
+    TweenManager.to({
+      target: this,
+      props: { alpha: 0 },
+      duration: 0.18,
+      delay: 0.08,
+      ease: Ease.easeInQuad,
+      onComplete,
     });
   }
 

@@ -81,15 +81,18 @@ export class PropBar extends PIXI.Container {
 
   private _onStockChanged = () => { this.refresh(); };
   private _onPropUsed = () => { this.refresh(); };
+  private _onSessionReset = () => { this.refresh(); };
 
   private _bindEvents(): void {
     EventBus.on('prop:stockChanged', this._onStockChanged);
     EventBus.on('prop:used', this._onPropUsed);
+    EventBus.on('prop:sessionReset', this._onSessionReset);
   }
 
   destroy(): void {
     EventBus.off('prop:stockChanged', this._onStockChanged);
     EventBus.off('prop:used', this._onPropUsed);
+    EventBus.off('prop:sessionReset', this._onSessionReset);
     super.destroy();
   }
 }
@@ -165,26 +168,13 @@ class PropButton extends PIXI.Container {
   }
 
   refresh(): void {
-    const stock = PropManager.getStock(this._type);
-    const canUse = PropManager.canUse(this._type);
+    const canRequestUse = PropManager.canRequestUse(this._type);
 
     this._stockBadge.removeChildren();
-    this._stockBadge.visible = stock > 0;
+    this._stockBadge.visible = false;
 
-    if (stock > 0) {
-      const circle = new PIXI.Graphics();
-      circle.beginFill(0x2563EB);
-      circle.drawCircle(0, 0, 10);
-      circle.endFill();
-      this._stockBadge.addChild(circle);
-
-      this._stockText.text = String(stock);
-      this._stockText.style.fontSize = 12;
-      this._stockBadge.addChild(this._stockText);
-    }
-
-    this._iconContainer.alpha = 1;
-    this._nameLabel.alpha = canUse ? 1 : 0.9;
+    this._iconContainer.alpha = canRequestUse ? 1 : 0.42;
+    this._nameLabel.alpha = canRequestUse ? 1 : 0.55;
   }
 
   animateUse(): void {

@@ -40,7 +40,7 @@ export const PROP_DEFS: Record<PropType, PropDef> = {
     name: '万能预备',
     icon: '🌈',
     description: '把下一轮出现的珠子全部变成万能珠',
-    maxPerGame: 2,
+    maxPerGame: 1,
     adUnitId: PROP_REWARDED_AD_UNIT_ID,
   },
 };
