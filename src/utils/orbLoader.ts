@@ -5,7 +5,8 @@ const ORB_SHEET_PATH = 'subpkg_assets/images/orb_skins_sheet.png';
 const ORB_SHEET_COLS = 7;
 const ORB_SHEET_FRAME = 96;
 
-const ORB_FILES: string[] = [
+/** 用作默认头像的珠子图（与棋盘珠子一致） */
+export const ORB_AVATAR_PATHS: readonly string[] = [
   'subpkg_assets/images/orb_fire.png',    // 0 = red
   'subpkg_assets/images/orb_metal.png',   // 1 = yellow
   'subpkg_assets/images/orb_water.png',   // 2 = blue
@@ -36,7 +37,7 @@ export function loadOrbTextures(): Promise<void> {
 
     return _loadLegacyOrbFiles(platform).then(() => {
       _loaded = true;
-      console.log(`[orbLoader] loaded ${_textures.filter(Boolean).length}/${ORB_FILES.length} orb textures`);
+      console.log(`[orbLoader] loaded ${_textures.filter(Boolean).length}/${ORB_AVATAR_PATHS.length} orb textures`);
     });
   });
 }
@@ -96,7 +97,7 @@ function _applyOrbSheetRow(row: number): void {
 }
 
 function _loadLegacyOrbFiles(platform: any): Promise<void> {
-  const promises = ORB_FILES.map((path, index) =>
+  const promises = ORB_AVATAR_PATHS.map((path, index) =>
     new Promise<void>((resolve) => {
       try {
         if (platform?.createImage) {

@@ -64,10 +64,18 @@ export interface LeaderboardLevelEntry {
   updatedAt: number;
 }
 
+export interface LeaderboardFetchMeta {
+  ok: boolean;
+  code?: string;
+  message?: string;
+}
+
 export interface LeaderboardWorldResult<T> {
   items: T[];
   me: T | null;
   total: number;
+  /** 全服榜接口拉取状态；失败时 items 为空，不应把本地成绩混入列表冒充全服榜 */
+  fetch?: LeaderboardFetchMeta;
 }
 
 export interface LeaderboardSubmitProfile {

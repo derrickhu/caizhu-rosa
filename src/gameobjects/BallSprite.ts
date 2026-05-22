@@ -24,6 +24,7 @@ export class BallSprite extends PIXI.Container {
   private _selected = false;
   private _bounceTween: any = null;
   private _inner: PIXI.Container;
+  private _drawVersion = 0;
 
   constructor(piece: Piece, radius: number) {
     super();
@@ -48,6 +49,7 @@ export class BallSprite extends PIXI.Container {
   }
 
   private _draw(): void {
+    const drawVersion = ++this._drawVersion;
     this._inner.removeChildren();
     this._inner.addChild(this._gfx);
     this._gfx.clear();
@@ -56,10 +58,10 @@ export class BallSprite extends PIXI.Container {
 
     if (this._piece.kind === 'wild') {
       this._drawWildBall(this._gfx);
-      this._drawImageSprite('subpkg_assets/images/special_wild.png');
+      this._drawImageSprite('subpkg_assets/images/special_wild.png', drawVersion);
     } else if (this._piece.kind === 'block') {
       this._drawBlock(this._gfx);
-      this._drawImageSprite('subpkg_assets/images/special_block.png');
+      this._drawImageSprite('subpkg_assets/images/special_block.png', drawVersion);
     } else {
       const color = getPieceColor(this._piece);
       if (color === null) return;
@@ -71,12 +73,12 @@ export class BallSprite extends PIXI.Container {
       }
       if (this._piece.kind === 'frozen') {
         this._drawFrozenOverlay(this._gfx);
-        this._drawImageSprite('subpkg_assets/images/special_frozen_overlay.png');
+        this._drawImageSprite('subpkg_assets/images/special_frozen_overlay.png', drawVersion);
       } else if (this._piece.kind === 'chain') {
         this._drawChainOverlay(this._gfx, this._piece.layers);
-        this._drawImageSprite('subpkg_assets/images/special_chain_overlay.png');
+        this._drawImageSprite('subpkg_assets/images/special_chain_overlay.png', drawVersion);
       } else if (this._piece.kind === 'bomb') {
-        this._drawBombBadgeSprite();
+        this._drawBombBadgeSprite(drawVersion);
       }
     }
   }
@@ -94,18 +96,28 @@ export class BallSprite extends PIXI.Container {
     this._sprite = sprite;
   }
 
-  private _drawImageSprite(path: string): void {
+  private _drawImageSprite(path: string, drawVersion: number): void {
     const r = this._radius;
     addImageSprite(this._inner, path, (sprite) => {
+      if (drawVersion !== this._drawVersion || this.destroyed) {
+        sprite.visible = false;
+        sprite.renderable = false;
+        return;
+      }
       sprite.width = r * 2.12;
       sprite.height = r * 2.12;
       sprite.anchor.set(0.5, 0.5);
     });
   }
 
-  private _drawBombBadgeSprite(): void {
+  private _drawBombBadgeSprite(drawVersion: number): void {
     const r = this._radius;
     addImageSprite(this._inner, 'subpkg_assets/images/special_bomb.png', (sprite) => {
+      if (drawVersion !== this._drawVersion || this.destroyed) {
+        sprite.visible = false;
+        sprite.renderable = false;
+        return;
+      }
       sprite.width = r * 1.22;
       sprite.height = r * 1.22;
       sprite.anchor.set(0.5, 0.5);

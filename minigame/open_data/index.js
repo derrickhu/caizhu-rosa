@@ -13,7 +13,7 @@ var state = {
   tab: 'classic',
   metric: 'classic_best',
   metricLabel: '分',
-  viewport: { width: 750, height: 1000, startY: 28 },
+  viewport: { width: 750, height: 680, listStartY: 300 },
   lastEntries: null,
   fetchInflight: false,
 };
@@ -105,6 +105,10 @@ function fetchAndRender() {
       success: function (res) {
         var entries = buildEntries((res && res.data) || [], pickedMetric, selfOpenId);
         state.lastEntries = entries;
+        var needH = drawer.computeCanvasHeight(entries.length);
+        state.viewport.height = Math.max(620, needH);
+        state.viewport.listStartY = drawer.PODIUM_ZONE_H;
+        ensureCanvasSize(state.viewport);
         drawer.drawFriendList(
           ctx,
           sharedCanvas.width,
@@ -158,7 +162,7 @@ if (WX && WX.onMessage) {
         state.viewport = {
           width: Number(msg.viewport.width || state.viewport.width),
           height: Number(msg.viewport.height || state.viewport.height),
-          startY: Number(msg.viewport.startY || state.viewport.startY),
+          listStartY: Number(msg.viewport.listStartY || state.viewport.listStartY || drawer.PODIUM_ZONE_H),
         };
         ensureCanvasSize(state.viewport);
       }

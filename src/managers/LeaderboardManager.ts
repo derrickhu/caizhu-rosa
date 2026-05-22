@@ -11,6 +11,11 @@ import {
   type LeaderboardWorldResult,
 } from '@/core/BackendService';
 import { Platform } from '@/core/PlatformService';
+import {
+  isRemoteAvatarUrl,
+  resolveDisplayAvatarUrl,
+  resolveDisplayNickname,
+} from '@/utils/defaultProfileDisplay';
 import { UserProfileManager } from './UserProfileManager';
 
 declare const GameGlobal: any;
@@ -107,12 +112,13 @@ class LeaderboardManagerClass {
       try {
         await BackendService.ensureToken();
         const result = await BackendService.fetchClassicWorld(100);
-        this._classicCache = { result, fetchedAt: Date.now() };
-        return result;
+        const wrapped = { ...result, fetch: { ok: true as const } };
+        this._classicCache = { result: wrapped, fetchedAt: Date.now() };
+        return wrapped;
       } catch (error) {
         this._logError('fetchClassicWorld', error);
-        if (this._classicCache) return this._classicCache.result;
-        return { items: [], me: null, total: 0 } as LeaderboardWorldResult<LeaderboardClassicEntry>;
+        if (this._classicCache?.result.fetch?.ok !== false) return this._classicCache.result;
+        return this._emptyWorldResult<LeaderboardClassicEntry>(error);
       } finally {
         this._classicInflight = null;
       }
@@ -132,12 +138,13 @@ class LeaderboardManagerClass {
       try {
         await BackendService.ensureToken();
         const result = await BackendService.fetchLevelWorld(100);
-        this._levelCache = { result, fetchedAt: Date.now() };
-        return result;
+        const wrapped = { ...result, fetch: { ok: true as const } };
+        this._levelCache = { result: wrapped, fetchedAt: Date.now() };
+        return wrapped;
       } catch (error) {
         this._logError('fetchLevelWorld', error);
-        if (this._levelCache) return this._levelCache.result;
-        return { items: [], me: null, total: 0 } as LeaderboardWorldResult<LeaderboardLevelEntry>;
+        if (this._levelCache?.result.fetch?.ok !== false) return this._levelCache.result;
+        return this._emptyWorldResult<LeaderboardLevelEntry>(error);
       } finally {
         this._levelInflight = null;
       }
@@ -150,30 +157,44 @@ class LeaderboardManagerClass {
     this._levelCache = null;
   }
 
-  private _profileForSubmit(): { nickname: string; avatarUrl: string } | undefined {
-    const profile = UserProfileManager.profile;
-    if (!profile.authorized) return undefined;
-    if (!profile.nickname && !profile.avatarUrl) return undefined;
+  /** 授权后把昵称/头像同步到全服榜记录（进入排行榜时调用） */
+  async resyncAuthorizedProfile(): Promise<void> {
+    if (!BackendService.available || !UserProfileManager.isAuthorized) return;
+    const payload = this._authorizedProfilePayload();
+    if (!payload) return;
+    try {
+      await BackendService.ensureToken();
+      await BackendService.updateProfile(payload);
+      this.invalidateCache();
+    } catch (error) {
+      this._logError('resyncAuthorizedProfile', error);
+    }
+  }
+
+  private _profileForSubmit(): { nickname: string; avatarUrl: string } {
+    const authorized = this._authorizedProfilePayload();
+    if (authorized) return authorized;
+    const userId = UserProfileManager.userId;
     return {
-      nickname: profile.nickname,
-      avatarUrl: profile.avatarUrl,
+      nickname: resolveDisplayNickname('', userId),
+      avatarUrl: resolveDisplayAvatarUrl('', userId),
+    };
+  }
+
+  private _authorizedProfilePayload(): { nickname: string; avatarUrl: string } | null {
+    const profile = UserProfileManager.profile;
+    if (!profile.authorized) return null;
+    const nickname = String(profile.nickname || '').trim();
+    const avatarUrl = String(profile.avatarUrl || '').trim();
+    if (!nickname && !isRemoteAvatarUrl(avatarUrl)) return null;
+    return {
+      nickname: nickname || resolveDisplayNickname('', UserProfileManager.userId),
+      avatarUrl: isRemoteAvatarUrl(avatarUrl) ? avatarUrl : resolveDisplayAvatarUrl('', UserProfileManager.userId),
     };
   }
 
   private async _syncProfileToServer(): Promise<void> {
-    if (!BackendService.available) return;
-    const profile = UserProfileManager.profile;
-    if (!profile.authorized) return;
-    try {
-      await BackendService.ensureToken();
-      await BackendService.updateProfile({
-        nickname: profile.nickname,
-        avatarUrl: profile.avatarUrl,
-      });
-      this.invalidateCache();
-    } catch (error) {
-      this._logError('updateProfile', error);
-    }
+    await this.resyncAuthorizedProfile();
   }
 
   private async _writeWxFriendStorage(KVDataList: Array<{ key: string; value: string }>): Promise<void> {
@@ -183,6 +204,17 @@ class LeaderboardManagerClass {
       .map((item) => ({ key: String(item.key), value: String(item.value) }));
     if (safe.length === 0) return;
     await Platform.setUserCloudStorage(safe);
+  }
+
+  private _emptyWorldResult<T>(error: unknown): LeaderboardWorldResult<T> {
+    const meta: LeaderboardWorldResult<T>['fetch'] = { ok: false };
+    if (error instanceof BackendError) {
+      meta.code = error.code;
+      meta.message = error.message;
+    } else if (error instanceof Error) {
+      meta.message = error.message;
+    }
+    return { items: [], me: null, total: 0, fetch: meta };
   }
 
   private _logError(scope: string, error: unknown): void {

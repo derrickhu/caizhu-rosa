@@ -1,6 +1,10 @@
 import * as PIXI from 'pixi.js';
-import { DEFAULT_AVATAR_PATH } from '@/config/CloudConfig';
 import { Platform } from '@/core/PlatformService';
+import {
+  getDefaultOrbAvatarPath,
+  isRemoteAvatarUrl,
+  resolveDisplayAvatarUrl,
+} from '@/utils/defaultProfileDisplay';
 import { loadImageTexture } from './imageTexture';
 
 declare const wx: any;
@@ -53,25 +57,25 @@ function loadRemoteAvatar(url: string): Promise<PIXI.Texture | null> {
 }
 
 /** 创建一个固定半径的圆形头像 sprite。
- *  - 默认头像（subpkg 路径）走 loadImageTexture 缓存
- *  - 微信头像（http(s):// 或 wxfile:// 临时路径）走 loadRemoteAvatar
- *  - 加载完成前先显示占位环
+ *  - 默认：按 userId 映射到一颗珠子图
+ *  - 微信头像（http(s)://）走 loadRemoteAvatar
  */
-export function createAvatarSprite(avatarUrl: string, radius: number): PIXI.Container {
+export function createAvatarSprite(avatarUrl: string, radius: number, userId = ''): PIXI.Container {
   const container = new PIXI.Container();
   const diameter = radius * 2;
+  const resolvedUrl = resolveDisplayAvatarUrl(avatarUrl, userId);
+  const fallbackUrl = getDefaultOrbAvatarPath(userId);
 
   const placeholder = new PIXI.Graphics();
-  placeholder.beginFill(0x4F5B73, 1);
+  placeholder.beginFill(0x2A3A52, 1);
   placeholder.drawCircle(radius, radius, radius);
   placeholder.endFill();
-  placeholder.lineStyle(2, 0xFFFFFF, 0.3);
+  placeholder.lineStyle(2, 0xFFFFFF, 0.35);
   placeholder.drawCircle(radius, radius, radius);
   container.addChild(placeholder);
 
-  const url = avatarUrl || DEFAULT_AVATAR_PATH;
-  const useRemote = /^(https?:|wxfile:|http:|blob:)/i.test(url);
-  const primaryLoader = useRemote ? loadRemoteAvatar(url) : loadImageTexture(url);
+  const useRemote = isRemoteAvatarUrl(resolvedUrl);
+  const primaryLoader = useRemote ? loadRemoteAvatar(resolvedUrl) : loadImageTexture(resolvedUrl);
 
   const mountTexture = (texture: PIXI.Texture | null): boolean => {
     if (!texture || container.destroyed) return false;
@@ -97,25 +101,24 @@ export function createAvatarSprite(avatarUrl: string, radius: number): PIXI.Cont
     return true;
   };
 
+  const tryFallbackOrb = (): void => {
+    if (fallbackUrl === resolvedUrl) return;
+    void loadImageTexture(fallbackUrl).then((tex) => mountTexture(tex));
+  };
+
   void primaryLoader.then((texture) => {
     if (mountTexture(texture)) return;
-    if (/^https?:/i.test(url)) {
-      void Platform.downloadAvatar(url).then((localPath) => {
-        if (!localPath || localPath === url) return null;
+    if (useRemote) {
+      void Platform.downloadAvatar(resolvedUrl).then((localPath) => {
+        if (!localPath || localPath === resolvedUrl) return null;
         return loadRemoteAvatar(localPath);
       }).then((localTexture) => {
         if (mountTexture(localTexture)) return;
-        if (url === DEFAULT_AVATAR_PATH) return;
-        void loadImageTexture(DEFAULT_AVATAR_PATH).then((fallback) => {
-          mountTexture(fallback);
-        });
+        tryFallbackOrb();
       });
       return;
     }
-    if (url === DEFAULT_AVATAR_PATH) return;
-    void loadImageTexture(DEFAULT_AVATAR_PATH).then((fallback) => {
-      mountTexture(fallback);
-    });
+    tryFallbackOrb();
   });
 
   return container;

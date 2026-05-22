@@ -17,6 +17,17 @@ export interface PlatformRequestResult {
   data: any;
 }
 
+export interface PlatformShareOptions {
+  title: string;
+  imageUrl?: string;
+  query?: string;
+}
+
+export interface PlatformShareMenuOptions {
+  withShareTicket?: boolean;
+  menus?: Array<'shareAppMessage' | 'shareTimeline'>;
+}
+
 class PlatformServiceClass {
   readonly name: PlatformName;
   private _api: any;
@@ -156,12 +167,25 @@ class PlatformServiceClass {
     }
   }
 
-  shareAppMessage(opts: { title: string; imageUrl?: string; query?: string }): void {
+  showShareMenu(opts: PlatformShareMenuOptions = {}): void {
+    try {
+      this._api?.showShareMenu?.({
+        withShareTicket: opts.withShareTicket ?? true,
+        menus: opts.menus || ['shareAppMessage', 'shareTimeline'],
+      });
+    } catch {}
+  }
+
+  shareAppMessage(opts: PlatformShareOptions): void {
     try { this._api?.shareAppMessage?.(opts); } catch {}
   }
 
-  onShareAppMessage(callback: () => { title: string; imageUrl?: string; query?: string }): void {
+  onShareAppMessage(callback: () => PlatformShareOptions): void {
     try { this._api?.onShareAppMessage?.(callback); } catch {}
+  }
+
+  onShareTimeline(callback: () => PlatformShareOptions): void {
+    try { this._api?.onShareTimeline?.(callback); } catch {}
   }
 
   onHide(callback: () => void): void {

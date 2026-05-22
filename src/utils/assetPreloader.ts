@@ -1,4 +1,5 @@
 import { loadImageTexture } from './imageTexture';
+import { ORB_AVATAR_PATHS } from './orbLoader';
 
 export const IMAGE_ASSETS: readonly string[] = [
   'images/loading_screen.png',
@@ -45,7 +46,7 @@ export const IMAGE_ASSETS: readonly string[] = [
   'subpkg_assets/images/level_next_banner.png',
   'subpkg_assets/images/level_complete_panel.png',
   'subpkg_assets/images/rank_panel.png',
-  'subpkg_assets/images/avatar_default.png',
+  ...ORB_AVATAR_PATHS,
   'subpkg_assets/images/rank_title_banner.png',
   'subpkg_assets/images/rank_tab_mode_active_blue.png',
   'subpkg_assets/images/rank_tab_mode_inactive.png',

@@ -378,8 +378,7 @@ export class BoardView extends PIXI.Container {
     }
 
     if (result.eliminated.length > 0) {
-      await this._animateElimination(result.eliminated, result.score, result.bombCells);
-      this._refreshChangedPieces(result.changedPieces);
+      await this._animateElimination(result.eliminated, result.score, result.bombCells, result.changedPieces);
     }
 
     if (result.newBalls.length > 0) {
@@ -387,8 +386,7 @@ export class BoardView extends PIXI.Container {
     }
 
     if (result.autoEliminated && result.autoEliminated.length > 0) {
-      await this._animateElimination(result.autoEliminated, result.score, result.autoBombCells);
-      this._refreshChangedPieces(result.autoChangedPieces);
+      await this._animateElimination(result.autoEliminated, result.score, result.autoBombCells, result.autoChangedPieces);
     }
 
     if (result.score > 0) {
@@ -456,7 +454,12 @@ export class BoardView extends PIXI.Container {
     });
   }
 
-  private _animateElimination(eliminated: Point[], scoreDelta = 0, bombCells: Point[] = []): Promise<void> {
+  private _animateElimination(
+    eliminated: Point[],
+    scoreDelta = 0,
+    bombCells: Point[] = [],
+    changedPieces: ChangedPiece[] = [],
+  ): Promise<void> {
     return new Promise((resolve) => {
       if (eliminated.length === 0) { resolve(); return; }
 
@@ -464,6 +467,10 @@ export class BoardView extends PIXI.Container {
         a.row !== b.row ? a.row - b.row : a.col - b.col
       );
       const bombSet = new Set(bombCells.map(p => `${p.row},${p.col}`));
+      const changedMap = new Map(changedPieces.map(changed => [
+        `${changed.position.row},${changed.position.col}`,
+        changed,
+      ]));
       const lineGroups = this._groupEliminationLines(sorted);
       AudioManager.play(eliminated.length >= 6 || scoreDelta >= 16 ? 'eliminateBig' : 'eliminate');
       lineGroups.forEach((line) => this._spawnLineGlow(line));
@@ -491,6 +498,7 @@ export class BoardView extends PIXI.Container {
         const mainColor = palette ? palette[0] : 0xFFFFFF;
         const hiColor = palette ? palette[1] : 0xFFFFFF;
         const isBombTarget = bombSet.has(`${pos.row},${pos.col}`);
+        const changed = changedMap.get(`${pos.row},${pos.col}`);
         const distanceDelay = blastCenter
           ? Math.hypot(center.x - blastCenter.x, center.y - blastCenter.y) / this._cellSize * 0.022
           : 0;
@@ -504,8 +512,20 @@ export class BoardView extends PIXI.Container {
           delay,
           onComplete: () => {
             this._flashEliminateCell(pos, mainColor, isBombTarget);
-            this._spawnOrbDissolve(center, mainColor, hiColor, isBombTarget);
+            if (changed) {
+              this._spawnLayerBreak(center, mainColor, hiColor, isBombTarget);
+              ball.setPiece(changed.piece);
+              this._animateLayerRemoved(ball, () => {
+                remaining--;
+                if (remaining === 0) {
+                  this._boardShake();
+                  resolve();
+                }
+              });
+              return;
+            }
 
+            this._spawnOrbDissolve(center, mainColor, hiColor, isBombTarget);
             ball.animateEliminate(() => {
               this._ballContainer.removeChild(ball);
               ball.destroy();
@@ -909,6 +929,100 @@ export class BoardView extends PIXI.Container {
         onComplete: () => this._spawnShockwave(targetCenter, 0xFFD66B, 1.65),
       });
     }
+  }
+
+  private _spawnLayerBreak(
+    center: { x: number; y: number },
+    mainColor: number,
+    hiColor: number,
+    intense = false,
+  ): void {
+    const ring = new PIXI.Graphics();
+    ring.blendMode = PIXI.BLEND_MODES.ADD;
+    ring.lineStyle(this._cellSize * 0.055, 0xFFFFFF, intense ? 0.72 : 0.52);
+    ring.drawCircle(0, 0, this._cellSize * 0.32);
+    ring.lineStyle(this._cellSize * 0.035, hiColor, 0.75);
+    ring.drawCircle(0, 0, this._cellSize * 0.39);
+    ring.x = center.x;
+    ring.y = center.y;
+    this._overlayContainer.addChild(ring);
+
+    TweenManager.to({
+      target: ring.scale,
+      props: { x: intense ? 1.65 : 1.35, y: intense ? 1.65 : 1.35 },
+      duration: 0.22,
+      ease: Ease.easeOutQuad,
+    });
+    TweenManager.to({
+      target: ring,
+      props: { alpha: 0 },
+      duration: 0.26,
+      ease: Ease.easeOutQuad,
+      onComplete: () => {
+        this._overlayContainer.removeChild(ring);
+        ring.destroy();
+      },
+    });
+
+    const count = intense ? 10 : 7;
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 / count) * i + (Math.random() - 0.5) * 0.45;
+      const dist = this._cellSize * (0.34 + Math.random() * 0.36);
+      const shard = new PIXI.Graphics();
+      shard.blendMode = PIXI.BLEND_MODES.ADD;
+      shard.beginFill(Math.random() > 0.45 ? 0xFFFFFF : hiColor, 0.88);
+      shard.drawPolygon([
+        -this._cellSize * 0.025, -this._cellSize * 0.055,
+        this._cellSize * 0.045, 0,
+        -this._cellSize * 0.025, this._cellSize * 0.055,
+      ]);
+      shard.endFill();
+      shard.x = center.x;
+      shard.y = center.y;
+      shard.rotation = angle;
+      this._overlayContainer.addChild(shard);
+
+      const duration = 0.26 + Math.random() * 0.12;
+      TweenManager.to({
+        target: shard,
+        props: {
+          x: center.x + Math.cos(angle) * dist,
+          y: center.y + Math.sin(angle) * dist,
+          rotation: angle + (Math.random() - 0.5) * 1.2,
+        },
+        duration,
+        ease: Ease.easeOutQuad,
+      });
+      TweenManager.to({
+        target: shard,
+        props: { alpha: 0 },
+        duration: duration + 0.04,
+        onComplete: () => {
+          this._overlayContainer.removeChild(shard);
+          shard.destroy();
+        },
+      });
+    }
+
+    this._spawnOrbDissolve(center, mainColor, hiColor, false);
+  }
+
+  private _animateLayerRemoved(ball: BallSprite, onComplete: () => void): void {
+    TweenManager.to({
+      target: ball.scale,
+      props: { x: 1.08, y: 1.08 },
+      duration: 0.08,
+      ease: Ease.easeOutQuad,
+      onComplete: () => {
+        TweenManager.to({
+          target: ball.scale,
+          props: { x: 1, y: 1 },
+          duration: 0.14,
+          ease: Ease.easeOutBack,
+          onComplete,
+        });
+      },
+    });
   }
 
   private _spawnOrbDissolve(

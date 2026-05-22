@@ -1,5 +1,13 @@
-import { DEFAULT_AVATAR_PATH, USER_PROFILE_KEY } from '@/config/CloudConfig';
+import { USER_PROFILE_KEY } from '@/config/CloudConfig';
 import { PersistService } from '@/core/PersistService';
+import {
+  formatDefaultNickname,
+  getDefaultOrbAvatarPath,
+  isLegacyDefaultAvatar,
+  isRemoteAvatarUrl,
+  resolveDisplayAvatarUrl,
+  resolveDisplayNickname,
+} from '@/utils/defaultProfileDisplay';
 
 declare const GameGlobal: any;
 
@@ -43,11 +51,11 @@ class UserProfileManagerClass {
   setUserId(userId: string): void {
     if (!userId || userId === this._userId) return;
     this._userId = userId;
-    if (!this._profile.authorized && !this._profile.nickname) {
+    if (!this._profile.authorized) {
       this._profile = this._defaultProfile(userId);
       this._emit();
     } else if (!this._profile.nickname) {
-      this._profile.nickname = this._defaultNickname(userId);
+      this._profile.nickname = formatDefaultNickname(userId);
       this._emit();
     }
   }
@@ -61,11 +69,11 @@ class UserProfileManagerClass {
   }
 
   get nickname(): string {
-    return this._profile.nickname || this._defaultNickname(this._userId);
+    return resolveDisplayNickname(this._profile.nickname, this._userId);
   }
 
   get avatarUrl(): string {
-    return this._profile.avatarUrl || DEFAULT_AVATAR_PATH;
+    return resolveDisplayAvatarUrl(this._profile.avatarUrl, this._userId);
   }
 
   get isAuthorized(): boolean {
@@ -93,8 +101,8 @@ class UserProfileManagerClass {
     }
 
     const next: UserProfile = {
-      nickname: trimmedNick || this._profile.nickname || this._defaultNickname(this._userId),
-      avatarUrl: this._normalizeAvatarUrl(trimmedAvatar || this._profile.avatarUrl),
+      nickname: trimmedNick || this._profile.nickname || formatDefaultNickname(this._userId),
+      avatarUrl: this._normalizeAvatarUrl(trimmedAvatar || this._profile.avatarUrl, true),
       updatedAt: Date.now(),
       authorized: true,
     };
@@ -111,15 +119,10 @@ class UserProfileManagerClass {
     this._emit();
   }
 
-  private _defaultNickname(userId: string): string {
-    const tail = (userId || '').replace(/[^A-Za-z0-9]/g, '').slice(-4) || '0000';
-    return `游客${tail.toUpperCase()}`;
-  }
-
   private _defaultProfile(userId: string): UserProfile {
     return {
-      nickname: this._defaultNickname(userId),
-      avatarUrl: DEFAULT_AVATAR_PATH,
+      nickname: formatDefaultNickname(userId),
+      avatarUrl: getDefaultOrbAvatarPath(userId),
       updatedAt: 0,
       authorized: false,
     };
@@ -132,21 +135,34 @@ class UserProfileManagerClass {
       return;
     }
     const nickname = String(raw.nickname || '').trim();
-    const avatarUrl = this._normalizeAvatarUrl(String(raw.avatarUrl || '').trim());
+    let avatarUrl = this._normalizeAvatarUrl(String(raw.avatarUrl || '').trim(), false);
     const updatedAt = Number(raw.updatedAt || 0);
-    const authorized = Boolean(raw.authorized && avatarUrl !== DEFAULT_AVATAR_PATH)
-      || (nickname.length > 0 && avatarUrl !== DEFAULT_AVATAR_PATH);
+    const authorized = Boolean(raw.authorized) && isRemoteAvatarUrl(avatarUrl);
+
     this._profile = {
-      nickname: nickname || this._defaultNickname(this._userId),
-      avatarUrl: avatarUrl || DEFAULT_AVATAR_PATH,
+      nickname: authorized
+        ? (nickname || formatDefaultNickname(this._userId))
+        : formatDefaultNickname(this._userId),
+      avatarUrl: authorized
+        ? avatarUrl
+        : getDefaultOrbAvatarPath(this._userId),
       updatedAt,
       authorized,
     };
+
+    if (!authorized && (nickname !== this._profile.nickname || avatarUrl !== this._profile.avatarUrl)) {
+      this._saveToStorage();
+    }
   }
 
-  private _normalizeAvatarUrl(url: string): string {
+  private _normalizeAvatarUrl(url: string, fromWechat: boolean): string {
     const trimmed = String(url || '').trim();
-    if (!trimmed || this._isTemporaryAvatarUrl(trimmed)) return DEFAULT_AVATAR_PATH;
+    if (this._isTemporaryAvatarUrl(trimmed)) {
+      return fromWechat ? trimmed : getDefaultOrbAvatarPath(this._userId);
+    }
+    if (!trimmed || isLegacyDefaultAvatar(trimmed)) {
+      return getDefaultOrbAvatarPath(this._userId);
+    }
     return trimmed;
   }
 

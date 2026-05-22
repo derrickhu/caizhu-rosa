@@ -16,6 +16,7 @@ import { PropBar } from '@/ui/PropBar';
 import { PropInfoOverlay } from '@/ui/PropInfoOverlay';
 import { getLevelDef, getLevelStars, getMaxStarScore, getPassScore, TOTAL_LEVELS, type LevelDef } from '@/config/LevelConfig';
 import { LEVEL1_TUTORIAL_LAYOUT } from '@/config/Level1TutorialLayout';
+import { getLevelLayout } from '@/config/LevelLayouts';
 import { getSpecialPieceIntros, hasSeenSpecialPieceIntro, markSpecialPieceIntroSeen, type SpecialPieceIntroDef } from '@/config/SpecialPieceIntroConfig';
 import { PropType } from '@/config/PropConfig';
 import { LEVEL1_TUTORIAL_KEY } from '@/config/CloudConfig';
@@ -138,6 +139,14 @@ export class LevelScene implements Scene {
     };
     if (this._tutorialActive) {
       BoardManager.initLevelWithLayout(levelConfig, LEVEL1_TUTORIAL_LAYOUT);
+    } else if (def.layoutId) {
+      const layout = getLevelLayout(def.layoutId);
+      if (layout) {
+        BoardManager.initLevelWithLayout(levelConfig, layout);
+      } else {
+        console.warn(`[LevelScene] Missing layout for ${def.layoutId}`);
+        BoardManager.initLevel(levelConfig);
+      }
     } else {
       BoardManager.initLevel(levelConfig);
     }

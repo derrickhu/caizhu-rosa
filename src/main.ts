@@ -17,6 +17,7 @@ import { LeaderboardManager } from '@/managers/LeaderboardManager';
 import { UserProfileManager } from '@/managers/UserProfileManager';
 import { BackendService } from '@/core/BackendService';
 import { Platform } from '@/core/PlatformService';
+import { configureWechatShare } from '@/core/ShareService';
 import { AudioManager } from '@/core/AudioManager';
 import { loadPropIcons } from '@/utils/iconLoader';
 import { loadOrbTextures } from '@/utils/orbLoader';
@@ -72,9 +73,7 @@ async function main(): Promise<void> {
     await loadWechatSubpackage('assets');
     await loadWechatSubpackage('audio');
 
-    Platform.onShareAppMessage(() => ({
-      title: GAME_DISPLAY_NAME,
-    }));
+    configureWechatShare();
 
     AudioManager.register('eliminate', AUDIO_ASSETS.eliminate, AUDIO_VOLUME.eliminate);
     AudioManager.register('eliminateBig', AUDIO_ASSETS.eliminateBig, AUDIO_VOLUME.eliminateBig);

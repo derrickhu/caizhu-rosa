@@ -16,6 +16,8 @@ import { BEST_SCORE_KEY } from '@/config/CloudConfig';
 import { PersistService } from '@/core/PersistService';
 import { createBgSprite } from '@/utils/bgHelper';
 import { createAvatarSprite } from '@/utils/avatarSprite';
+import { resolveDisplayAvatarUrl, resolveDisplayNickname } from '@/utils/defaultProfileDisplay';
+import { BackendService } from '@/core/BackendService';
 import { addImageSprite, loadImageTexture } from '@/utils/imageTexture';
 import { AudioManager } from '@/core/AudioManager';
 import { AUDIO_ASSETS, AUDIO_VOLUME } from '@/config/AudioConfig';
@@ -115,7 +117,7 @@ export class RankScene implements Scene {
     this.container.addChild(this._meBar);
 
     this._profileUnsub = UserProfileManager.subscribe(() => {
-      this._refreshMeBar();
+      void this._onProfileChanged();
     });
 
     void this._promptUserProfileAuth();
@@ -142,9 +144,22 @@ export class RankScene implements Scene {
     const profile = await Platform.getUserProfile('用于排行榜显示');
     if (profile && (profile.nickName || profile.avatarUrl)) {
       await UserProfileManager.updateProfile(profile.nickName, profile.avatarUrl);
-      LeaderboardManager.invalidateCache();
+      await LeaderboardManager.resyncAuthorizedProfile();
       void this._loadInitialData(true);
     }
+  }
+
+  private async _onProfileChanged(): Promise<void> {
+    this._refreshMeBar();
+    if (!UserProfileManager.isAuthorized) return;
+    await LeaderboardManager.resyncAuthorizedProfile();
+    if (this._classicData) {
+      this._classicData = this._patchWorldWithLocalProfile(this._classicData);
+    }
+    if (this._levelData) {
+      this._levelData = this._patchWorldWithLocalProfile(this._levelData);
+    }
+    this._renderList();
   }
 
   // ─── Tabs ──────────────────────────────────────────────────
@@ -290,6 +305,9 @@ export class RankScene implements Scene {
     this._restyleScopeTabs();
     this._renderList();
     this._refreshMeBar();
+    if (tab === 'world') {
+      void this._loadInitialData(true);
+    }
   }
 
   // ─── List rendering ────────────────────────────────────────
@@ -311,6 +329,17 @@ export class RankScene implements Scene {
 
     if (this._loading) {
       this._listArea.addChild(this._renderEmpty('加载中...', W));
+      return;
+    }
+
+    if (data?.fetch && data.fetch.ok === false) {
+      const code = data.fetch.code || '';
+      const hint = code === 'NOT_FOUND'
+        ? '全服榜接口未部署或版本过旧\n请更新云函数 caizhu-api 后重新打开排行榜'
+        : code === 'DATABASE_COLLECTION_NOT_EXIST'
+          ? '全服榜数据库集合未创建\n请在云开发控制台创建 caizhu_leaderboard_classic / level'
+          : `全服榜加载失败\n${data.fetch.message || code || '请稍后重试'}`;
+      this._listArea.addChild(this._renderEmpty(hint, W));
       return;
     }
 
@@ -373,6 +402,15 @@ export class RankScene implements Scene {
       this._friendCanvasSprite = sprite;
       this._listArea.addChild(sprite);
 
+      const H = Game.logicHeight;
+      const visibleH = H - 226 - this._listArea.y - 8;
+      const mask = new PIXI.Graphics();
+      mask.beginFill(0xffffff, 1);
+      mask.drawRect(0, 0, W, visibleH);
+      mask.endFill();
+      this._listArea.addChild(mask);
+      sprite.mask = mask;
+
       const ticker = (_dt: number) => {
         try { baseTexture.update(); } catch {}
       };
@@ -396,8 +434,8 @@ export class RankScene implements Scene {
       tab: this._modeTab,
       viewport: {
         width: 750,
-        height: Math.max(1100, Math.floor(targetW * 1.8)),
-        startY: 28,
+        height: 680,
+        listStartY: 300,
       },
     });
   }
@@ -495,13 +533,38 @@ export class RankScene implements Scene {
       c.addChild(card);
 
       const panelHolder = new PIXI.Container();
-      const panelH = p.w * podiumFrameRatio(p.frame);
 
       if (!p.item) {
         card.addChild(panelHolder);
         this._addPodiumFrameSprite(panelHolder, p.frame, p.w);
         continue;
       }
+
+      card.addChild(panelHolder);
+      this._addPodiumFrameSprite(panelHolder, p.frame, p.w);
+
+      const avatarR = p.frame === 'top1' ? 40 : 34;
+      const avatarY = p.frame === 'top1' ? 100 : 50;
+      const avatar = createAvatarSprite(p.item.avatarUrl, avatarR, p.item.userId);
+      avatar.x = p.w / 2 - avatarR;
+      avatar.y = avatarY;
+      card.addChild(avatar);
+
+      const name = new PIXI.Text(
+        this._truncateNickname(resolveDisplayNickname(p.item.nickname, p.item.userId)),
+        new PIXI.TextStyle({
+          fontSize: p.frame === 'top1' ? 20 : 17,
+          fill: 0x1E3A5F,
+          fontWeight: 'bold',
+          fontFamily: 'Arial',
+          stroke: 0xFFFFFF,
+          strokeThickness: 2,
+        }),
+      );
+      name.anchor.set(0.5, 0);
+      name.x = p.w / 2;
+      name.y = avatarY + avatarR * 2 + 6;
+      card.addChild(name);
 
       const value = this._modeTab === 'classic'
         ? `${(p.item as LeaderboardClassicEntry).bestScore}`
@@ -519,43 +582,30 @@ export class RankScene implements Scene {
         dropShadowDistance: 2,
         dropShadowAlpha: 0.45,
       }));
-      score.anchor.set(1, 1);
-      score.x = p.w - 8;
-      score.y = panelH - 10;
-
-      card.addChild(panelHolder);
-      this._addPodiumFrameSprite(panelHolder, p.frame, p.w);
+      // 分数/星星：面板白色区域内水平居中，紧挨昵称下方（对齐设计红框位置）
+      const scoreGapBelowName = p.frame === 'top1' ? 10 : 8;
+      const nameLineH = p.frame === 'top1' ? 24 : 20;
+      score.anchor.set(0.5, 0);
+      score.x = p.w / 2;
+      score.y = name.y + nameLineH + scoreGapBelowName;
       card.addChild(score);
-
-      const avatarR = p.frame === 'top1' ? 40 : 34;
-      const avatar = createAvatarSprite(p.item.avatarUrl, avatarR);
-      avatar.x = p.w / 2 - avatarR;
-      avatar.y = p.frame === 'top1' ? 100 : 50;
-      card.addChild(avatar);
-
-      const name = new PIXI.Text(this._truncateNickname(p.item.nickname || '玩家'), new PIXI.TextStyle({
-        fontSize: p.frame === 'top1' ? 20 : 17,
-        fill: 0x1E3A5F,
-        fontWeight: 'bold',
-        fontFamily: 'Arial',
-        stroke: 0xFFFFFF,
-        strokeThickness: 2,
-      }));
-      name.anchor.set(0.5, 0);
-      name.x = p.w / 2;
-      name.y = avatar.y + avatarR * 2 + 8;
-      card.addChild(name);
     }
 
     return c;
   }
 
   private _createClassicRow(entry: LeaderboardClassicEntry, W: number): PIXI.Container {
-    return this._createRowFrame(entry.rank, entry.isMe, entry.nickname, entry.avatarUrl, String(entry.bestScore), '分', W);
+    return this._createRowFrame(
+      entry.rank, entry.isMe, entry.nickname, entry.avatarUrl, entry.userId,
+      String(entry.bestScore), '分', W,
+    );
   }
 
   private _createLevelRow(entry: LeaderboardLevelEntry, W: number): PIXI.Container {
-    const row = this._createRowFrame(entry.rank, entry.isMe, entry.nickname, entry.avatarUrl, String(entry.totalStars), '星', W);
+    const row = this._createRowFrame(
+      entry.rank, entry.isMe, entry.nickname, entry.avatarUrl, entry.userId,
+      String(entry.totalStars), '星', W,
+    );
     const sub = new PIXI.Text(`累计 ${entry.totalScore}`, new PIXI.TextStyle({
       fontSize: 14, fill: 0xCBD5E1, fontFamily: 'Arial',
     }));
@@ -568,7 +618,7 @@ export class RankScene implements Scene {
 
   private _createRowFrame(
     rank: number, isMe: boolean,
-    nickname: string, avatarUrl: string,
+    nickname: string, avatarUrl: string, userId: string,
     valueText: string, valueUnit: string,
     W: number,
   ): PIXI.Container {
@@ -595,12 +645,12 @@ export class RankScene implements Scene {
     rankText.y = h / 2;
     row.addChild(rankText);
 
-    const avatar = createAvatarSprite(avatarUrl, 24);
+    const avatar = createAvatarSprite(avatarUrl, 24, userId);
     avatar.x = 60;
     avatar.y = h / 2 - 24;
     row.addChild(avatar);
 
-    const nick = new PIXI.Text(this._truncateNickname(nickname || '游客'), new PIXI.TextStyle({
+    const nick = new PIXI.Text(this._truncateNickname(resolveDisplayNickname(nickname, userId)), new PIXI.TextStyle({
       fontSize: 22, fill: 0x102F64, fontWeight: 'bold', fontFamily: 'Arial',
     }));
     nick.anchor.set(0, 0.5);
@@ -746,13 +796,14 @@ export class RankScene implements Scene {
   private _refreshMeBar(): void {
     if (!this._meBarRankText || !this._meBarNameText || !this._meBarScoreText || !this._meBarAvatarHolder) return;
     const profile = UserProfileManager.profile;
+    const meUserId = BackendService.userId || UserProfileManager.userId || 'local';
     this._meBarAvatarHolder.removeChildren();
-    this._meBarAvatarHolder.addChild(createAvatarSprite(profile.avatarUrl, 38));
+    this._meBarAvatarHolder.addChild(createAvatarSprite(profile.avatarUrl, 38, meUserId));
 
     if (this._scopeTab === 'friends') {
       const localValue = this._localFallbackValue();
       this._meBarRankText.text = '好友榜';
-      this._meBarNameText.text = this._truncateNickname(profile.nickname || '我');
+      this._meBarNameText.text = this._truncateNickname(resolveDisplayNickname(profile.nickname, meUserId));
       this._meBarScoreText.text = Platform.supportsOpenData
         ? this._modeTab === 'classic' ? `${localValue} 分` : `★ ${localValue}`
         : '不可用';
@@ -763,7 +814,7 @@ export class RankScene implements Scene {
     if (!data || !data.me) {
       const localValue = this._localFallbackValue();
       this._meBarRankText.text = '未上榜';
-      this._meBarNameText.text = this._truncateNickname(profile.nickname || '我');
+      this._meBarNameText.text = this._truncateNickname(resolveDisplayNickname(profile.nickname, meUserId));
       this._meBarScoreText.text = this._modeTab === 'classic' ? `${localValue} 分` : `★ ${localValue}`;
       return;
     }
@@ -771,12 +822,16 @@ export class RankScene implements Scene {
     if (this._modeTab === 'classic') {
       const cm = me as LeaderboardClassicEntry;
       this._meBarRankText.text = `第 ${cm.rank} 名`;
-      this._meBarNameText.text = this._truncateNickname(profile.nickname || cm.nickname || '我');
+      this._meBarNameText.text = this._truncateNickname(
+        resolveDisplayNickname(profile.nickname || cm.nickname, cm.userId || meUserId),
+      );
       this._meBarScoreText.text = `${cm.bestScore} 分`;
     } else {
       const lm = me as LeaderboardLevelEntry;
       this._meBarRankText.text = `第 ${lm.rank} 名`;
-      this._meBarNameText.text = this._truncateNickname(profile.nickname || lm.nickname || '我');
+      this._meBarNameText.text = this._truncateNickname(
+        resolveDisplayNickname(profile.nickname || lm.nickname, lm.userId || meUserId),
+      );
       this._meBarScoreText.text = `★ ${lm.totalStars}`;
     }
   }
@@ -808,13 +863,16 @@ export class RankScene implements Scene {
     this._loading = true;
     this._renderList();
     try {
-      const synced = await this._syncLocalProgressToLeaderboard();
+      await this._syncLocalProgressToLeaderboard();
+      if (UserProfileManager.isAuthorized) {
+        await LeaderboardManager.resyncAuthorizedProfile();
+      }
       const [classic, level] = await Promise.all([
-        LeaderboardManager.fetchClassicWorld(force || synced),
-        LeaderboardManager.fetchLevelWorld(force || synced),
+        LeaderboardManager.fetchClassicWorld(true),
+        LeaderboardManager.fetchLevelWorld(true),
       ]);
-      this._classicData = this._withLocalClassicMe(classic);
-      this._levelData = this._withLocalLevelMe(level);
+      this._classicData = this._patchWorldWithLocalProfile(this._withLocalClassicMe(classic));
+      this._levelData = this._patchWorldWithLocalProfile(this._withLocalLevelMe(level));
     } catch (error) {
       console.warn('[RankScene] load failed', error);
     } finally {
@@ -847,21 +905,55 @@ export class RankScene implements Scene {
     return false;
   }
 
+  private _myUserId(): string {
+    return BackendService.userId || UserProfileManager.userId || '';
+  }
+
+  private _isMyEntry(userId: string, isMe: boolean): boolean {
+    const myId = this._myUserId();
+    return isMe || (!!myId && userId === myId);
+  }
+
+  /** 领奖台/列表与底部「我的」一致：自己的条目用本地授权资料覆盖服务端旧数据 */
+  private _patchWorldWithLocalProfile<T extends LeaderboardClassicEntry | LeaderboardLevelEntry>(
+    data: LeaderboardWorldResult<T>,
+  ): LeaderboardWorldResult<T> {
+    if (!UserProfileManager.isAuthorized) return data;
+    const patchOne = (entry: T): T => {
+      if (!this._isMyEntry(entry.userId, entry.isMe)) return entry;
+      const meUserId = this._myUserId();
+      return {
+        ...entry,
+        nickname: UserProfileManager.profile.nickname || resolveDisplayNickname(entry.nickname, meUserId),
+        avatarUrl: UserProfileManager.avatarUrl,
+      };
+    };
+    return {
+      ...data,
+      items: data.items.map(patchOne),
+      me: data.me ? patchOne(data.me) : data.me,
+    };
+  }
+
   private _withLocalClassicMe(
     data: LeaderboardWorldResult<LeaderboardClassicEntry>,
   ): LeaderboardWorldResult<LeaderboardClassicEntry> {
+    if (data.fetch && data.fetch.ok === false) return data;
     if (data.me) return data;
     const bestScore = this._localClassicScore();
     if (bestScore <= 0) return data;
 
     const profile = UserProfileManager.profile;
+    const meUserId = BackendService.userId || UserProfileManager.userId || 'local';
     const higherCount = data.items.filter((item) => item.bestScore > bestScore).length;
     const me: LeaderboardClassicEntry = {
       rank: higherCount + 1,
       isMe: true,
-      userId: 'local',
-      nickname: profile.nickname || '我',
-      avatarUrl: profile.avatarUrl,
+      userId: meUserId,
+      nickname: UserProfileManager.isAuthorized
+        ? (profile.nickname || resolveDisplayNickname('', meUserId))
+        : resolveDisplayNickname(profile.nickname, meUserId),
+      avatarUrl: UserProfileManager.avatarUrl,
       bestScore,
       updatedAt: Date.now(),
     };
@@ -878,18 +970,22 @@ export class RankScene implements Scene {
   private _withLocalLevelMe(
     data: LeaderboardWorldResult<LeaderboardLevelEntry>,
   ): LeaderboardWorldResult<LeaderboardLevelEntry> {
+    if (data.fetch && data.fetch.ok === false) return data;
     if (data.me) return data;
     const totalStars = this._localLevelStars();
     const totalScore = LevelManager.getTotalBestScore();
     if (totalStars <= 0 && totalScore <= 0) return data;
 
     const profile = UserProfileManager.profile;
+    const meUserId = BackendService.userId || UserProfileManager.userId || 'local';
     const me: LeaderboardLevelEntry = {
       rank: 1,
       isMe: true,
-      userId: 'local',
-      nickname: profile.nickname || '我',
-      avatarUrl: profile.avatarUrl,
+      userId: meUserId,
+      nickname: UserProfileManager.isAuthorized
+        ? (profile.nickname || resolveDisplayNickname('', meUserId))
+        : resolveDisplayNickname(profile.nickname, meUserId),
+      avatarUrl: UserProfileManager.avatarUrl,
       totalStars,
       totalScore,
       maxUnlocked: LevelManager.maxUnlocked,
