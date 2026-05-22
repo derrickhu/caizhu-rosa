@@ -1,22 +1,26 @@
-Create a game-ready loading screen background for a mobile casual puzzle game called "彩珠五连".
+Create a polished full-screen loading background for a mobile casual puzzle game "彩珠五连" (colorful glass marble line-matching).
 
-Style:
-- vibrant glossy cartoon mobile game UI
-- colorful glass marbles, rounded puzzle board, candy-like highlights
-- consistent with a playful marble line-matching puzzle game
-- high saturation, clean readable composition, polished casual WeChat mini game style
+Art style:
+- premium glossy cartoon mobile game illustration, WeChat mini-game quality
+- vibrant but refined: soft periwinkle-lavender-blue gradient sky, subtle bokeh sparkles, floating iridescent glass bubbles at edges
+- candy-like specular highlights on marbles, clean soft shadows, high production value
+- NOT cluttered; elegant composition with breathing room in lower third for UI overlay
 
-Composition:
-- portrait 9:16 loading screen
-- soft blue-purple gradient background with subtle sparkles and floating glass marbles
-- center area shows a cute 9x9 puzzle board fragment with colorful marbles forming a glowing five-in-a-row line
-- include a bright line-clear glow effect across five marbles to communicate gameplay
-- bottom area has a glossy rounded loading bar frame, empty inside, suitable for code-drawn progress fill
-- leave clean space above or below the board for code-drawn "加载中" text and percentage
+Color palette (match existing game):
+- background: #6B8CFF → #9B7BFF → #C8A8FF soft vertical gradient
+- marbles: ruby red, amber gold, emerald green, sapphire blue, bright orange — translucent gemstone look
+- accent glow: warm white-gold line-clear beam
 
-Important:
-- NO text, no labels, no captions, no writing, no numbers
-- do not include logos or UI buttons
-- no ocean/coral/seaweed/shell theme
-- full-screen background image, no transparent background
-- polished, clean, high quality, mobile portrait wallpaper
+Composition (portrait 9:16):
+- upper and mid frame: dreamy sparkle atmosphere with a few decorative floating marbles (small, blurred depth)
+- center focal: a beautiful rounded 9x9 puzzle board fragment (about 55% of screen width), cream-white rounded grid cells, thick glossy purple border
+- inside board: colorful glass marbles; one diagonal five-in-a-row of red marbles with brilliant white-gold connection glow and lens flares — communicates core gameplay
+- lower third: ONLY soft gradient and gentle sparkles — completely empty, calm, no UI chrome, no bar, no slot, no groove, no frame, no recessed panel
+- subtle soft vignette at bottom for text readability
+
+Critical exclusions:
+- NO text, numbers, logos, buttons, captions
+- NO loading bar, progress bar, groove, slot, frame, panel, or any placeholder for progress UI
+- NO ocean/coral/seaweed/shell theme
+- full opaque background, no transparency
+- single cohesive illustration, wallpaper-quality

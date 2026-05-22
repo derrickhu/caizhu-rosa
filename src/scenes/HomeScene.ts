@@ -7,7 +7,6 @@ import { addImageSprite } from '@/utils/imageTexture';
 import { GmOverlay } from '@/ui/GmOverlay';
 import { SettingsOverlay } from '@/ui/SettingsOverlay';
 import { AudioManager } from '@/core/AudioManager';
-import { shareToFriend } from '@/core/ShareService';
 import { AUDIO_ASSETS, AUDIO_VOLUME } from '@/config/AudioConfig';
 
 export class HomeScene implements Scene {
@@ -44,7 +43,6 @@ export class HomeScene implements Scene {
     this._createHotspot(W * 0.51, H * 0.785, W * 0.91, H * 0.90, () => this._handleRewardsTap());
     this._createGameClubButton(W * 0.51, H * 0.785, W * 0.91, H * 0.90);
 
-    this._addShareEntry();
     this._maybeAddGmEntry();
   }
 
@@ -89,41 +87,6 @@ export class HomeScene implements Scene {
   private _handleRewardsTap(): void {
     if (this._gameClubButton) return;
     Platform.showToast(Platform.isWechat ? '当前微信版本暂不支持游戏圈' : '请在微信小游戏中打开游戏圈');
-  }
-
-  private _addShareEntry(): void {
-    const btn = new PIXI.Container();
-    btn.x = Game.logicWidth - 78;
-    btn.y = Math.max(70, Game.safeTop + 50);
-    btn.eventMode = 'static';
-    btn.cursor = 'pointer';
-    this.container.addChild(btn);
-
-    const bg = new PIXI.Graphics();
-    bg.beginFill(0xFFB934, 0.95);
-    bg.lineStyle(4, 0xFFFFFF, 0.95);
-    bg.drawRoundedRect(-46, -25, 92, 50, 25);
-    bg.endFill();
-    btn.addChild(bg);
-
-    const label = new PIXI.Text('分享', new PIXI.TextStyle({
-      fontSize: 24,
-      fill: 0xFFFFFF,
-      fontWeight: 'bold',
-      fontFamily: 'Arial',
-      stroke: 0x8A3A00,
-      strokeThickness: 4,
-    }));
-    label.anchor.set(0.5, 0.53);
-    btn.addChild(label);
-
-    btn.on('pointerdown', () => {
-      AudioManager.play('button');
-      btn.scale.set(0.94);
-      shareToFriend('home_button');
-    });
-    btn.on('pointerup', () => btn.scale.set(1));
-    btn.on('pointerupoutside', () => btn.scale.set(1));
   }
 
   private _createGameClubButton(x1: number, y1: number, x2: number, y2: number): void {

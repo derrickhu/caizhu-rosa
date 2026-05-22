@@ -71,6 +71,8 @@ async function main(): Promise<void> {
     SceneManager.switchTo('loading');
 
     await loadWechatSubpackage('assets');
+    await loadImageTexture('subpkg_assets/images/home_title_cz5.png');
+    loadingScene.addGameTitle();
     await loadWechatSubpackage('audio');
 
     configureWechatShare();

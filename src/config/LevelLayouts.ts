@@ -33,6 +33,9 @@ export const LEVEL_LAYOUTS: Record<string, DesignedLevelLayout> = {
   level_01: layout([
     cell(4, 2, n(0)), cell(4, 3, n(0)), cell(4, 4, n(0)), cell(4, 5, n(0)),
     cell(6, 6, n(0)),
+    cell(2, 1, n(1)), cell(2, 7, n(2)), cell(3, 3, n(2)), cell(3, 6, n(1)),
+    cell(5, 1, n(1)), cell(5, 7, n(2)), cell(6, 2, n(2)), cell(6, 0, n(1)),
+    cell(7, 4, n(1)), cell(1, 5, n(2)), cell(7, 7, n(2)),
   ], [n(1), n(2), n(1)]),
 
   level_02: layout([

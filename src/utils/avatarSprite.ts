@@ -2,9 +2,11 @@ import * as PIXI from 'pixi.js';
 import { Platform } from '@/core/PlatformService';
 import {
   getDefaultOrbAvatarPath,
+  getDefaultOrbColorIndex,
   isRemoteAvatarUrl,
   resolveDisplayAvatarUrl,
 } from '@/utils/defaultProfileDisplay';
+import { getOrbTexture } from './orbLoader';
 import { loadImageTexture } from './imageTexture';
 
 declare const wx: any;
@@ -75,6 +77,12 @@ export function createAvatarSprite(avatarUrl: string, radius: number, userId = '
   container.addChild(placeholder);
 
   const useRemote = isRemoteAvatarUrl(resolvedUrl);
+  const orbTex = !useRemote ? getOrbTexture(getDefaultOrbColorIndex(userId)) : null;
+  if (orbTex) {
+    mountTexture(orbTex);
+    return container;
+  }
+
   const primaryLoader = useRemote ? loadRemoteAvatar(resolvedUrl) : loadImageTexture(resolvedUrl);
 
   const mountTexture = (texture: PIXI.Texture | null): boolean => {
@@ -102,7 +110,8 @@ export function createAvatarSprite(avatarUrl: string, radius: number, userId = '
   };
 
   const tryFallbackOrb = (): void => {
-    if (fallbackUrl === resolvedUrl) return;
+    const orbTex = getOrbTexture(getDefaultOrbColorIndex(userId));
+    if (mountTexture(orbTex)) return;
     void loadImageTexture(fallbackUrl).then((tex) => mountTexture(tex));
   };
 

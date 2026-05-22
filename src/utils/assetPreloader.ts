@@ -1,5 +1,4 @@
 import { loadImageTexture } from './imageTexture';
-import { ORB_AVATAR_PATHS } from './orbLoader';
 
 export const IMAGE_ASSETS: readonly string[] = [
   'images/loading_screen.png',
@@ -46,7 +45,7 @@ export const IMAGE_ASSETS: readonly string[] = [
   'subpkg_assets/images/level_next_banner.png',
   'subpkg_assets/images/level_complete_panel.png',
   'subpkg_assets/images/rank_panel.png',
-  ...ORB_AVATAR_PATHS,
+  'subpkg_assets/images/avatar_default.png',
   'subpkg_assets/images/rank_title_banner.png',
   'subpkg_assets/images/rank_tab_mode_active_blue.png',
   'subpkg_assets/images/rank_tab_mode_inactive.png',
@@ -78,22 +77,6 @@ export const IMAGE_ASSETS: readonly string[] = [
   'subpkg_assets/images/special_intro_panel.png',
   'subpkg_assets/images/tutorial_hand_pointer.png',
   'subpkg_assets/images/tutorial_panel.png',
-  'subpkg_assets/images/ui_button_blue.png',
-  'subpkg_assets/images/ui_button_green.png',
-  'subpkg_assets/images/ui_button_orange.png',
-  'subpkg_assets/images/ui_button_purple.png',
-  'subpkg_assets/images/ui_icon_back.png',
-  'subpkg_assets/images/ui_icon_close.png',
-  'subpkg_assets/images/ui_icon_lock.png',
-  'subpkg_assets/images/ui_icon_medal.png',
-  'subpkg_assets/images/ui_icon_rank.png',
-  'subpkg_assets/images/ui_icon_skin.png',
-  'subpkg_assets/images/ui_icon_star.png',
-  'subpkg_assets/images/ui_panel_hud.png',
-  'subpkg_assets/images/ui_panel_popup.png',
-  'subpkg_assets/images/ui_progress_bar.png',
-  'subpkg_assets/images/ui_tab_active.png',
-  'subpkg_assets/images/ui_tab_inactive.png',
 ];
 
 export async function preloadImageAssets(

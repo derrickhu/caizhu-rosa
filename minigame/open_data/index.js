@@ -1,6 +1,4 @@
-// 开放数据域入口（独立 JS 上下文）。
-// 接收主域 postMessage，调用 wx.getFriendCloudStorage 拉取好友榜数据，
-// 并在 SharedCanvas 上完成绘制。
+// 开放数据域：拉取好友云存储并绘制到 sharedCanvas（canvas 宽高只读）
 
 var drawer = require('./drawer.js');
 
@@ -13,40 +11,47 @@ var state = {
   tab: 'classic',
   metric: 'classic_best',
   metricLabel: '分',
-  viewport: { width: 750, height: 680, listStartY: 300 },
+  listWidth: 690,
+  rowHeight: 76,
   lastEntries: null,
   fetchInflight: false,
 };
 
-drawer.setRedrawTrigger(function () {
-  // 头像加载完成后重绘
-  if (state.lastEntries) {
-    drawer.drawFriendList(
-      ctx,
-      sharedCanvas.width,
-      sharedCanvas.height,
-      state.lastEntries,
-      state.metricLabel,
-      state.viewport,
-    );
+function readCanvasSize() {
+  if (!sharedCanvas) return { width: 0, height: 0 };
+  return { width: sharedCanvas.width, height: sharedCanvas.height };
+}
+
+function publishContentHeight(h) {
+  if (sharedCanvas) {
+    sharedCanvas.__friendContentHeight = h;
   }
-});
+}
+
+function redrawLast() {
+  if (!state.lastEntries || !ctx || !sharedCanvas) return;
+  var size = readCanvasSize();
+  var meta = {};
+  drawer.drawFriendList(
+    ctx,
+    size.width,
+    size.height,
+    state.lastEntries,
+    state.metricLabel,
+    state.listWidth,
+    state.rowHeight,
+    meta,
+  );
+  publishContentHeight(meta.contentHeight || 120);
+}
+
+drawer.setRedrawTrigger(redrawLast);
 
 function metricOf(tab) {
   if (tab === 'level') {
     return { metric: 'level_stars', label: '星' };
   }
   return { metric: 'classic_best', label: '分' };
-}
-
-function ensureCanvasSize(viewport) {
-  if (!sharedCanvas || !viewport) return;
-  if (viewport.width && sharedCanvas.width !== viewport.width) {
-    sharedCanvas.width = viewport.width;
-  }
-  if (viewport.height && sharedCanvas.height !== viewport.height) {
-    sharedCanvas.height = viewport.height;
-  }
 }
 
 function safeNumber(s) {
@@ -87,8 +92,10 @@ function fetchAndRender() {
   if (state.fetchInflight) return;
   state.fetchInflight = true;
 
-  // Render placeholder while loading
-  drawer.drawEmptyState(ctx, sharedCanvas.width, sharedCanvas.height, '加载好友榜中...');
+  var size = readCanvasSize();
+  var meta = {};
+  drawer.drawEmptyState(ctx, size.width, size.height, '加载好友榜中...');
+  publishContentHeight(80);
 
   var pickedMetric = state.metric;
   var pickedLabel = state.metricLabel;
@@ -97,7 +104,8 @@ function fetchAndRender() {
   function doFetch() {
     if (!WX.getFriendCloudStorage) {
       state.fetchInflight = false;
-      drawer.drawEmptyState(ctx, sharedCanvas.width, sharedCanvas.height, '当前环境不支持好友榜');
+      drawer.drawEmptyState(ctx, size.width, size.height, '当前环境不支持好友榜');
+      publishContentHeight(80);
       return;
     }
     WX.getFriendCloudStorage({
@@ -105,25 +113,28 @@ function fetchAndRender() {
       success: function (res) {
         var entries = buildEntries((res && res.data) || [], pickedMetric, selfOpenId);
         state.lastEntries = entries;
-        var needH = drawer.computeCanvasHeight(entries.length);
-        state.viewport.height = Math.max(620, needH);
-        state.viewport.listStartY = drawer.PODIUM_ZONE_H;
-        ensureCanvasSize(state.viewport);
+        size = readCanvasSize();
+        meta = {};
         drawer.drawFriendList(
           ctx,
-          sharedCanvas.width,
-          sharedCanvas.height,
+          size.width,
+          size.height,
           entries,
           pickedLabel,
-          state.viewport,
+          state.listWidth,
+          state.rowHeight,
+          meta,
         );
+        publishContentHeight(meta.contentHeight || 120);
       },
       fail: function (err) {
         var msg = '好友榜读取失败';
         if (err && err.errMsg) {
           msg = '好友榜读取失败\n' + String(err.errMsg).slice(0, 40);
         }
-        drawer.drawEmptyState(ctx, sharedCanvas.width, sharedCanvas.height, msg);
+        size = readCanvasSize();
+        drawer.drawEmptyState(ctx, size.width, size.height, msg);
+        publishContentHeight(80);
       },
       complete: function () {
         state.fetchInflight = false;
@@ -158,14 +169,8 @@ if (WX && WX.onMessage) {
       state.tab = tab;
       state.metric = pair.metric;
       state.metricLabel = pair.label;
-      if (msg.viewport) {
-        state.viewport = {
-          width: Number(msg.viewport.width || state.viewport.width),
-          height: Number(msg.viewport.height || state.viewport.height),
-          listStartY: Number(msg.viewport.listStartY || state.viewport.listStartY || drawer.PODIUM_ZONE_H),
-        };
-        ensureCanvasSize(state.viewport);
-      }
+      if (msg.listWidth) state.listWidth = Number(msg.listWidth);
+      if (msg.rowHeight) state.rowHeight = Number(msg.rowHeight);
       fetchAndRender();
     } else if (type === 'clearCache') {
       drawer.clearCache();
@@ -173,8 +178,8 @@ if (WX && WX.onMessage) {
   });
 }
 
-// 初始绘制
 if (ctx && sharedCanvas) {
-  ensureCanvasSize(state.viewport);
-  drawer.drawEmptyState(ctx, sharedCanvas.width, sharedCanvas.height, '好友榜准备中');
+  var initSize = readCanvasSize();
+  drawer.drawEmptyState(ctx, initSize.width, initSize.height, '好友榜准备中');
+  publishContentHeight(80);
 }

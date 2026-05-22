@@ -1,26 +1,18 @@
-// 在 sharedCanvas 上绘制好友榜：前三领奖台 + 第4名起细行列表（风格对齐全服榜）
+// 好友榜：canvas 尺寸只读，按主域传入的 listWidth / rowHeight 换算像素布局
 
 var utils = require('./utils.js');
 
-var PODIUM_SHEET = 'images/rank_top_podium_sheet.png';
-var PODIUM_FRAMES = {
-  top1: { x: 467, y: 4, w: 494, h: 832 },
-  top2: { x: 4, y: 88, w: 451, h: 663 },
-  top3: { x: 973, y: 104, w: 436, h: 632 },
-};
+var DESIGN_W = 750;
 
-var PODIUM_ZONE_H = 300;
-var ROW_HEIGHT = 56;
-var ROW_GAP = 6;
-var PADDING_X = 24;
-var AVATAR_RADIUS_ROW = 22;
+var ROW_PANEL = 'images/rank_row_panel.png';
+var ROW_PANEL_BORDER = { left: 64, top: 20, right: 64, bottom: 20 };
+
+var LIST_TOP = 8;
+var PADDING_X = 30;
+var FONT_FAMILY = 'PingFang SC, Hiragino Sans GB, Microsoft YaHei, Arial, sans-serif';
+
 var IMAGE_CACHE = {};
-
-var ASSETS = {
-  podiumSheet: null,
-  podiumReady: false,
-  podiumLoading: false,
-};
+var ASSETS = { rowPanel: null, rowReady: false, rowLoading: false };
 
 function setRedrawTrigger(redrawFn) {
   IMAGE_CACHE.__onLoad = redrawFn;
@@ -28,43 +20,57 @@ function setRedrawTrigger(redrawFn) {
 
 function clearCache() {
   for (var k in IMAGE_CACHE) {
-    if (k !== '__onLoad') {
-      delete IMAGE_CACHE[k];
-    }
+    if (k !== '__onLoad') delete IMAGE_CACHE[k];
+  }
+}
+
+function prepCtx(ctx) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  if (typeof ctx.imageSmoothingQuality === 'string') {
+    ctx.imageSmoothingQuality = 'high';
   }
 }
 
 function clearCanvas(ctx, w, h) {
-  ctx.save();
   ctx.clearRect(0, 0, w, h);
-  ctx.restore();
 }
 
-function drawEmptyState(ctx, w, h, message) {
-  clearCanvas(ctx, w, h);
-  ctx.fillStyle = 'rgba(148,163,184,0.9)';
-  ctx.font = '20px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  var lines = String(message || '').split('\n');
-  var lineH = 30;
-  var startY = h / 2 - ((lines.length - 1) * lineH) / 2;
-  for (var i = 0; i < lines.length; i++) {
-    ctx.fillText(lines[i], w / 2, startY + i * lineH);
-  }
+/** 与全服榜行高对齐：主域显示时 scale=listW/cw，故 canvas 上 rowH = targetRowH * cw / listW */
+function getLayout(canvasW, listW, targetRowH) {
+  var k = canvasW > 0 ? canvasW / DESIGN_W : 1;
+  var rowH = Math.max(40, Math.round(targetRowH * canvasW / listW));
+  var rowGap = Math.max(4, Math.round(8 * k));
+  var pad = Math.max(12, Math.round(PADDING_X * k));
+  return {
+    pad: pad,
+    rowH: rowH,
+    rowGap: rowGap,
+    rowW: canvasW - pad * 2,
+    avatarR: Math.max(16, Math.round(24 * k)),
+    rankX: Math.max(18, Math.round(24 * k)),
+    nameX: Math.max(72, Math.round(84 * k)),
+    valueX: canvasW - Math.max(48, Math.round(72 * k)),
+    fontRankMedal: Math.max(18, Math.round(20 * k)) + 'px ' + FONT_FAMILY,
+    fontRankNum: 'bold ' + Math.max(14, Math.round(16 * k)) + 'px ' + FONT_FAMILY,
+    fontName: 'bold ' + Math.max(15, Math.round(17 * k)) + 'px ' + FONT_FAMILY,
+    fontValue: 'bold ' + Math.max(16, Math.round(18 * k)) + 'px ' + FONT_FAMILY,
+    fontUnit: Math.max(10, Math.round(11 * k)) + 'px ' + FONT_FAMILY,
+  };
 }
 
-function computeCanvasHeight(entryCount) {
-  var listCount = Math.max(0, (entryCount || 0) - 3);
-  return PODIUM_ZONE_H + listCount * (ROW_HEIGHT + ROW_GAP) + 20;
+function computeContentHeight(entryCount, layout) {
+  var n = Math.max(0, entryCount || 0);
+  if (n === 0) return 120;
+  return LIST_TOP + n * (layout.rowH + layout.rowGap) + 16;
 }
 
-function loadPodiumSheet(done) {
-  if (ASSETS.podiumReady && ASSETS.podiumSheet) {
+function loadRowPanel(done) {
+  if (ASSETS.rowReady && ASSETS.rowPanel) {
     done(true);
     return;
   }
-  if (ASSETS.podiumLoading) {
+  if (ASSETS.rowLoading) {
     done(false);
     return;
   }
@@ -72,38 +78,60 @@ function loadPodiumSheet(done) {
     done(false);
     return;
   }
-  ASSETS.podiumLoading = true;
+  ASSETS.rowLoading = true;
   var img = wx.createImage();
   img.onload = function () {
-    ASSETS.podiumSheet = img;
-    ASSETS.podiumReady = true;
-    ASSETS.podiumLoading = false;
+    ASSETS.rowPanel = img;
+    ASSETS.rowReady = true;
+    ASSETS.rowLoading = false;
     done(true);
   };
   img.onerror = function () {
-    ASSETS.podiumReady = false;
-    ASSETS.podiumLoading = false;
+    ASSETS.rowReady = false;
+    ASSETS.rowLoading = false;
     done(false);
   };
-  img.src = PODIUM_SHEET;
+  img.src = ROW_PANEL;
 }
 
-function drawPodiumFrame(ctx, frameKey, x, y, w) {
-  var f = PODIUM_FRAMES[frameKey];
-  var h = w * f.h / f.w;
-  if (ASSETS.podiumReady && ASSETS.podiumSheet) {
-    ctx.drawImage(ASSETS.podiumSheet, f.x, f.y, f.w, f.h, x, y, w, h);
-    return h;
+function drawNineSlice(ctx, img, x, y, w, h, border) {
+  var iw = img.width;
+  var ih = img.height;
+  var l = border.left;
+  var t = border.top;
+  var r = border.right;
+  var b = border.bottom;
+  var cw = iw - l - r;
+  var ch = ih - t - b;
+  var dw = w - l - r;
+  var dh = h - t - b;
+
+  ctx.drawImage(img, 0, 0, l, t, x, y, l, t);
+  ctx.drawImage(img, l, 0, cw, t, x + l, y, dw, t);
+  ctx.drawImage(img, iw - r, 0, r, t, x + w - r, y, r, t);
+  ctx.drawImage(img, 0, t, l, ch, x, y + t, l, dh);
+  ctx.drawImage(img, l, t, cw, ch, x + l, y + t, dw, dh);
+  ctx.drawImage(img, iw - r, t, r, ch, x + w - r, y + t, r, dh);
+  ctx.drawImage(img, 0, ih - b, l, b, x, y + h - b, l, b);
+  ctx.drawImage(img, l, ih - b, cw, b, x + l, y + h - b, dw, b);
+  ctx.drawImage(img, iw - r, ih - b, r, b, x + w - r, y + h - b, r, b);
+}
+
+function drawRowPanelFallback(ctx, x, y, w, h, isMe) {
+  roundRect(ctx, x, y, w, h, 12);
+  var grad = ctx.createLinearGradient(x, y, x, y + h);
+  if (isMe) {
+    grad.addColorStop(0, '#FFF9E6');
+    grad.addColorStop(1, '#FFF3C4');
+  } else {
+    grad.addColorStop(0, '#FFFFFF');
+    grad.addColorStop(1, '#E8F4FF');
   }
-  // 资源未加载时的简易占位框
-  ctx.save();
-  var colors = { top1: '#E8B923', top2: '#B8C4D4', top3: '#C98A52' };
-  ctx.fillStyle = colors[frameKey] || '#94A3B8';
-  ctx.globalAlpha = 0.35;
-  roundRect(ctx, x, y, w, h, 14);
+  ctx.fillStyle = grad;
   ctx.fill();
-  ctx.restore();
-  return h;
+  ctx.strokeStyle = isMe ? 'rgba(250, 204, 21, 0.9)' : 'rgba(96, 165, 250, 0.75)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
 }
 
 function roundRect(ctx, x, y, w, h, r) {
@@ -120,198 +148,135 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function drawPodiumCard(ctx, placement, metricLabel) {
-  var entry = placement.entry;
-  if (!entry) {
-    drawPodiumFrame(ctx, placement.frame, placement.x, placement.y, placement.w);
-    return;
-  }
-
-  var frameH = drawPodiumFrame(ctx, placement.frame, placement.x, placement.y, placement.w);
-  var isTop1 = placement.frame === 'top1';
-  var avatarR = isTop1 ? 40 : 34;
-  var avatarY = placement.y + (isTop1 ? 100 : 50);
-  var avatarX = placement.x + placement.w / 2;
-
-  utils.drawCircleAvatar(
-    ctx,
-    entry.avatarUrl,
-    avatarX,
-    avatarY,
-    avatarR,
-    IMAGE_CACHE,
-    entry.nickname,
-  );
-
-  ctx.save();
-  ctx.fillStyle = '#1E3A5F';
-  ctx.font = 'bold ' + (isTop1 ? 20 : 17) + 'px sans-serif';
+function strokeFillText(ctx, text, x, y, fill, stroke, lineW, font) {
+  ctx.font = font;
   ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.strokeStyle = '#FFFFFF';
-  ctx.lineWidth = 3;
-  var nick = utils.truncateNickname(entry.nickname || '微信好友', 6);
-  ctx.strokeText(nick, avatarX, avatarY + avatarR + 6);
-  ctx.fillText(nick, avatarX, avatarY + avatarR + 6);
-  ctx.restore();
-
-  var valueText = metricLabel === '星'
-    ? ('★ ' + utils.formatNumber(entry.value))
-    : utils.formatNumber(entry.value);
-  ctx.save();
-  ctx.fillStyle = '#FFF8E7';
-  ctx.font = 'bold ' + (isTop1 ? 26 : 22) + 'px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.strokeStyle = '#7A3A08';
-  ctx.lineWidth = 4;
-  var nameLineH = isTop1 ? 24 : 20;
-  var scoreY = avatarY + avatarR * 2 + 6 + nameLineH + (isTop1 ? 10 : 8);
-  ctx.strokeText(valueText, avatarX, scoreY);
-  ctx.fillText(valueText, avatarX, scoreY);
-  ctx.restore();
-
-  if (entry.isMe) {
-    ctx.save();
-    ctx.fillStyle = '#FACC15';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('我', avatarX, placement.y + frameH - 18);
-    ctx.restore();
-  }
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = lineW;
+  ctx.strokeStyle = stroke;
+  ctx.fillStyle = fill;
+  ctx.strokeText(text, x, y);
+  ctx.fillText(text, x, y);
 }
 
-function drawPodiumTop3(ctx, w, entries, metricLabel) {
-  var top3 = entries.slice(0, 3);
-  var sideW = 165;
-  var centerW = 190;
-  var placements = [
-    { entry: top3[1], x: 56, y: 80, frame: 'top2', w: sideW },
-    { entry: top3[0], x: (w - centerW) / 2, y: 0, frame: 'top1', w: centerW },
-    { entry: top3[2], x: w - sideW - 64, y: 78, frame: 'top3', w: sideW },
-  ];
-  for (var i = 0; i < placements.length; i++) {
-    drawPodiumCard(ctx, placements[i], metricLabel);
+function drawCompactRow(ctx, x, y, layout, entry, rank, isMe, metricLabel) {
+  var w = layout.rowW;
+  var h = layout.rowH;
+  if (ASSETS.rowReady && ASSETS.rowPanel) {
+    drawNineSlice(ctx, ASSETS.rowPanel, x, y, w, h, ROW_PANEL_BORDER);
+  } else {
+    drawRowPanelFallback(ctx, x, y, w, h, isMe);
   }
-}
 
-function drawCompactRow(ctx, x, y, w, entry, rank, isMe, metricLabel) {
-  ctx.save();
-  roundRect(ctx, x, y, w, ROW_HEIGHT, 12);
-  ctx.fillStyle = isMe ? 'rgba(255, 248, 225, 0.95)' : 'rgba(237, 245, 255, 0.92)';
-  ctx.fill();
-  ctx.strokeStyle = isMe ? 'rgba(250, 204, 21, 0.75)' : 'rgba(147, 197, 253, 0.55)';
-  ctx.lineWidth = isMe ? 2 : 1;
-  ctx.stroke();
-  ctx.restore();
-
-  var cy = y + ROW_HEIGHT / 2;
+  var cy = y + h / 2;
 
   ctx.save();
   if (rank <= 3) {
-    ctx.font = '22px sans-serif';
-    ctx.fillText(rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉', x + 26, cy + 1);
-  } else {
-    ctx.fillStyle = '#0B4A8B';
-    ctx.font = 'bold 18px sans-serif';
+    ctx.font = layout.fontRankMedal;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(String(rank), x + 26, cy);
+    ctx.fillText(rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉', x + layout.rankX, cy);
+  } else {
+    strokeFillText(
+      ctx,
+      String(rank),
+      x + layout.rankX,
+      cy,
+      '#0B4A8B',
+      '#FFFFFF',
+      2,
+      layout.fontRankNum,
+    );
   }
   ctx.restore();
 
-  var avatarX = x + 58 + AVATAR_RADIUS_ROW;
-  utils.drawCircleAvatar(ctx, entry.avatarUrl, avatarX, cy, AVATAR_RADIUS_ROW, IMAGE_CACHE, entry.nickname);
+  var avatarX = x + layout.nameX - 36 + layout.avatarR;
+  utils.drawCircleAvatar(ctx, entry.avatarUrl, avatarX, cy, layout.avatarR, IMAGE_CACHE, entry.nickname);
 
   ctx.save();
   ctx.fillStyle = '#102F64';
-  ctx.font = 'bold 18px sans-serif';
+  ctx.font = layout.fontName;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  var name = utils.truncateNickname(entry.nickname || '微信好友', 10);
-  ctx.fillText(name, avatarX + AVATAR_RADIUS_ROW + 12, cy);
+  var name = utils.truncateNickname(entry.nickname || '微信好友', 8);
+  ctx.fillText(name, x + layout.nameX, cy);
   ctx.restore();
 
   if (isMe) {
     ctx.save();
-    ctx.fillStyle = '#1F2937';
-    ctx.font = 'bold 11px sans-serif';
-    var tagX = avatarX + AVATAR_RADIUS_ROW + 12 + ctx.measureText(name).width + 6;
+    var tagX = x + layout.nameX + ctx.measureText(name).width + 4;
     ctx.fillStyle = '#FACC15';
-    roundRect(ctx, tagX, cy - 9, 22, 18, 5);
+    roundRect(ctx, tagX, cy - 8, 20, 15, 4);
     ctx.fill();
     ctx.fillStyle = '#1F2937';
+    ctx.font = 'bold 10px ' + FONT_FAMILY;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('我', tagX + 11, cy);
+    ctx.fillText('我', tagX + 10, cy);
     ctx.restore();
   }
 
+  var valueText = utils.formatNumber(entry.value) + (metricLabel === '星' ? ' 星' : ' 分');
+
   ctx.save();
   ctx.fillStyle = '#0B4A8B';
-  ctx.font = 'bold 20px sans-serif';
+  ctx.font = layout.fontValue;
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
-  var valueText = metricLabel === '星'
-    ? ('★ ' + utils.formatNumber(entry.value))
-    : utils.formatNumber(entry.value);
-  ctx.fillText(valueText, x + w - 14, cy - 6);
-  if (metricLabel === '星') {
-    ctx.fillStyle = '#94A3B8';
-    ctx.font = '12px sans-serif';
-    ctx.fillText('星', x + w - 14, cy + 12);
-  } else {
-    ctx.fillStyle = '#94A3B8';
-    ctx.font = '12px sans-serif';
-    ctx.fillText('分', x + w - 14, cy + 12);
-  }
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.strokeText(valueText, layout.valueX, cy);
+  ctx.fillText(valueText, layout.valueX, cy);
   ctx.restore();
 }
 
-function drawFriendList(ctx, w, h, entries, metricLabel, viewport) {
+function drawTopMessage(ctx, w, h, message, layout) {
+  prepCtx(ctx);
   clearCanvas(ctx, w, h);
+  ctx.fillStyle = 'rgba(148,163,184,0.9)';
+  ctx.font = layout ? layout.fontName : ('16px ' + FONT_FAMILY);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  var lines = String(message || '').split('\n');
+  var lineH = 24;
+  var startY = LIST_TOP + 8;
+  for (var i = 0; i < lines.length; i++) {
+    ctx.fillText(lines[i], w / 2, startY + i * lineH);
+  }
+}
+
+function drawFriendList(ctx, w, h, entries, metricLabel, listW, targetRowH, outCanvas) {
+  var layout = getLayout(w, listW, targetRowH);
 
   if (!entries || entries.length === 0) {
-    drawEmptyState(ctx, w, h, '还没有好友数据\n邀请好友一起玩吧');
+    drawTopMessage(ctx, w, h, '还没有好友数据\n邀请好友一起玩吧', layout);
+    if (outCanvas) outCanvas.contentHeight = 120;
     return;
   }
 
-  var listStartY = (viewport && viewport.listStartY) || PODIUM_ZONE_H;
-  var rowW = w - PADDING_X * 2;
-
   function paint() {
-    drawPodiumTop3(ctx, w, entries, metricLabel);
-    for (var i = 3; i < entries.length; i++) {
-      var y = listStartY + (i - 3) * (ROW_HEIGHT + ROW_GAP);
-      if (y + ROW_HEIGHT < 0 || y > h + 80) continue;
-      drawCompactRow(
-        ctx,
-        PADDING_X,
-        y,
-        rowW,
-        entries[i],
-        i + 1,
-        entries[i].isMe,
-        metricLabel,
-      );
+    prepCtx(ctx);
+    clearCanvas(ctx, w, h);
+    for (var i = 0; i < entries.length; i++) {
+      var rowY = LIST_TOP + i * (layout.rowH + layout.rowGap);
+      drawCompactRow(ctx, layout.pad, rowY, layout, entries[i], i + 1, entries[i].isMe, metricLabel);
+    }
+    if (outCanvas) {
+      outCanvas.contentHeight = computeContentHeight(entries.length, layout);
     }
   }
 
-  loadPodiumSheet(function () {
-    clearCanvas(ctx, w, h);
-    if (!entries || entries.length === 0) {
-      drawEmptyState(ctx, w, h, '还没有好友数据\n邀请好友一起玩吧');
-      return;
-    }
+  loadRowPanel(function () {
     paint();
   });
 }
 
 module.exports = {
   drawFriendList: drawFriendList,
-  drawEmptyState: drawEmptyState,
+  drawEmptyState: drawTopMessage,
   setRedrawTrigger: setRedrawTrigger,
   clearCache: clearCache,
-  computeCanvasHeight: computeCanvasHeight,
-  PODIUM_ZONE_H: PODIUM_ZONE_H,
+  computeContentHeight: computeContentHeight,
+  getLayout: getLayout,
+  LIST_TOP: LIST_TOP,
 };

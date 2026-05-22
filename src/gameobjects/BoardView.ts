@@ -1237,7 +1237,7 @@ export class BoardView extends PIXI.Container {
     }
   }
 
-  syncWithBoard(): void {
+  syncWithBoard(animateAppear = false): void {
     for (let r = 0; r < BOARD_SIZE; r++) {
       for (let c = 0; c < BOARD_SIZE; c++) {
         const ball = this._balls[r][c];
@@ -1259,6 +1259,9 @@ export class BoardView extends PIXI.Container {
           sprite.y = center.y;
           this._ballContainer.addChild(sprite);
           this._balls[r][c] = sprite;
+          if (animateAppear) {
+            sprite.animateAppear();
+          }
         }
       }
     }

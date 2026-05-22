@@ -58,6 +58,8 @@ export class RankScene implements Scene {
   private _meBarScoreText!: PIXI.Text;
 
   private _friendCanvasSprite: PIXI.Sprite | null = null;
+  private _friendBaseTexture: PIXI.BaseTexture | null = null;
+  private _friendScroll: PIXI.Container | null = null;
   private _friendTickerCb: ((dt: number) => void) | null = null;
 
   private _profileUnsub: (() => void) | null = null;
@@ -283,9 +285,6 @@ export class RankScene implements Scene {
     this._restyleModeTabs();
     this._renderList();
     this._refreshMeBar();
-    if (this._scopeTab === 'friends') {
-      this._postFriendRender();
-    }
   }
 
   private async _switchScope(tab: ScopeTab): Promise<void> {
@@ -390,29 +389,59 @@ export class RankScene implements Scene {
       return;
     }
 
+    const listW = W - LIST_PADDING_X * 2;
+    this._postFriendRender(listW);
+
     try {
-      const baseTexture = PIXI.BaseTexture.from(sharedCanvas as any);
+      const baseTexture = PIXI.BaseTexture.from(sharedCanvas as any, {
+        scaleMode: PIXI.SCALE_MODES.LINEAR,
+        resourceOptions: { autoLoad: true },
+      });
+      this._friendBaseTexture = baseTexture;
       const texture = new PIXI.Texture(baseTexture);
       const sprite = new PIXI.Sprite(texture);
       sprite.x = LIST_PADDING_X;
       sprite.y = 0;
-      const targetW = W - LIST_PADDING_X * 2;
-      const screenScale = sharedCanvas.width > 0 ? targetW / sharedCanvas.width : 1;
-      sprite.scale.set(screenScale, screenScale);
-      this._friendCanvasSprite = sprite;
-      this._listArea.addChild(sprite);
 
-      const H = Game.logicHeight;
-      const visibleH = H - 226 - this._listArea.y - 8;
-      const mask = new PIXI.Graphics();
-      mask.beginFill(0xffffff, 1);
-      mask.drawRect(0, 0, W, visibleH);
-      mask.endFill();
-      this._listArea.addChild(mask);
-      sprite.mask = mask;
+      const applyDisplayScale = () => {
+        const cw = sharedCanvas.width || W;
+        const ch = sharedCanvas.height || 0;
+        if (cw <= 0 || ch <= 0) return;
+        const s = listW / cw;
+        const contentH = (sharedCanvas as any).__friendContentHeight as number | undefined;
+        const frameH = Math.min(ch, Math.max(80, contentH || ch));
+        const rect = new PIXI.Rectangle(0, 0, cw, frameH);
+        const tex = sprite.texture as PIXI.Texture & {
+          frame?: PIXI.Rectangle;
+          orig?: PIXI.Rectangle;
+          trim?: PIXI.Rectangle | null;
+          updateUvs?: () => void;
+        };
+        tex.frame = rect;
+        tex.orig = rect;
+        tex.trim = null;
+        tex.updateUvs?.();
+        sprite.scale.set(s, s);
+      };
+      applyDisplayScale();
+
+      const scroll = new PIXI.Container();
+      scroll.x = 0;
+      scroll.y = 0;
+      scroll.addChild(sprite);
+      this._friendScroll = scroll;
+      this._friendCanvasSprite = sprite;
+      this._listArea.addChild(scroll);
+
+      this._setupListScroll(scroll, 0, 0, {
+        contentHeight: () => sprite.height,
+      });
 
       const ticker = (_dt: number) => {
-        try { baseTexture.update(); } catch {}
+        try {
+          baseTexture.update();
+        } catch {}
+        applyDisplayScale();
       };
       this._friendTickerCb = ticker;
       Game.ticker.add(ticker);
@@ -421,22 +450,15 @@ export class RankScene implements Scene {
       this._listArea.addChild(this._renderEmpty('好友榜渲染失败', W));
       return;
     }
-
-    this._postFriendRender();
   }
 
-  private _postFriendRender(): void {
+  private _postFriendRender(listWidth: number): void {
     if (!Platform.supportsOpenData) return;
-    const W = Game.logicWidth;
-    const targetW = W - LIST_PADDING_X * 2;
     Platform.postOpenDataMessage({
       type: 'render',
       tab: this._modeTab,
-      viewport: {
-        width: 750,
-        height: 680,
-        listStartY: 300,
-      },
+      listWidth: Math.round(listWidth),
+      rowHeight: ROW_HEIGHT,
     });
   }
 
@@ -445,20 +467,36 @@ export class RankScene implements Scene {
       try { Game.ticker.remove(this._friendTickerCb); } catch {}
       this._friendTickerCb = null;
     }
-    if (this._friendCanvasSprite) {
+    if (this._friendScroll) {
       try {
-        this._friendCanvasSprite.parent?.removeChild(this._friendCanvasSprite);
-        this._friendCanvasSprite.destroy({ children: true });
+        this._friendScroll.parent?.removeChild(this._friendScroll);
+        this._friendScroll.destroy({ children: true });
       } catch {}
+      this._friendScroll = null;
+    }
+    if (this._friendCanvasSprite) {
+      try { this._friendCanvasSprite.destroy({ children: true, texture: false }); } catch {}
       this._friendCanvasSprite = null;
+    }
+    if (this._friendBaseTexture) {
+      try { this._friendBaseTexture.destroy(); } catch {}
+      this._friendBaseTexture = null;
     }
   }
 
-  private _setupListScroll(scroll: PIXI.Container, rowCount: number, extraHeight = 0): void {
+  private _setupListScroll(
+    scroll: PIXI.Container,
+    rowCount: number,
+    extraHeight = 0,
+    options?: { contentHeight?: () => number },
+  ): void {
     const W = Game.logicWidth;
     const H = Game.logicHeight;
     const visibleH = H - 226 - this._listArea.y - 8;
-    const contentH = extraHeight + rowCount * (ROW_HEIGHT + ROW_GAP);
+    const resolveContentH = () => {
+      if (options?.contentHeight) return options.contentHeight();
+      return extraHeight + rowCount * (ROW_HEIGHT + ROW_GAP);
+    };
 
     const mask = new PIXI.Graphics();
     mask.beginFill(0xFFFFFF, 1);
@@ -469,13 +507,9 @@ export class RankScene implements Scene {
     this._listArea.addChild(mask);
     scroll.mask = mask;
 
-    if (contentH <= visibleH) return;
-
     let dragging = false;
     let dragStartY = 0;
     let scrollStartY = 0;
-    const minY = visibleH - contentH;
-    const maxY = 0;
 
     const hit = new PIXI.Graphics();
     hit.beginFill(0xFFFFFF, 0.001);
@@ -492,6 +526,13 @@ export class RankScene implements Scene {
     });
     hit.on('pointermove', (event: PIXI.FederatedPointerEvent) => {
       if (!dragging) return;
+      const contentH = resolveContentH();
+      if (contentH <= visibleH) {
+        scroll.y = 0;
+        return;
+      }
+      const minY = visibleH - contentH;
+      const maxY = 0;
       const dy = event.global.y - dragStartY;
       // event.global 在 PIXI 7 中是屏幕物理像素；stage 应用了 Game.scale 缩放
       let next = scrollStartY + dy / Game.scale;

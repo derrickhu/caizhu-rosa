@@ -1,5 +1,4 @@
 import { DEFAULT_AVATAR_PATH } from '@/config/CloudConfig';
-import { ORB_AVATAR_PATHS } from '@/utils/orbLoader';
 
 function hashUserId(userId: string): number {
   const seed = String(userId || 'guest');
@@ -16,10 +15,14 @@ export function formatDefaultNickname(userId: string): string {
   return `玩家${suffix}`;
 }
 
-/** 未授权时的默认头像：按 userId 稳定映射到一颗珠子图 */
-export function getDefaultOrbAvatarPath(userId: string): string {
-  const idx = hashUserId(userId) % ORB_AVATAR_PATHS.length;
-  return ORB_AVATAR_PATHS[idx] || ORB_AVATAR_PATHS[0];
+/** 未授权默认头像：按 userId 映射到 0–6 号珠子色（由 orb_skins_sheet 取图） */
+export function getDefaultOrbColorIndex(userId: string): number {
+  return hashUserId(userId) % 7;
+}
+
+/** 兜底静态头像（sheet 未加载时） */
+export function getDefaultOrbAvatarPath(_userId: string): string {
+  return DEFAULT_AVATAR_PATH;
 }
 
 export function isLegacyDefaultAvatar(url: string): boolean {

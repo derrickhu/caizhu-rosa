@@ -1,6 +1,13 @@
 /** 游戏展示名（首页标题、日志、分享等） */
 export const GAME_DISPLAY_NAME = '彩珠五连';
 
+/** 新闻出版署《健康游戏忠告》全文（须在加载/启动画面显著位置登载） */
+export const HEALTH_GAME_ADVISORY =
+  '抵制不良游戏，拒绝盗版游戏。\n' +
+  '注意自我保护，谨防受骗上当。\n' +
+  '适度游戏益脑，沉迷游戏伤身。\n' +
+  '合理安排时间，享受健康生活。';
+
 export const BOARD_SIZE = 9;
 export const BOARD_CELLS = BOARD_SIZE * BOARD_SIZE; // 81
 

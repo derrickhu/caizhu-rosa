@@ -49,7 +49,7 @@ export function getLevelStars(score: number, starScores: readonly [number, numbe
 
 export const LEVELS: readonly LevelDef[] = [
   // === Tier 1: 入门 (1-5) — unlock all colors early ===
-  { id: 1,  type: 'steps', colorCount: 3, starScores: stars(10),  stepLimit: 40, initialBalls: 5, ballsPerTurn: 3, noSpawnThreshold: 8, layoutId: 'level_01' },
+  { id: 1,  type: 'steps', colorCount: 3, starScores: stars(10),  stepLimit: 40, initialBalls: 16, ballsPerTurn: 3, noSpawnThreshold: 8, layoutId: 'level_01' },
   { id: 2,  type: 'steps', colorCount: 4, starScores: stars(30),  stepLimit: 38, initialBalls: 8, ballsPerTurn: 3, noSpawnThreshold: 8, layoutId: 'level_02' },
   { id: 3,  type: 'steps', colorCount: 5, starScores: stars(50),  stepLimit: 38, initialBalls: 9, ballsPerTurn: 3, noSpawnThreshold: 8, layoutId: 'level_03' },
   { id: 4,  type: 'steps', colorCount: 6, starScores: stars(75),  stepLimit: 36, initialBalls: 10, ballsPerTurn: 3, noSpawnThreshold: 8, layoutId: 'level_04' },

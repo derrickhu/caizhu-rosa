@@ -150,7 +150,12 @@ export class LevelScene implements Scene {
     } else {
       BoardManager.initLevel(levelConfig);
     }
-    this._boardView.syncWithBoard();
+    this._boardView.syncWithBoard(true);
+    requestAnimationFrame(() => {
+      if (!this.container.destroyed && this._boardView) {
+        this._boardView.syncWithBoard(true);
+      }
+    });
     this._hud.updateScore(0);
 
     if (def.type === 'steps') {
@@ -295,6 +300,7 @@ export class LevelScene implements Scene {
     this._boardView.setTutorialGate((cell) => (
       this._tutorialOverlay.allowsCell(cell, LEVEL1_TUTORIAL_LAYOUT.source, LEVEL1_TUTORIAL_LAYOUT.target)
     ));
+    this._boardView.syncWithBoard(true);
     this._tutorialOverlay.show({
       preview: previewAnchor,
       source: sourceAnchor,
@@ -309,6 +315,7 @@ export class LevelScene implements Scene {
     PersistService.writeJSON(LEVEL1_TUTORIAL_KEY, { completed: true, version: 1, completedAt: Date.now() });
     this._tutorialActive = false;
     this._boardView.setTutorialGate(null);
+    this._boardView.syncWithBoard(true);
     this._startTimerIfNeeded();
   }
 
