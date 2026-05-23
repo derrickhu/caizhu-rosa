@@ -31,13 +31,10 @@ export function loadOrbTextures(): Promise<void> {
   return _loadOrbSheet(platform).then((loadedFromSheet) => {
     if (loadedFromSheet) {
       _loaded = true;
-      console.log(`[orbLoader] loaded ${_textures.filter(Boolean).length}/${ORB_SHEET_COLS} orb textures from sprite sheet`);
       return;
     }
-
     return _loadLegacyOrbFiles(platform).then(() => {
       _loaded = true;
-      console.log(`[orbLoader] loaded ${_textures.filter(Boolean).length}/${ORB_AVATAR_PATHS.length} orb textures`);
     });
   });
 }

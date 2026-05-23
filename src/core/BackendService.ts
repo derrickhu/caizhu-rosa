@@ -234,7 +234,6 @@ class BackendServiceClass {
     };
     this.stored = stored;
     Platform.setStorageSync(BACKEND_TOKEN_KEY, JSON.stringify(stored));
-    console.log(`[Backend] login ok userId=${stored.userId}`);
     return stored;
   }
 

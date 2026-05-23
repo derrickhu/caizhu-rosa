@@ -63,7 +63,6 @@ if (_api) {
       fetch: ((_url: any, _opts?: any): any =>
         Promise.reject(new Error('fetch not available in mini game'))) as any,
     };
-    console.log('[pixiWechatPatch] ADAPTER 已配置（wx.createCanvas 离屏）');
   } catch (e) {
     console.warn('[pixiWechatPatch] ADAPTER 失败:', e);
   }
@@ -141,7 +140,6 @@ if (!(ShaderSystem.prototype as any).__patched) {
       patchedSyncUniforms(group, self.shader.program.uniformData, glProgram.uniformData, group.uniforms, self.renderer);
     },
   });
-  console.log('[pixiWechatPatch] ShaderSystem unsafe-eval 已替换');
 
   const _isRealDevice = (() => {
     try {
@@ -162,7 +160,6 @@ if (!(ShaderSystem.prototype as any).__patched) {
     (whiteTex as any).destroy = () => {};
     try { Object.defineProperty(Texture, '_WHITE', { value: whiteTex, writable: true, configurable: true }); } catch { /* */ }
     try { Object.defineProperty(Texture, 'WHITE', { get: () => whiteTex, configurable: true }); } catch { /* */ }
-    console.log('[pixiWechatPatch] Texture.WHITE fromBuffer（真机）');
 
     const _origUpload = BaseImageResource.prototype.upload;
     let _uploadLog = 0;
@@ -179,7 +176,6 @@ if (!(ShaderSystem.prototype as any).__patched) {
         _canReadPixels = td[0] > 200 && td[3] > 200;
       }
     } catch { /* */ }
-    console.log('[pixiWechatPatch] canvas getImageData 可用:', _canReadPixels);
 
     BaseImageResource.prototype.upload = function (
       renderer: any, baseTexture: any, glTexture: any, source?: any,
@@ -207,10 +203,6 @@ if (!(ShaderSystem.prototype as any).__patched) {
               gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, baseTexture.alphaMode > 0 ? 1 : 0);
               gl.texImage2D(gl.TEXTURE_2D, 0, glTexture.internalFormat,
                 w, h, 0, baseTexture.format, glTexture.type, pixels);
-              if (_uploadLog < 3) {
-                console.log('[pixiWechatPatch] canvas→buffer 覆盖', w, 'x', h);
-                _uploadLog++;
-              }
             }
           } catch (e) {
             if (_uploadLog < 6) {
@@ -224,6 +216,5 @@ if (!(ShaderSystem.prototype as any).__patched) {
         _inUpload = false;
       }
     };
-    console.log('[pixiWechatPatch] BaseImageResource.upload 已 patch（真机）');
   }
 }

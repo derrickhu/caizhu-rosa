@@ -110,7 +110,6 @@ class GameClass {
     } catch {}
 
     this._initialized = true;
-    console.log(`[Game] 初始化完成: ${realWidth}x${realHeight}, scale=${this.scale.toFixed(2)}`);
   }
 
   get logicWidth(): number { return this.designWidth; }

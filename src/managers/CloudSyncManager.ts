@@ -342,9 +342,8 @@ class CloudSyncManagerClass {
     console.warn(`[CloudSync] cacheOnly reason=${reason}`);
   }
 
-  private confirmRemoteBaseline(remoteUpdatedAt: number, reason: string): void {
+  private confirmRemoteBaseline(_remoteUpdatedAt: number, _reason: string): void {
     this.authorityState = 'confirmedRemote';
-    console.log(`[CloudSync] remote baseline confirmed reason=${reason}, remoteUpdatedAt=${remoteUpdatedAt}`);
   }
 }
 
