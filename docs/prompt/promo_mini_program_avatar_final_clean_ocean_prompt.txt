@@ -1,0 +1,19 @@
+Create ONE square 1:1 official WeChat mini-game app icon for 彩珠五连.
+
+Use the provided reference image only for content and style direction: central rainbow magic marble, bright cross-shaped clearing beams, surrounding colorful glossy marbles, clean ocean bubble style.
+
+Formal icon requirements:
+- Single full-bleed square icon, 1024x1024 style master artwork.
+- The artwork must fill the entire square edge to edge.
+- Absolutely NO gray corner background, NO white border, NO pale outside margin, NO transparent padding.
+- Do NOT draw a rounded-square tile sitting on a background. The entire canvas itself is the icon.
+- Keep the content simple and readable at 48px and 144px.
+
+Composition:
+Place one large rainbow magic marble in the exact center, about 26% to 30% of icon width. From behind it, draw thick bright blue-white cross-shaped clearing beams extending to all four edges. Around it place 8 to 10 large glossy colored marbles in a radial layout, similar to the reference, with several marbles cropped by the canvas edges so the icon feels full. Background is a full-bleed deep cyan-to-navy ocean gradient with a few large soft bubbles only, not cluttered.
+
+Style:
+Clean ocean bubble mobile game icon, glossy polished 2.5D marbles, bright highlights, fresh cyan/navy contrast, attractive and simple. Keep the light beams vivid but do not overexpose the center. Avoid too many tiny particles.
+
+Strict constraints:
+NO TEXT, no Chinese characters, no English letters, no numbers, no logo, no watermark, no QR code, no fake glyphs. No frame, no border, no rounded tile, no outside background, no raw screenshot.

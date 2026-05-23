@@ -1,0 +1,26 @@
+Create ONE square 1:1 official WeChat mini-game app icon for 彩珠五连.
+
+Use the provided reference image as the MAIN composition reference, but ignore its white border and low-resolution look. Keep the icon idea: a compact centered cluster of glossy colorful marbles on a warm circular badge, with a strong central focal point.
+
+Goal:
+A high-quality polished mini-game icon that looks professional in WeChat, especially after circular avatar cropping. It must have a clear center subject, not a flat pattern of marbles spread to the edges.
+
+Composition:
+- Full square canvas with a simple rich teal-to-deep-aqua gradient background, edge to edge.
+- In the exact center, place one warm orange/yellow circular badge or soft halo, about 72% of the icon width. The badge is behind the marbles and helps the subject pop.
+- On top of the badge, place a compact pile of 6 to 7 glossy glass marbles, overlapping like a flower cluster.
+- One larger bright blue marble is the hero focal point in the front center, about 26% of icon width.
+- Around it place only 5 or 6 supporting marbles: pink, purple, yellow, cyan, green, red/orange. They overlap naturally behind and beside the blue marble.
+- The marble cluster should occupy about 62% to 68% of the icon width and stay fully inside the central safe area for circular crop.
+- Add only a few large simple sparkle highlights around the cluster. No confetti, no busy particles, no board, no edge marbles.
+
+Style:
+Premium polished 2D casual mobile game app icon, cute and attractive, high saturation, strong glossy highlights, soft bevels, thick clean dark teal/navy outlines, clear silhouette, simple but high-quality. Similar readability to successful WeChat mini-game icons. The image should remain recognizable at 48px and attractive at 144px.
+
+Important constraints:
+- The subject must be centered and compact.
+- Do NOT spread marbles evenly to the edges.
+- Do NOT use a radial burst or cross beam.
+- Do NOT include a raw gameplay board.
+- NO white border, NO gray margin, NO transparent padding, NO app tile sitting on white.
+- NO TEXT, no Chinese characters, no English letters, no numbers, no logo, no watermark, no QR code, no fake glyphs.

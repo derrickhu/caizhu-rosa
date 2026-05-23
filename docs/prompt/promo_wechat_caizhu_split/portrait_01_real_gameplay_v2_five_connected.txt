@@ -1,0 +1,21 @@
+9:16 vertical WeChat Mini Game promotional poster for 彩珠五连.
+
+Regenerate the gameplay-focused vertical poster. The key correction: the board MUST clearly show exactly five same-color marbles connected together in one unbroken straight horizontal line, adjacent cell by adjacent cell, no gaps, no different colors between them. This five-in-a-row line must be the main visual focus.
+
+Use the provided modern game screenshot only as gameplay reference: ocean bubble background, 9x9 square grid, glossy colored marbles, top score panel, next marbles preview. Recompose it as a designed advertising poster, not a raw screenshot.
+
+Art style: premium polished casual mobile game ad, vibrant cartoon, glossy rounded UI, high saturation, toy-like glass marbles, soft bevel, strong contrast, clear mobile game typography, blue-cyan bubble fantasy background.
+
+Composition from top to bottom:
+1. Aqua and purple rounded poster frame with bubble and marble decorations.
+2. Top 70% inner artwork: large square 9x9 puzzle board in perspective. In the center row, place EXACTLY FIVE purple marbles in five neighboring cells, touching horizontally as a continuous line. Put a bright golden clearing glow behind this row, sparkles and small star particles around it. Other marbles must stay away from this row so the five connected marbles are unmistakable.
+3. Add a small next-piece preview panel above the board with three small marbles, but do not let it distract from the five connected line.
+4. Bottom 30% title ribbon.
+
+Chinese promotional text must be part of the poster, large and readable:
+Main title EXACTLY: 五珠连成线
+Subtitle EXACTLY: 老玩家一看就懂
+
+Typography style: thick rounded Chinese POP title, yellow-white fill, dark blue outline, orange shadow, glossy highlight, sticker-like scroll banner.
+
+Strict constraints: the five connected marbles must be obvious. No diagonal five, no separated marbles, no four-in-a-row, no six-in-a-row. No English letters, no watermark, no logo, no QR code, no app store badge, no random numbers, no fake small UI labels.

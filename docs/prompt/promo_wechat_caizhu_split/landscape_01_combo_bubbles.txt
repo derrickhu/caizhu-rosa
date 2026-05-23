@@ -1,0 +1,15 @@
+16:9 horizontal WeChat Mini Game promotional key art for a casual puzzle game named 彩珠五连.
+
+Create one complete designed advertising poster, not a raw UI screenshot. Use the reference game screenshots only to extract highlights: glossy colorful marbles, a square puzzle board, ocean-blue bubble fantasy background, next-piece preview, combo clearing effects.
+
+Art style: premium polished 2.5D casual mobile game ad key art, vibrant cartoon, glossy rounded UI, high saturation, soft bevels, toy-like glass marbles, clean silhouettes, bright cyan and purple ocean bubble background, strong contrast, readable at thumbnail size.
+
+Composition: full-bleed cinematic horizontal banner. Left side has a large playful 9x9 puzzle board tilted slightly in perspective, with five same-color red marbles connecting in a glowing line and bursting into sparkles. Center foreground has oversized glossy marbles flying outward: red, yellow, blue, green, purple, cyan, orange. Right side has a polished headline sticker integrated into the design, with room for all characters to be clear.
+
+Chinese promotional text must be part of the poster, large and readable:
+Main title EXACTLY: 彩珠五连
+Subtitle EXACTLY: 一步连消爽翻天
+
+Typography style: bold Chinese mobile game POP title, yellow-to-white fill, deep blue outer outline, small orange shadow, glossy highlight, no extra text.
+
+Important constraints: The design can be inspired by the provided screenshots but must NOT copy the screenshot layout exactly. No ad badge, no QR code, no app store badge, no watermark, no English letters, no fake small UI labels, no random numbers. Only the two Chinese text strings above may appear.
