@@ -111,7 +111,7 @@ class LeaderboardManagerClass {
     this._classicInflight = (async () => {
       try {
         await BackendService.ensureToken();
-        const result = await BackendService.fetchClassicWorld(100);
+        const result = await BackendService.fetchClassicWorld(50);
         const wrapped = { ...result, fetch: { ok: true as const } };
         this._classicCache = { result: wrapped, fetchedAt: Date.now() };
         return wrapped;
@@ -137,7 +137,7 @@ class LeaderboardManagerClass {
     this._levelInflight = (async () => {
       try {
         await BackendService.ensureToken();
-        const result = await BackendService.fetchLevelWorld(100);
+        const result = await BackendService.fetchLevelWorld(50);
         const wrapped = { ...result, fetch: { ok: true as const } };
         this._levelCache = { result: wrapped, fetchedAt: Date.now() };
         return wrapped;

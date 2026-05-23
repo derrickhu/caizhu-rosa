@@ -16,7 +16,8 @@ import { BEST_SCORE_KEY } from '@/config/CloudConfig';
 import { PersistService } from '@/core/PersistService';
 import { createBgSprite } from '@/utils/bgHelper';
 import { createAvatarSprite } from '@/utils/avatarSprite';
-import { resolveDisplayAvatarUrl, resolveDisplayNickname } from '@/utils/defaultProfileDisplay';
+import { resolveCircleAvatarTexture } from '@/utils/avatarTexture';
+import { resolveDisplayNickname } from '@/utils/defaultProfileDisplay';
 import { BackendService } from '@/core/BackendService';
 import { addImageSprite, loadImageTexture } from '@/utils/imageTexture';
 import { AudioManager } from '@/core/AudioManager';
@@ -25,9 +26,14 @@ import { AUDIO_ASSETS, AUDIO_VOLUME } from '@/config/AudioConfig';
 type ModeTab = 'classic' | 'level';
 type ScopeTab = 'world' | 'friends';
 
+// 列表行/间距与水果（hot-pot）保持一致量级，避免单行渲染时间被字体或描边推高
 const ROW_HEIGHT = 76;
 const ROW_GAP = 8;
 const LIST_PADDING_X = 30;
+const TOP3_HEIGHT = 300;
+// 50 名上限：与 hot-pot RankService.list(board, 50, 0) 对齐
+const WORLD_LIST_MAX = 50;
+
 const RANK_ASSET_PREFIX = 'subpkg_assets/images/';
 const RANK_PODIUM_SHEET = `${RANK_ASSET_PREFIX}rank_top_podium_sheet.png`;
 const RANK_PODIUM_FRAMES = {
@@ -35,10 +41,45 @@ const RANK_PODIUM_FRAMES = {
   top1: { x: 467, y: 4, w: 494, h: 832 },
   top3: { x: 973, y: 104, w: 436, h: 632 },
 } as const;
+const RANK_PRELOAD_ASSETS = [
+  RANK_PODIUM_SHEET,
+  `${RANK_ASSET_PREFIX}rank_title_banner.png`,
+  `${RANK_ASSET_PREFIX}rank_back_normal.png`,
+  `${RANK_ASSET_PREFIX}rank_tab_mode_active_blue.png`,
+  `${RANK_ASSET_PREFIX}rank_tab_mode_active_green.png`,
+  `${RANK_ASSET_PREFIX}rank_tab_mode_inactive.png`,
+  `${RANK_ASSET_PREFIX}rank_tab_scope_active.png`,
+  `${RANK_ASSET_PREFIX}rank_tab_scope_inactive.png`,
+  `${RANK_ASSET_PREFIX}rank_my_rank_panel.png`,
+] as const;
 const MODE_TAB_W = 230;
 const MODE_TAB_H = 106;
 const SCOPE_TAB_W = 118;
 const SCOPE_TAB_H = 45;
+// 虚拟列表上下额外预渲染 2 行，避免快速拖动时露白
+const WORLD_VIRTUAL_BUFFER_ROWS = 2;
+
+type WorldEntry = LeaderboardClassicEntry | LeaderboardLevelEntry;
+
+/**
+ * 复用型榜单行：滚动时把进入可视区的行从 pool 里 pop 出来 in-place 重写文本，
+ * 避免重新创建 PIXI.Container / PIXI.Text（PIXI.Text 的 canvas rasterize 是最贵的一步）。
+ */
+interface RankRowView extends PIXI.Container {
+  __rankText: PIXI.Text;
+  __avatarSprite: PIXI.Sprite;
+  __nickText: PIXI.Text;
+  __valueText: PIXI.Text;
+  __meTag: PIXI.Container;
+  __bg: PIXI.Graphics;
+  __avatarSeq: number;
+  __lastAvatarKey?: string;
+  __lastNick?: string;
+  __lastValue?: string;
+  __lastIsMe?: boolean;
+}
+
+const ROW_AVATAR_RADIUS = 24;
 
 export class RankScene implements Scene {
   readonly name = 'rank';
@@ -47,8 +88,8 @@ export class RankScene implements Scene {
   private _modeTab: ModeTab = 'classic';
   private _scopeTab: ScopeTab = 'world';
 
-  private _modeTabBtns: { tab: ModeTab; bg: PIXI.Graphics; label: PIXI.Text; container: PIXI.Container }[] = [];
-  private _scopeTabBtns: { tab: ScopeTab; bg: PIXI.Graphics; label: PIXI.Text; container: PIXI.Container }[] = [];
+  private _modeTabBtns: { tab: ModeTab; container: PIXI.Container; label: PIXI.Text }[] = [];
+  private _scopeTabBtns: { tab: ScopeTab; container: PIXI.Container; label: PIXI.Text }[] = [];
 
   private _listArea!: PIXI.Container;
   private _meBar!: PIXI.Container;
@@ -57,26 +98,61 @@ export class RankScene implements Scene {
   private _meBarNameText!: PIXI.Text;
   private _meBarScoreText!: PIXI.Text;
 
-  private _friendCanvasSprite: PIXI.Sprite | null = null;
-  private _friendBaseTexture: PIXI.BaseTexture | null = null;
-  private _friendScroll: PIXI.Container | null = null;
-  private _friendTickerCb: ((dt: number) => void) | null = null;
-
-  private _profileUnsub: (() => void) | null = null;
-  private _profilePrompted = false;
-
   private _classicData: LeaderboardWorldResult<LeaderboardClassicEntry> | null = null;
   private _levelData: LeaderboardWorldResult<LeaderboardLevelEntry> | null = null;
-
   private _loading = false;
+
+  // ── 列表区域几何（设计像素，绝对坐标）──
+  // 在 _listArea 容器内还要再减去 _listArea.y 才能拿到容器内 y
+  private _listAreaRect = { x: 0, y: 0, w: 0, h: 0 };
+
+  // ── 世界榜虚拟列表 + 行复用 ──
+  private _worldListContent: PIXI.Container | null = null;
+  private _worldListRecords: WorldEntry[] = [];
+  private _worldVisibleStart = -1;
+  private _worldVisibleEnd = -1;
+  private _worldScrollY = 0;
+  private _worldRowByIndex = new Map<number, RankRowView>();
+  private _worldRowPool: RankRowView[] = [];
+
+  // ── 拖动状态 ──
+  // 真机 wx.onTouchMove 可能 60~120Hz 触发，
+  // 这里只暂存最新 Y，真正的 scroll 应用和虚拟列表刷新由 update(dt) 每帧 commit 一次，
+  // 避免一帧内重复 renderWorldVisibleRows / postMessage 排版。
+  private _sceneActive = false;
+  private _nativeTouchBound = false;
+  private _dragKind: ScopeTab | null = null;
+  private _dragStartY = 0;
+  private _dragStartScrollY = 0;
+  private _dragMoved = false;
+  private _pendingDragY: number | null = null;
+  // 好友榜 sharedCanvas 的滚动偏移（仅 <= 0），透传给开放数据域
+  private _friendScrollY = 0;
+
+  // ── 好友榜 sharedCanvas ──
+  private _friendCanvasSprite: PIXI.Sprite | null = null;
+  private _friendBaseTexture: PIXI.BaseTexture | null = null;
+  private _friendTickerCb: ((dt: number) => void) | null = null;
+  private _friendListWidth = 0;
+
+  // ── 用户资料 ──
+  private _profileUnsub: (() => void) | null = null;
+  private _profilePrompted = false;
+  private _meBarAvatarKey = '';
 
   // ─── Lifecycle ─────────────────────────────────────────────
 
   onEnter(): void {
+    this._sceneActive = true;
+    this._installNativeTouchHandlers();
     this.container.removeChildren();
+    this._preloadRankAssets();
     AudioManager.playBGM(AUDIO_ASSETS.bgmClassic, AUDIO_VOLUME.bgmClassic);
     this._modeTab = 'classic';
     this._scopeTab = 'world';
+    this._worldScrollY = 0;
+    this._friendScrollY = 0;
+    this._resetWorldRowPool();
 
     const W = Game.logicWidth;
     const H = Game.logicHeight;
@@ -118,6 +194,9 @@ export class RankScene implements Scene {
     this._meBar.y = H - 210;
     this.container.addChild(this._meBar);
 
+    // 计算列表可视区域（绝对设计像素），拖动判定和虚拟列表都用它
+    this._recalcListAreaRect();
+
     this._profileUnsub = UserProfileManager.subscribe(() => {
       void this._onProfileChanged();
     });
@@ -132,12 +211,40 @@ export class RankScene implements Scene {
   }
 
   onExit(): void {
+    this._sceneActive = false;
+    this._dragKind = null;
+    this._pendingDragY = null;
+    this._dragMoved = false;
     if (this._profileUnsub) {
       this._profileUnsub();
       this._profileUnsub = null;
     }
     this._teardownFriendCanvas();
+    // 行池里的 PIXI.Text 一并销毁，避免下次进入复用到已 detach 但未清理的旧节点
+    this._destroyWorldRowPool();
+    this._worldListContent = null;
+    this._worldListRecords = [];
   }
+
+  /** 每帧由 SceneManager → main.ts ticker 转发回来，仅做最近一次拖动 Y 的 commit */
+  update(_dt: number): void {
+    if (this._pendingDragY != null) {
+      this._commitPendingDrag();
+    }
+  }
+
+  private _recalcListAreaRect(): void {
+    const W = Game.logicWidth;
+    const visibleH = Math.max(120, Game.logicHeight - 226 - this._listArea.y - 8);
+    this._listAreaRect = {
+      x: LIST_PADDING_X,
+      y: this._listArea.y,
+      w: W - LIST_PADDING_X * 2,
+      h: visibleH,
+    };
+  }
+
+  // ─── User profile ──────────────────────────────────────────
 
   private async _promptUserProfileAuth(): Promise<void> {
     if (this._profilePrompted) return;
@@ -179,13 +286,10 @@ export class RankScene implements Scene {
       c.eventMode = 'static';
       c.cursor = 'pointer';
       c.hitArea = new PIXI.RoundedRectangle(0, 0, MODE_TAB_W, MODE_TAB_H, 26);
-      c.on('pointerdown', () => {
+      c.on('pointertap', () => {
         AudioManager.play('button');
         this._switchMode(tab);
       });
-
-      const bg = new PIXI.Graphics();
-      c.addChild(bg);
 
       const label = new PIXI.Text(tab === 'classic' ? '经典版' : '关卡版', new PIXI.TextStyle({
         fontSize: 28,
@@ -201,25 +305,19 @@ export class RankScene implements Scene {
       c.addChild(label);
 
       this.container.addChild(c);
-      this._modeTabBtns.push({ tab, bg, label, container: c });
+      this._modeTabBtns.push({ tab, container: c, label });
     });
     this._restyleModeTabs();
   }
 
   private _restyleModeTabs(): void {
     for (const item of this._modeTabBtns) {
-      item.bg.clear();
-      item.bg.visible = false;
       const active = item.tab === this._modeTab;
       const asset = active
         ? item.tab === 'classic' ? 'rank_tab_mode_active_blue.png' : 'rank_tab_mode_active_green.png'
         : 'rank_tab_mode_inactive.png';
       this._setButtonAsset(item.container, asset, MODE_TAB_W);
-      if (active) {
-        item.label.style.fill = 0xFFFFFF;
-      } else {
-        item.label.style.fill = 0xD9EEF8;
-      }
+      item.label.alpha = active ? 1 : 0.82;
     }
   }
 
@@ -236,13 +334,10 @@ export class RankScene implements Scene {
       c.eventMode = 'static';
       c.cursor = 'pointer';
       c.hitArea = new PIXI.RoundedRectangle(0, 0, SCOPE_TAB_W, SCOPE_TAB_H, 18);
-      c.on('pointerdown', () => {
+      c.on('pointertap', () => {
         AudioManager.play('button');
         void this._switchScope(tab);
       });
-
-      const bg = new PIXI.Graphics();
-      c.addChild(bg);
 
       const label = new PIXI.Text(tab === 'world' ? '全服' : '好友', new PIXI.TextStyle({
         fontSize: 18,
@@ -258,30 +353,25 @@ export class RankScene implements Scene {
       c.addChild(label);
 
       this.container.addChild(c);
-      this._scopeTabBtns.push({ tab, bg, label, container: c });
+      this._scopeTabBtns.push({ tab, container: c, label });
     });
     this._restyleScopeTabs();
   }
 
   private _restyleScopeTabs(): void {
     for (const item of this._scopeTabBtns) {
-      item.bg.clear();
-      item.bg.visible = false;
       const active = item.tab === this._scopeTab;
       this._setButtonAsset(item.container, active ? 'rank_tab_scope_active.png' : 'rank_tab_scope_inactive.png', SCOPE_TAB_W);
-      if (active) {
-        item.label.style.fill = 0xFFFFFF;
-        item.label.style.stroke = 0x7C3F00;
-      } else {
-        item.label.style.fill = 0xEAFBFF;
-        item.label.style.stroke = 0x1787A9;
-      }
+      item.label.alpha = active ? 1 : 0.78;
     }
   }
 
   private _switchMode(tab: ModeTab): void {
     if (this._modeTab === tab) return;
     this._modeTab = tab;
+    this._worldScrollY = 0;
+    this._dragKind = null;
+    this._pendingDragY = null;
     this._restyleModeTabs();
     this._renderList();
     this._refreshMeBar();
@@ -301,25 +391,39 @@ export class RankScene implements Scene {
       }
     }
     this._scopeTab = tab;
+    this._dragKind = null;
+    this._pendingDragY = null;
+    this._friendScrollY = 0;
     this._restyleScopeTabs();
     this._renderList();
     this._refreshMeBar();
-    if (tab === 'world') {
-      void this._loadInitialData(true);
-    }
   }
 
   // ─── List rendering ────────────────────────────────────────
 
+  /**
+   * 单一入口：清空 listArea → 按当前 scope 直接重画。
+   * 跟 hot-pot 一致，不做 cache / placeholder / defer / prewarm，
+   * 每次重画都是 O(可视行数) 的虚拟列表，性能足够。
+   */
   private _renderList(): void {
+    if (!this._listArea) return;
     this._listArea.removeChildren();
-    this._teardownFriendCanvas();
+    // listArea.removeChildren 把行容器 detach 了，但 worldRowByIndex 仍持有引用，
+    // 统一回收到 pool 里供下次复用，避免重建 PIXI.Text。
+    this._reclaimWorldRowsToPool();
+    this._worldListContent = null;
+    this._worldListRecords = [];
+    this._worldVisibleStart = -1;
+    this._worldVisibleEnd = -1;
+    this._recalcListAreaRect();
 
-    if (this._scopeTab === 'world') {
-      this._renderWorldList();
-    } else {
+    if (this._scopeTab === 'friends') {
       this._renderFriendList();
+      return;
     }
+    this._teardownFriendCanvas();
+    this._renderWorldList();
   }
 
   private _renderWorldList(): void {
@@ -342,39 +446,146 @@ export class RankScene implements Scene {
       return;
     }
 
-    const items = data?.items || [];
-    const scroll = new PIXI.Container();
-    this._listArea.addChild(scroll);
+    const items = (data?.items || []).slice(0, WORLD_LIST_MAX);
+    this._worldListRecords = items;
 
-    const podium = this._createTop3Podium(items.slice(0, 3), W);
-    podium.x = 18;
-    podium.y = 0;
-    scroll.addChild(podium);
-    const startY = 300;
+    // 顶部 Top3 奖台（固定不滚动，单独贴在 listArea 顶上）
+    const podiumLayer = new PIXI.Container();
+    podiumLayer.x = 18;
+    podiumLayer.y = 0;
+    this._listArea.addChild(podiumLayer);
+    this._renderTop3Podium(podiumLayer, items.slice(0, 3), W);
 
+    // 排行 4 起的可滚动列表
     const listItems = items.slice(3);
-    if (listItems.length === 0 && items.length === 0) {
+    if (items.length === 0) {
       const text = this._modeTab === 'classic'
         ? '还没有人提交分数\n快去经典模式挑战吧！'
         : '还没有人完成关卡\n快去关卡模式挑战吧！';
       const empty = this._renderEmpty(text, W);
-      empty.y = startY - 8;
-      scroll.addChild(empty);
+      empty.y = TOP3_HEIGHT - 8;
+      this._listArea.addChild(empty);
+      return;
+    }
+    if (listItems.length === 0) {
+      // 只有前三：不需要列表，但保留底色一致的占位
+      return;
     }
 
-    listItems.forEach((entry, idx) => {
-      const row = this._modeTab === 'classic'
-        ? this._createClassicRow(entry as LeaderboardClassicEntry, W)
-        : this._createLevelRow(entry as LeaderboardLevelEntry, W);
-      row.x = LIST_PADDING_X;
-      row.y = startY + idx * (ROW_HEIGHT + ROW_GAP);
-      row.alpha = 0;
-      TweenManager.to({ target: row, props: { alpha: 1 }, duration: 0.25, delay: Math.min(idx * 0.02, 0.4) });
-      scroll.addChild(row);
-    });
+    // viewport + mask + content：mask 用绝对坐标的矩形，content 通过 y 偏移做滚动
+    const area = this._listAreaRect;
+    const listTopAbs = area.y + TOP3_HEIGHT;
+    const listH = Math.max(80, area.y + area.h - listTopAbs);
 
-    this._setupListScroll(scroll, listItems.length, startY);
+    const mask = new PIXI.Graphics();
+    mask.beginFill(0xFFFFFF, 1);
+    // 用绝对设计坐标，listArea 没有缩放/平移，所以 mask 可直接挂在 listArea 上
+    mask.drawRect(area.x - 8, TOP3_HEIGHT - 4, area.w + 16, listH + 8);
+    mask.endFill();
+    mask.renderable = false;
+    this._listArea.addChild(mask);
+
+    const viewport = new PIXI.Container();
+    viewport.eventMode = 'none';
+    viewport.mask = mask;
+    this._listArea.addChild(viewport);
+
+    const content = new PIXI.Container();
+    content.eventMode = 'none';
+    content.y = TOP3_HEIGHT + this._worldScrollY;
+    viewport.addChild(content);
+    this._worldListContent = content;
+
+    // 拖动范围 clamp：在写入 scrollY 前算一遍最小值，保证 scroll 不会停在非法位置
+    this._worldScrollY = this._clampScrollY(this._worldScrollY, listItems.length, listH);
+    content.y = TOP3_HEIGHT + this._worldScrollY;
+
+    this._renderWorldVisibleRows(listH);
   }
+
+  /**
+   * 世界榜虚拟列表：仅渲染当前 scrollY 可见区窗口内的行。
+   * 1) 行容器 + 内部 PIXI.Text 走对象池复用，避免滚动时重复创建/销毁；
+   * 2) 同 index 行已在显示 → 不动；
+   * 3) 滚出可视区的行 detach 进池子，下一次滚入时 in-place 重写内容。
+   */
+  private _renderWorldVisibleRows(listH: number): void {
+    const content = this._worldListContent;
+    if (!content) return;
+    const items = this._worldListRecords.slice(3);
+    if (items.length === 0) return;
+
+    const W = Game.logicWidth;
+    const step = ROW_HEIGHT + ROW_GAP;
+    // content.y = TOP3_HEIGHT + scrollY，可见区 absolute y 是 [TOP3_HEIGHT, TOP3_HEIGHT + listH)
+    // 行 i 的 content 内 y = i * step，绝对 y = content.y + i * step
+    // 可见条件：absoluteY + ROW_HEIGHT >= TOP3_HEIGHT && absoluteY < TOP3_HEIGHT + listH
+    // 转换得 i ∈ [(- scrollY - ROW_HEIGHT) / step, (- scrollY + listH) / step]
+    const sy = this._worldScrollY;
+    const startIndex = Math.max(0, Math.floor((-sy - ROW_HEIGHT) / step) - WORLD_VIRTUAL_BUFFER_ROWS);
+    const endIndex = Math.min(
+      items.length,
+      Math.ceil((-sy + listH) / step) + WORLD_VIRTUAL_BUFFER_ROWS,
+    );
+
+    if (startIndex === this._worldVisibleStart && endIndex === this._worldVisibleEnd) return;
+    this._worldVisibleStart = startIndex;
+    this._worldVisibleEnd = endIndex;
+
+    // 1) 不再可见的行 → pool
+    for (const [idx, row] of this._worldRowByIndex) {
+      if (idx < startIndex || idx >= endIndex) {
+        row.parent?.removeChild(row);
+        this._worldRowByIndex.delete(idx);
+        this._worldRowPool.push(row);
+      }
+    }
+
+    // 2) 新进入可视区的 index：先从 pool 复用，不够再 new
+    for (let i = startIndex; i < endIndex; i += 1) {
+      const entry = items[i];
+      if (!entry) continue;
+      let row = this._worldRowByIndex.get(i);
+      if (!row) {
+        row = this._worldRowPool.pop() || this._createRankRowTemplate(W);
+        this._updateRankRowContent(row, entry, this._modeTab, W);
+        content.addChild(row);
+        this._worldRowByIndex.set(i, row);
+      }
+      row.x = LIST_PADDING_X;
+      row.y = i * step;
+    }
+  }
+
+  private _clampScrollY(scrollY: number, itemCount: number, viewportH: number): number {
+    const contentH = itemCount > 0 ? itemCount * ROW_HEIGHT + Math.max(0, itemCount - 1) * ROW_GAP : 0;
+    const minScrollY = Math.min(0, viewportH - contentH);
+    return Math.max(minScrollY, Math.min(0, scrollY));
+  }
+
+  // ─── 世界榜行池：detach 但不销毁，下次进入时 in-place 重写文本 ──
+  private _reclaimWorldRowsToPool(): void {
+    for (const row of this._worldRowByIndex.values()) {
+      row.parent?.removeChild(row);
+      this._worldRowPool.push(row);
+    }
+    this._worldRowByIndex.clear();
+  }
+
+  private _resetWorldRowPool(): void {
+    this._reclaimWorldRowsToPool();
+  }
+
+  /** 场景退出时彻底销毁池内行，下次进入会重新建立 */
+  private _destroyWorldRowPool(): void {
+    this._reclaimWorldRowsToPool();
+    for (const row of this._worldRowPool) {
+      if (!row.destroyed) row.destroy({ children: true });
+    }
+    this._worldRowPool.length = 0;
+  }
+
+  // ─── Friend board (sharedCanvas) ────────────────────────────
 
   private _renderFriendList(): void {
     const W = Game.logicWidth;
@@ -390,7 +601,8 @@ export class RankScene implements Scene {
     }
 
     const listW = W - LIST_PADDING_X * 2;
-    this._postFriendRender(listW);
+    this._friendListWidth = listW;
+    this._postFriendRender();
 
     try {
       const baseTexture = PIXI.BaseTexture.from(sharedCanvas as any, {
@@ -408,9 +620,7 @@ export class RankScene implements Scene {
         const ch = sharedCanvas.height || 0;
         if (cw <= 0 || ch <= 0) return;
         const s = listW / cw;
-        const contentH = (sharedCanvas as any).__friendContentHeight as number | undefined;
-        const frameH = Math.min(ch, Math.max(80, contentH || ch));
-        const rect = new PIXI.Rectangle(0, 0, cw, frameH);
+        const rect = new PIXI.Rectangle(0, 0, cw, ch);
         const tex = sprite.texture as PIXI.Texture & {
           frame?: PIXI.Rectangle;
           orig?: PIXI.Rectangle;
@@ -419,28 +629,17 @@ export class RankScene implements Scene {
         };
         tex.frame = rect;
         tex.orig = rect;
-        tex.trim = null;
+        (tex as { trim?: PIXI.Rectangle | null }).trim = null;
         tex.updateUvs?.();
         sprite.scale.set(s, s);
       };
       applyDisplayScale();
 
-      const scroll = new PIXI.Container();
-      scroll.x = 0;
-      scroll.y = 0;
-      scroll.addChild(sprite);
-      this._friendScroll = scroll;
+      this._listArea.addChild(sprite);
       this._friendCanvasSprite = sprite;
-      this._listArea.addChild(scroll);
-
-      this._setupListScroll(scroll, 0, 0, {
-        contentHeight: () => sprite.height,
-      });
 
       const ticker = (_dt: number) => {
-        try {
-          baseTexture.update();
-        } catch {}
+        try { baseTexture.update(); } catch {}
         applyDisplayScale();
       };
       this._friendTickerCb = ticker;
@@ -448,17 +647,18 @@ export class RankScene implements Scene {
     } catch (error) {
       console.warn('[RankScene] sharedCanvas sprite failed', error);
       this._listArea.addChild(this._renderEmpty('好友榜渲染失败', W));
-      return;
     }
   }
 
-  private _postFriendRender(listWidth: number): void {
+  /** 通知开放数据域子项目刷新好友榜（含滚动偏移） */
+  private _postFriendRender(): void {
     if (!Platform.supportsOpenData) return;
     Platform.postOpenDataMessage({
       type: 'render',
       tab: this._modeTab,
-      listWidth: Math.round(listWidth),
+      listWidth: Math.round(this._friendListWidth),
       rowHeight: ROW_HEIGHT,
+      scrollY: Math.round(this._friendScrollY),
     });
   }
 
@@ -467,15 +667,11 @@ export class RankScene implements Scene {
       try { Game.ticker.remove(this._friendTickerCb); } catch {}
       this._friendTickerCb = null;
     }
-    if (this._friendScroll) {
-      try {
-        this._friendScroll.parent?.removeChild(this._friendScroll);
-        this._friendScroll.destroy({ children: true });
-      } catch {}
-      this._friendScroll = null;
-    }
     if (this._friendCanvasSprite) {
-      try { this._friendCanvasSprite.destroy({ children: true, texture: false }); } catch {}
+      try {
+        this._friendCanvasSprite.parent?.removeChild(this._friendCanvasSprite);
+        this._friendCanvasSprite.destroy({ children: true, texture: false });
+      } catch {}
       this._friendCanvasSprite = null;
     }
     if (this._friendBaseTexture) {
@@ -484,73 +680,113 @@ export class RankScene implements Scene {
     }
   }
 
-  private _setupListScroll(
-    scroll: PIXI.Container,
-    rowCount: number,
-    extraHeight = 0,
-    options?: { contentHeight?: () => number },
-  ): void {
-    const W = Game.logicWidth;
-    const H = Game.logicHeight;
-    const visibleH = H - 226 - this._listArea.y - 8;
-    const resolveContentH = () => {
-      if (options?.contentHeight) return options.contentHeight();
-      return extraHeight + rowCount * (ROW_HEIGHT + ROW_GAP);
-    };
+  // ─── Native touch handlers（参考 hot-pot.LeaderboardScene）──
+  //
+  // 微信小游戏下 Pixi pointer 在好友榜 sharedCanvas 那一层经常收不到 move，
+  // 而且 PIXI EventSystem 路径上同一次手势会被 Sprite/Container 重复 hit-test，
+  // 直接监听 wx.onTouchStart/Move/End 是公认更稳的方案，
+  // 实际表现也跟水果完全一致。
 
-    const mask = new PIXI.Graphics();
-    mask.beginFill(0xFFFFFF, 1);
-    mask.drawRect(0, 0, W, visibleH);
-    mask.endFill();
-    mask.x = 0;
-    mask.y = 0;
-    this._listArea.addChild(mask);
-    scroll.mask = mask;
-
-    let dragging = false;
-    let dragStartY = 0;
-    let scrollStartY = 0;
-
-    const hit = new PIXI.Graphics();
-    hit.beginFill(0xFFFFFF, 0.001);
-    hit.drawRect(0, 0, W, visibleH);
-    hit.endFill();
-    hit.eventMode = 'static';
-    hit.cursor = 'grab';
-    this._listArea.addChildAt(hit, 0);
-
-    hit.on('pointerdown', (event: PIXI.FederatedPointerEvent) => {
-      dragging = true;
-      dragStartY = event.global.y;
-      scrollStartY = scroll.y;
-    });
-    hit.on('pointermove', (event: PIXI.FederatedPointerEvent) => {
-      if (!dragging) return;
-      const contentH = resolveContentH();
-      if (contentH <= visibleH) {
-        scroll.y = 0;
-        return;
-      }
-      const minY = visibleH - contentH;
-      const maxY = 0;
-      const dy = event.global.y - dragStartY;
-      // event.global 在 PIXI 7 中是屏幕物理像素；stage 应用了 Game.scale 缩放
-      let next = scrollStartY + dy / Game.scale;
-      if (next > maxY) next = maxY;
-      if (next < minY) next = minY;
-      scroll.y = next;
-    });
-    const endDrag = () => { dragging = false; };
-    hit.on('pointerup', endDrag);
-    hit.on('pointerupoutside', endDrag);
-    hit.on('pointercancel', endDrag);
+  private _installNativeTouchHandlers(): void {
+    if (this._nativeTouchBound) return;
+    const api = Platform.api;
+    if (!api?.onTouchStart || !api?.onTouchMove || !api?.onTouchEnd) return;
+    this._nativeTouchBound = true;
+    try {
+      api.onTouchStart((event: any) => this._onNativeTouchStart(event));
+      api.onTouchMove((event: any) => this._onNativeTouchMove(event));
+      api.onTouchEnd(() => this._onNativeTouchEnd());
+      api.onTouchCancel?.(() => this._onNativeTouchEnd());
+    } catch (error) {
+      console.warn('[RankScene] install native touch handlers failed', error);
+    }
   }
 
-  private _createTop3Podium(
-    items: Array<LeaderboardClassicEntry | LeaderboardLevelEntry>,
+  private _firstTouch(event: any): { clientX: number; clientY: number } | null {
+    const touches = event?.touches || event?.changedTouches;
+    const t = touches && touches[0];
+    if (!t || !Number.isFinite(t.clientX) || !Number.isFinite(t.clientY)) return null;
+    return { clientX: t.clientX, clientY: t.clientY };
+  }
+
+  /**
+   * CSS px → 画布物理像素（× dpr）→ 除以舞台缩放 → 设计像素。
+   * caizhu 的 stage 只 scale 不 translate，所以不需要扣 letterbox 偏移。
+   */
+  private _touchToDesign(touch: { clientX: number; clientY: number }): { x: number; y: number } {
+    const dpr = Math.max(1, Game.dpr || 1);
+    const scale = Math.max(0.0001, Game.scale || 1);
+    return {
+      x: (touch.clientX * dpr) / scale,
+      y: (touch.clientY * dpr) / scale,
+    };
+  }
+
+  private _onNativeTouchStart(event: any): void {
+    if (!this._sceneActive) return;
+    const touch = this._firstTouch(event);
+    if (!touch) return;
+    const p = this._touchToDesign(touch);
+    const area = this._listAreaRect;
+    // 拖动区只覆盖 Top3 下方的列表区，避免点 mebar/tab 也被当成拖动
+    const dragTop = area.y + TOP3_HEIGHT;
+    if (p.x < area.x || p.x > area.x + area.w || p.y < dragTop || p.y > area.y + area.h) {
+      return;
+    }
+    this._dragKind = this._scopeTab;
+    this._dragStartY = p.y;
+    this._dragStartScrollY = this._scopeTab === 'friends' ? this._friendScrollY : this._worldScrollY;
+    this._dragMoved = false;
+  }
+
+  private _onNativeTouchMove(event: any): void {
+    if (!this._sceneActive || !this._dragKind) return;
+    const touch = this._firstTouch(event);
+    if (!touch) return;
+    this._pendingDragY = this._touchToDesign(touch).y;
+  }
+
+  /** 帧驱动提交：把最近一次 touchmove 的 Y 真正应用到 scrollY 上 */
+  private _commitPendingDrag(): void {
+    if (this._pendingDragY == null || !this._dragKind) {
+      this._pendingDragY = null;
+      return;
+    }
+    const currentY = this._pendingDragY;
+    this._pendingDragY = null;
+    const dy = currentY - this._dragStartY;
+    if (Math.abs(dy) > 3) this._dragMoved = true;
+
+    if (this._dragKind === 'friends') {
+      // 主域不知道好友总人数，先只 clamp 不能往下拉超过顶部；
+      // 子域按真实列表长度二次 clamp 下界即可。
+      this._friendScrollY = Math.min(0, this._dragStartScrollY + dy);
+      this._postFriendRender();
+      return;
+    }
+
+    if (!this._worldListContent) return;
+    const items = this._worldListRecords.slice(3);
+    const area = this._listAreaRect;
+    const listH = Math.max(80, area.h - TOP3_HEIGHT);
+    this._worldScrollY = this._clampScrollY(this._dragStartScrollY + dy, items.length, listH);
+    this._worldListContent.y = TOP3_HEIGHT + this._worldScrollY;
+    this._renderWorldVisibleRows(listH);
+  }
+
+  private _onNativeTouchEnd(): void {
+    this._dragKind = null;
+    this._dragMoved = false;
+    this._pendingDragY = null;
+  }
+
+  // ─── Top3 podium ───────────────────────────────────────────
+
+  private _renderTop3Podium(
+    container: PIXI.Container,
+    items: WorldEntry[],
     W: number,
-  ): PIXI.Container {
-    const c = new PIXI.Container();
+  ): void {
     const sideW = 165;
     const centerW = 190;
     const leftX = 56;
@@ -562,27 +798,17 @@ export class RankScene implements Scene {
       { item: items[2], x: rightX, y: 78, frame: 'top3' as const, w: sideW },
     ];
 
-    const podiumFrameRatio = (k: keyof typeof RANK_PODIUM_FRAMES) => {
-      const f = RANK_PODIUM_FRAMES[k];
-      return f.h / f.w;
-    };
-
     for (const p of placements) {
       const card = new PIXI.Container();
       card.x = p.x;
       card.y = p.y;
-      c.addChild(card);
+      container.addChild(card);
 
       const panelHolder = new PIXI.Container();
-
-      if (!p.item) {
-        card.addChild(panelHolder);
-        this._addPodiumFrameSprite(panelHolder, p.frame, p.w);
-        continue;
-      }
-
       card.addChild(panelHolder);
       this._addPodiumFrameSprite(panelHolder, p.frame, p.w);
+
+      if (!p.item) continue;
 
       const avatarR = p.frame === 'top1' ? 40 : 34;
       const avatarY = p.frame === 'top1' ? 100 : 50;
@@ -623,7 +849,6 @@ export class RankScene implements Scene {
         dropShadowDistance: 2,
         dropShadowAlpha: 0.45,
       }));
-      // 分数/星星：面板白色区域内水平居中，紧挨昵称下方（对齐设计红框位置）
       const scoreGapBelowName = p.frame === 'top1' ? 10 : 8;
       const nameLineH = p.frame === 'top1' ? 24 : 20;
       score.anchor.set(0.5, 0);
@@ -631,112 +856,178 @@ export class RankScene implements Scene {
       score.y = name.y + nameLineH + scoreGapBelowName;
       card.addChild(score);
     }
-
-    return c;
   }
 
-  private _createClassicRow(entry: LeaderboardClassicEntry, W: number): PIXI.Container {
-    return this._createRowFrame(
-      entry.rank, entry.isMe, entry.nickname, entry.avatarUrl, entry.userId,
-      String(entry.bestScore), '分', W,
-    );
-  }
+  // ─── Rank row template & in-place update ──────────────────
 
-  private _createLevelRow(entry: LeaderboardLevelEntry, W: number): PIXI.Container {
-    const row = this._createRowFrame(
-      entry.rank, entry.isMe, entry.nickname, entry.avatarUrl, entry.userId,
-      String(entry.totalStars), '星', W,
-    );
-    const sub = new PIXI.Text(`累计 ${entry.totalScore}`, new PIXI.TextStyle({
-      fontSize: 14, fill: 0xCBD5E1, fontFamily: 'Arial',
-    }));
-    sub.anchor.set(1, 0.5);
-    sub.x = (W - LIST_PADDING_X * 2) - 18;
-    sub.y = ROW_HEIGHT - 16;
-    row.addChild(sub);
-    return row;
-  }
-
-  private _createRowFrame(
-    rank: number, isMe: boolean,
-    nickname: string, avatarUrl: string, userId: string,
-    valueText: string, valueUnit: string,
-    W: number,
-  ): PIXI.Container {
-    const row = new PIXI.Container();
+  private _createRankRowTemplate(W: number): RankRowView {
+    const row = new PIXI.Container() as RankRowView;
+    row.eventMode = 'none';
     const w = W - LIST_PADDING_X * 2;
     const h = ROW_HEIGHT;
 
-    const bg = new PIXI.Container();
-    this._addNineSliceImage(bg, 'rank_row_panel.png', 0, 0, w, h, { left: 90, top: 110, right: 90, bottom: 110 });
+    const bg = new PIXI.Graphics();
+    bg.beginFill(0xF8FBFF, 0.96);
+    bg.lineStyle(2, 0xB9D9F2, 0.9);
+    bg.drawRoundedRect(0, 0, w, h, 20);
+    bg.endFill();
     row.addChild(bg);
+    row.__bg = bg;
 
-    const rankText = rank <= 3 && !isMe
-      ? new PIXI.Text(['🥇', '🥈', '🥉'][rank - 1], new PIXI.TextStyle({ fontSize: 28, fontFamily: 'Arial' }))
-      : new PIXI.Text(String(rank), new PIXI.TextStyle({
-          fontSize: 24,
-          fill: 0x0B4A8B,
-          fontWeight: 'bold',
-          fontFamily: 'Arial',
-          stroke: 0xFFFFFF,
-          strokeThickness: 3,
-        }));
+    const rankText = new PIXI.Text('', new PIXI.TextStyle({
+      fontSize: 24,
+      fill: 0x0B4A8B,
+      fontWeight: 'bold',
+      fontFamily: 'Arial',
+      stroke: 0xFFFFFF,
+      strokeThickness: 3,
+    }));
     rankText.anchor.set(0.5, 0.5);
     rankText.x = 30;
     rankText.y = h / 2;
     row.addChild(rankText);
+    row.__rankText = rankText;
 
-    const avatar = createAvatarSprite(avatarUrl, 24, userId);
-    avatar.x = 60;
-    avatar.y = h / 2 - 24;
-    row.addChild(avatar);
+    // 头像 sprite：行复用时只切 .texture，不重建/不挂 Graphics mask。
+    // 真机上 Graphics mask 会破坏 batch（每行一个 stencil），是滚动卡顿的最大头。
+    const avatarSprite = new PIXI.Sprite();
+    avatarSprite.width = ROW_AVATAR_RADIUS * 2;
+    avatarSprite.height = ROW_AVATAR_RADIUS * 2;
+    avatarSprite.x = 60;
+    avatarSprite.y = h / 2 - ROW_AVATAR_RADIUS;
+    avatarSprite.eventMode = 'none';
+    row.addChild(avatarSprite);
+    row.__avatarSprite = avatarSprite;
+    row.__avatarSeq = 0;
 
-    const nick = new PIXI.Text(this._truncateNickname(resolveDisplayNickname(nickname, userId)), new PIXI.TextStyle({
-      fontSize: 22, fill: 0x102F64, fontWeight: 'bold', fontFamily: 'Arial',
+    const nick = new PIXI.Text('', new PIXI.TextStyle({
+      fontSize: 22,
+      fill: 0x102F64,
+      fontWeight: 'bold',
+      fontFamily: 'Arial',
     }));
     nick.anchor.set(0, 0.5);
     nick.x = 116;
-    nick.y = h / 2 - 12;
+    nick.y = h / 2;
     row.addChild(nick);
+    row.__nickText = nick;
 
-    if (isMe) {
-      const meTag = new PIXI.Text('我', new PIXI.TextStyle({
-        fontSize: 12, fill: 0x1F2937, fontFamily: 'Arial', fontWeight: 'bold',
-      }));
-      const tagBg = new PIXI.Graphics();
-      const tagW = 24;
-      const tagH = 18;
-      tagBg.beginFill(0xFACC15, 0.95);
-      tagBg.drawRoundedRect(0, 0, tagW, tagH, 6);
-      tagBg.endFill();
-      meTag.anchor.set(0.5, 0.5);
-      meTag.x = tagW / 2;
-      meTag.y = tagH / 2 + 1;
-      const tagWrap = new PIXI.Container();
-      tagWrap.addChild(tagBg);
-      tagWrap.addChild(meTag);
-      tagWrap.x = nick.x + nick.width + 6;
-      tagWrap.y = h / 2 - 21;
-      row.addChild(tagWrap);
-    }
+    const meTag = this._createMeTag();
+    meTag.visible = false;
+    row.addChild(meTag);
+    row.__meTag = meTag;
 
-    const valueT = new PIXI.Text(valueText, new PIXI.TextStyle({
-      fontSize: 24, fill: 0x0B4A8B, fontWeight: 'bold', fontFamily: 'Arial',
+    // 分数/星数：单行展示。
+    //  - 经典模式：`{best} 分`
+    //  - 关卡模式：`★ {stars}`（★ 与奖台一致，避免再单独画一颗星图标）
+    // 不再单独显示 "星/分" 副文字，也不再展示 "累计 XX"，避免右侧多行挤在一起。
+    const valueT = new PIXI.Text('', new PIXI.TextStyle({
+      fontSize: 26,
+      fill: 0xD25A36,
+      fontWeight: 'bold',
+      fontFamily: 'PingFang SC, Microsoft YaHei, Arial',
+      stroke: 0xFFFFFF,
+      strokeThickness: 2,
     }));
     valueT.anchor.set(1, 0.5);
-    valueT.x = w - 18;
-    valueT.y = h / 2 - 4;
+    valueT.x = w - 22;
+    valueT.y = h / 2;
     row.addChild(valueT);
-
-    const unitT = new PIXI.Text(valueUnit, new PIXI.TextStyle({
-      fontSize: 14, fill: 0xCBD5E1, fontFamily: 'Arial',
-    }));
-    unitT.anchor.set(1, 0.5);
-    unitT.x = w - 18;
-    unitT.y = h / 2 + 14;
-    row.addChild(unitT);
+    row.__valueText = valueT;
 
     return row;
+  }
+
+  private _updateRankRowContent(
+    row: RankRowView,
+    entry: WorldEntry,
+    mode: ModeTab,
+    W: number,
+  ): void {
+    const w = W - LIST_PADDING_X * 2;
+    const h = ROW_HEIGHT;
+    // 自己行高亮（背景变金）：只在 isMe 状态变化时重画
+    const desiredIsMe = !!entry.isMe;
+    if (row.__lastIsMe !== desiredIsMe) {
+      row.__lastIsMe = desiredIsMe;
+      const bg = row.__bg;
+      bg.clear();
+      if (desiredIsMe) {
+        bg.beginFill(0xFFEDB0, 1);
+        bg.lineStyle(2, 0xEFBD48, 1);
+      } else {
+        bg.beginFill(0xF8FBFF, 0.96);
+        bg.lineStyle(2, 0xB9D9F2, 0.9);
+      }
+      bg.drawRoundedRect(0, 0, w, h, 20);
+      bg.endFill();
+    }
+
+    const rankText = String(entry.rank);
+    if (row.__rankText.text !== rankText) row.__rankText.text = rankText;
+
+    const nickname = this._truncateNickname(resolveDisplayNickname(entry.nickname, entry.userId));
+    if (row.__lastNick !== nickname) {
+      row.__lastNick = nickname;
+      row.__nickText.text = nickname;
+    }
+
+    const avatarKey = `${entry.avatarUrl || ''}|${entry.userId || 'rank'}`;
+    if (row.__lastAvatarKey !== avatarKey) {
+      row.__lastAvatarKey = avatarKey;
+      const seq = ++row.__avatarSeq;
+      const sprite = row.__avatarSprite;
+      const initialTex = resolveCircleAvatarTexture(
+        entry.avatarUrl,
+        entry.userId,
+        ROW_AVATAR_RADIUS,
+        (finalTex) => {
+          // 异步远程头像加载完成时，只有这行依然展示同一用户（seq 不变）才换贴图，
+          // 防止滚动太快把贴图覆盖到已经被复用为别的 user 的行上。
+          if (sprite.destroyed) return;
+          if (row.__avatarSeq !== seq) return;
+          sprite.texture = finalTex;
+        },
+      );
+      sprite.texture = initialTex || PIXI.Texture.EMPTY;
+    }
+
+    row.__meTag.visible = desiredIsMe;
+    if (desiredIsMe) {
+      row.__meTag.x = Math.min(row.__nickText.x + row.__nickText.width + 6, w - 132);
+      row.__meTag.y = ROW_HEIGHT / 2 - 9;
+    }
+
+    const valueText = mode === 'classic'
+      ? `${(entry as LeaderboardClassicEntry).bestScore} 分`
+      : `★ ${(entry as LeaderboardLevelEntry).totalStars}`;
+    if (row.__lastValue !== valueText) {
+      row.__lastValue = valueText;
+      row.__valueText.text = valueText;
+    }
+  }
+
+  private _createMeTag(): PIXI.Container {
+    const tagWrap = new PIXI.Container();
+    const tagBg = new PIXI.Graphics();
+    const tagW = 24;
+    const tagH = 18;
+    tagBg.beginFill(0xFACC15, 0.95);
+    tagBg.drawRoundedRect(0, 0, tagW, tagH, 6);
+    tagBg.endFill();
+    tagWrap.addChild(tagBg);
+
+    const meTag = new PIXI.Text('我', new PIXI.TextStyle({
+      fontSize: 12,
+      fill: 0x1F2937,
+      fontFamily: 'Arial',
+      fontWeight: 'bold',
+    }));
+    meTag.anchor.set(0.5, 0.5);
+    meTag.x = tagW / 2;
+    meTag.y = tagH / 2 + 1;
+    tagWrap.addChild(meTag);
+    return tagWrap;
   }
 
   // ─── Bottom me bar ─────────────────────────────────────────
@@ -838,8 +1129,12 @@ export class RankScene implements Scene {
     if (!this._meBarRankText || !this._meBarNameText || !this._meBarScoreText || !this._meBarAvatarHolder) return;
     const profile = UserProfileManager.profile;
     const meUserId = BackendService.userId || UserProfileManager.userId || 'local';
-    this._meBarAvatarHolder.removeChildren();
-    this._meBarAvatarHolder.addChild(createAvatarSprite(profile.avatarUrl, 38, meUserId));
+    const avatarKey = `${profile.avatarUrl}|${meUserId}`;
+    if (this._meBarAvatarKey !== avatarKey) {
+      this._meBarAvatarKey = avatarKey;
+      this._meBarAvatarHolder.removeChildren();
+      this._meBarAvatarHolder.addChild(createAvatarSprite(profile.avatarUrl, 38, meUserId));
+    }
 
     if (this._scopeTab === 'friends') {
       const localValue = this._localFallbackValue();
@@ -878,9 +1173,7 @@ export class RankScene implements Scene {
   }
 
   private _localFallbackValue(): number {
-    if (this._modeTab === 'classic') {
-      return this._localClassicScore();
-    }
+    if (this._modeTab === 'classic') return this._localClassicScore();
     return this._localLevelStars();
   }
 
@@ -892,13 +1185,11 @@ export class RankScene implements Scene {
 
   private _localLevelStars(): number {
     let stars = 0;
-    for (let i = 1; i <= TOTAL_LEVELS; i++) {
-      stars += LevelManager.getStars(i);
-    }
+    for (let i = 1; i <= TOTAL_LEVELS; i++) stars += LevelManager.getStars(i);
     return stars;
   }
 
-  // ─── Loading ───────────────────────────────────────────────
+  // ─── Data loading ─────────────────────────────────────────
 
   private async _loadInitialData(force = false): Promise<void> {
     this._loading = true;
@@ -909,8 +1200,8 @@ export class RankScene implements Scene {
         await LeaderboardManager.resyncAuthorizedProfile();
       }
       const [classic, level] = await Promise.all([
-        LeaderboardManager.fetchClassicWorld(true),
-        LeaderboardManager.fetchLevelWorld(true),
+        LeaderboardManager.fetchClassicWorld(force),
+        LeaderboardManager.fetchLevelWorld(force),
       ]);
       this._classicData = this._patchWorldWithLocalProfile(this._withLocalClassicMe(classic));
       this._levelData = this._patchWorldWithLocalProfile(this._withLocalLevelMe(level));
@@ -956,7 +1247,7 @@ export class RankScene implements Scene {
   }
 
   /** 领奖台/列表与底部「我的」一致：自己的条目用本地授权资料覆盖服务端旧数据 */
-  private _patchWorldWithLocalProfile<T extends LeaderboardClassicEntry | LeaderboardLevelEntry>(
+  private _patchWorldWithLocalProfile<T extends WorldEntry>(
     data: LeaderboardWorldResult<T>,
   ): LeaderboardWorldResult<T> {
     if (!UserProfileManager.isAuthorized) return data;
@@ -1056,6 +1347,10 @@ export class RankScene implements Scene {
     return c;
   }
 
+  private _preloadRankAssets(): void {
+    for (const path of RANK_PRELOAD_ASSETS) void loadImageTexture(path);
+  }
+
   private _createImageAsset(path: string, width: number): PIXI.Container {
     const c = new PIXI.Container();
     addImageSprite(c, RANK_ASSET_PREFIX + path, (sprite) => {
@@ -1085,78 +1380,38 @@ export class RankScene implements Scene {
     });
   }
 
-  private _addNineSlicePanel(
-    parent: PIXI.Container,
-    path: string,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-  ): void {
-    void loadImageTexture(RANK_ASSET_PREFIX + path).then((texture) => {
-      if (!texture || parent.destroyed) return;
-      const NineSlicePlane = (PIXI as any).NineSlicePlane;
-      if (!NineSlicePlane) {
-        const sprite = new PIXI.Sprite(texture);
-        sprite.x = x;
-        sprite.y = y;
-        sprite.width = width;
-        sprite.height = height;
-        parent.addChild(sprite);
-        return;
-      }
-      const plane = new NineSlicePlane(texture, 110, 150, 110, 90) as PIXI.Container & { width: number; height: number };
-      plane.x = x;
-      plane.y = y;
-      plane.width = width;
-      plane.height = height;
-      parent.addChild(plane);
-    });
-  }
-
-  private _addNineSliceImage(
-    parent: PIXI.Container,
-    path: string,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    border: { left: number; top: number; right: number; bottom: number },
-  ): void {
-    void loadImageTexture(RANK_ASSET_PREFIX + path).then((texture) => {
-      if (!texture || parent.destroyed) return;
-      const NineSlicePlane = (PIXI as any).NineSlicePlane;
-      if (!NineSlicePlane) {
-        const sprite = new PIXI.Sprite(texture);
-        sprite.x = x;
-        sprite.y = y;
-        sprite.width = width;
-        sprite.height = height;
-        parent.addChild(sprite);
-        return;
-      }
-      const plane = new NineSlicePlane(texture, border.left, border.top, border.right, border.bottom) as PIXI.Container & { width: number; height: number };
-      plane.x = x;
-      plane.y = y;
-      plane.width = width;
-      plane.height = height;
-      parent.addChild(plane);
-    });
-  }
-
+  /**
+   * Tab 按钮的图片复用：同一个 container 内的不同 asset 都保留为子节点，
+   * 切 tab 时只切换 visible，不重新解码/上传纹理。
+   */
   private _setButtonAsset(container: PIXI.Container, path: string, width: number): void {
-    const old = container.getChildByName('assetBg');
-    if (old) {
-      container.removeChild(old);
-      old.destroy({ children: true });
+    let matched: (PIXI.Container & { __assetPath?: string }) | null = null;
+    for (const child of container.children) {
+      const holder = child as PIXI.Container & { __assetPath?: string };
+      if (holder.name !== 'assetBg') continue;
+      if (holder.__assetPath === path) {
+        matched = holder;
+        holder.visible = true;
+      } else {
+        holder.visible = false;
+      }
     }
+    if (matched) return;
     const holder = new PIXI.Container();
     holder.name = 'assetBg';
+    (holder as PIXI.Container & { __assetPath?: string }).__assetPath = path;
     container.addChildAt(holder, 0);
     addImageSprite(holder, RANK_ASSET_PREFIX + path, (sprite) => {
       sprite.width = width;
       sprite.height = width * (sprite.texture.height / sprite.texture.width);
     });
+  }
+
+  private _destroyChildren(container: PIXI.Container): void {
+    const children = container.removeChildren();
+    for (const child of children) {
+      if (!child.destroyed) child.destroy({ children: true });
+    }
   }
 
   private _truncateNickname(name: string): string {
@@ -1180,7 +1435,7 @@ export class RankScene implements Scene {
       sprite.height = 54;
     });
 
-    btn.on('pointerdown', () => {
+    btn.on('pointertap', () => {
       AudioManager.play('button');
       SceneManager.switchTo('home');
     });
