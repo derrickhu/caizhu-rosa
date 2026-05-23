@@ -420,36 +420,56 @@ class PlatformServiceClass {
     return new Promise((resolve) => {
       try {
         if (!this.isWechat) {
+          console.log('[RankDiag] authorize: not wechat -> auto pass');
           resolve(true);
           return;
         }
         const scope = 'scope.WxFriendInteraction';
         const openSetting = () => {
           if (!this._api?.openSetting) {
+            console.log('[RankDiag] authorize.openSetting: api missing -> false');
             resolve(false);
             return;
           }
+          console.log('[RankDiag] authorize.openSetting: invoke wx.openSetting');
           this._api.openSetting({
-            success: (res: any) => resolve(res?.authSetting?.[scope] === true),
-            fail: () => resolve(false),
+            success: (res: any) => {
+              const granted = res?.authSetting?.[scope] === true;
+              console.log('[RankDiag] authorize.openSetting success granted=' + granted);
+              resolve(granted);
+            },
+            fail: (err: any) => {
+              console.log('[RankDiag] authorize.openSetting fail ' + (err?.errMsg || ''));
+              resolve(false);
+            },
           });
         };
         const requestAuthorize = () => {
           if (!this._api?.authorize) {
+            console.log('[RankDiag] authorize: api missing -> openSetting');
             openSetting();
             return;
           }
+          console.log('[RankDiag] authorize: invoke wx.authorize scope=' + scope);
           this._api.authorize({
             scope,
-            success: () => resolve(true),
-            fail: () => openSetting(),
+            success: () => {
+              console.log('[RankDiag] authorize: granted');
+              resolve(true);
+            },
+            fail: (err: any) => {
+              console.log('[RankDiag] authorize fail ' + (err?.errMsg || '') + ' -> openSetting');
+              openSetting();
+            },
           });
         };
 
         if (this._api?.getSetting) {
+          console.log('[RankDiag] authorize: invoke wx.getSetting');
           this._api.getSetting({
             success: (res: any) => {
               const state = res?.authSetting?.[scope];
+              console.log('[RankDiag] getSetting state=' + String(state));
               if (state === true) {
                 resolve(true);
               } else if (state === false) {
@@ -458,13 +478,18 @@ class PlatformServiceClass {
                 requestAuthorize();
               }
             },
-            fail: () => requestAuthorize(),
+            fail: (err: any) => {
+              console.log('[RankDiag] getSetting fail ' + (err?.errMsg || '') + ' -> requestAuthorize');
+              requestAuthorize();
+            },
           });
           return;
         }
 
+        console.log('[RankDiag] authorize: no getSetting api -> requestAuthorize');
         requestAuthorize();
-      } catch {
+      } catch (error) {
+        console.warn('[RankDiag] authorize threw', error);
         resolve(false);
       }
     });

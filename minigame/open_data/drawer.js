@@ -36,21 +36,39 @@ function clearCanvas(ctx, w, h) {
   ctx.clearRect(0, 0, w, h);
 }
 
-/** 与全服榜行高对齐：主域显示时 scale=listW/cw，故 canvas 上 rowH = targetRowH * cw / listW */
+/**
+ * 与全服榜行高对齐：主域显示时 scale=listW/cw，故 canvas 上 rowH = targetRowH * cw / listW。
+ *
+ * 列布局采用「相对前一列依次排版」策略，避免按 k 各自缩放后互相穿插。
+ * 所有 X 都是「相对行起点 x」的偏移（除 valueX 是 canvasW 上的绝对 x，与原代码保持兼容）。
+ *   rankX        : 名次列居中 x（相对 x）
+ *   avatarCx     : 头像圆心 x（相对 x）
+ *   nameX        : 昵称左对齐 x（相对 x）
+ *   valueX       : 分数右对齐 x（canvas 绝对 x）
+ */
 function getLayout(canvasW, listW, targetRowH) {
   var k = canvasW > 0 ? canvasW / DESIGN_W : 1;
   var rowH = Math.max(40, Math.round(targetRowH * canvasW / listW));
   var rowGap = Math.max(4, Math.round(8 * k));
   var pad = Math.max(12, Math.round(PADDING_X * k));
+
+  var avatarR = Math.max(16, Math.round(24 * k));
+  var rankColW = Math.max(36, Math.round(48 * k));
+  var rankX = Math.round(rankColW / 2);
+  var avatarCx = rankColW + avatarR + Math.max(6, Math.round(8 * k));
+  var nameX = avatarCx + avatarR + Math.max(12, Math.round(16 * k));
+  var valueX = canvasW - pad - Math.max(6, Math.round(8 * k));
+
   return {
     pad: pad,
     rowH: rowH,
     rowGap: rowGap,
     rowW: canvasW - pad * 2,
-    avatarR: Math.max(16, Math.round(24 * k)),
-    rankX: Math.max(18, Math.round(24 * k)),
-    nameX: Math.max(72, Math.round(84 * k)),
-    valueX: canvasW - Math.max(48, Math.round(72 * k)),
+    avatarR: avatarR,
+    avatarCx: avatarCx,
+    rankX: rankX,
+    nameX: nameX,
+    valueX: valueX,
     fontRankMedal: Math.max(18, Math.round(20 * k)) + 'px ' + FONT_FAMILY,
     fontRankNum: 'bold ' + Math.max(14, Math.round(16 * k)) + 'px ' + FONT_FAMILY,
     fontName: 'bold ' + Math.max(15, Math.round(17 * k)) + 'px ' + FONT_FAMILY,
@@ -190,7 +208,7 @@ function drawCompactRow(ctx, x, y, layout, entry, rank, isMe, metricLabel) {
   }
   ctx.restore();
 
-  var avatarX = x + layout.nameX - 36 + layout.avatarR;
+  var avatarX = x + layout.avatarCx;
   utils.drawCircleAvatar(ctx, entry.avatarUrl, avatarX, cy, layout.avatarR, IMAGE_CACHE, entry.nickname);
 
   ctx.save();

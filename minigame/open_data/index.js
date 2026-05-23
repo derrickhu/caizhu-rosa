@@ -7,6 +7,18 @@ var WX = (typeof wx !== 'undefined') ? wx : null;
 var sharedCanvas = WX && WX.getSharedCanvas ? WX.getSharedCanvas() : null;
 var ctx = sharedCanvas ? sharedCanvas.getContext('2d') : null;
 
+// 真机诊断：开放数据域脚本被加载到的时刻、sharedCanvas size、ctx 是否拿到
+try {
+  console.log(
+    '[RankDiag-Sub] open_data loaded'
+      + ' hasWX=' + !!WX
+      + ' getFriendCloudStorage=' + (WX && typeof WX.getFriendCloudStorage === 'function')
+      + ' sharedCanvas=' + !!sharedCanvas
+      + ' size=' + (sharedCanvas ? (sharedCanvas.width | 0) + 'x' + (sharedCanvas.height | 0) : 'n/a')
+      + ' ctx=' + !!ctx
+  );
+} catch (_) {}
+
 var state = {
   tab: 'classic',
   metric: 'classic_best',
@@ -88,7 +100,12 @@ function buildEntries(items, metric, selfOpenId) {
 }
 
 function fetchAndRender() {
-  if (!WX || !ctx || !sharedCanvas) return;
+  if (!WX || !ctx || !sharedCanvas) {
+    try {
+      console.log('[RankDiag-Sub] fetchAndRender abort hasWX=' + !!WX + ' hasCtx=' + !!ctx + ' hasCanvas=' + !!sharedCanvas);
+    } catch (_) {}
+    return;
+  }
   if (state.fetchInflight) return;
   state.fetchInflight = true;
 
@@ -108,12 +125,23 @@ function fetchAndRender() {
       publishContentHeight(80);
       return;
     }
+    try {
+      console.log('[RankDiag-Sub] getFriendCloudStorage metric=' + pickedMetric);
+    } catch (_) {}
     WX.getFriendCloudStorage({
       keyList: [pickedMetric],
       success: function (res) {
         var entries = buildEntries((res && res.data) || [], pickedMetric, selfOpenId);
         state.lastEntries = entries;
         size = readCanvasSize();
+        try {
+          console.log(
+            '[RankDiag-Sub] getFriendCloudStorage success'
+              + ' raw=' + ((res && res.data) ? res.data.length : 0)
+              + ' entries=' + entries.length
+              + ' canvas=' + size.width + 'x' + size.height
+          );
+        } catch (_) {}
         meta = {};
         drawer.drawFriendList(
           ctx,
@@ -132,6 +160,9 @@ function fetchAndRender() {
         if (err && err.errMsg) {
           msg = '好友榜读取失败\n' + String(err.errMsg).slice(0, 40);
         }
+        try {
+          console.log('[RankDiag-Sub] getFriendCloudStorage fail ' + (err && err.errMsg));
+        } catch (_) {}
         size = readCanvasSize();
         drawer.drawEmptyState(ctx, size.width, size.height, msg);
         publishContentHeight(80);
@@ -163,6 +194,9 @@ if (WX && WX.onMessage) {
   WX.onMessage(function (msg) {
     if (!msg || typeof msg !== 'object') return;
     var type = String(msg.type || '');
+    try {
+      console.log('[RankDiag-Sub] onMessage type=' + type + ' tab=' + msg.tab + ' listWidth=' + msg.listWidth);
+    } catch (_) {}
     if (type === 'render') {
       var tab = String(msg.tab || 'classic');
       var pair = metricOf(tab);

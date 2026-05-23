@@ -143,11 +143,14 @@ async function main(): Promise<void> {
     // Enter home scene
     SceneManager.switchTo('home');
 
-    // First touch to resume audio
-    const view = Game.app?.view as HTMLCanvasElement | undefined;
-    if (view) {
+    // 首次触摸解锁音频：必须监听 PIXI view —— 它就是 pixi-adapter 内部的 canvas，
+    // 自带 addEventListener / pointerdown 路由（registerTouchEvents 注入）。
+    // Game.screenCanvas（xiao_chu 双 canvas 模式下是被 game.js 锁定 2D ctx 的主屏 canvas）
+    // 没有 addEventListener polyfill，绝对不能拿来挂事件。
+    const screenCanvas = (Game.app?.view as any) as (HTMLCanvasElement | undefined);
+    if (screenCanvas && typeof screenCanvas.addEventListener === 'function') {
       let firstTouch = true;
-      view.addEventListener('pointerdown', () => {
+      screenCanvas.addEventListener('pointerdown', () => {
         if (firstTouch) {
           firstTouch = false;
           AudioManager.resumeOnInteraction();

@@ -36,6 +36,9 @@ export class ClassicScene implements Scene {
   private _nativeTemplateAd: any = null;
   private _nativeTemplateAdShown = false;
   private _roundStartTs = 0;
+  // 本局开局前的历史最高分快照，用于 classic_end 判定 is_new_best（是否刷新了个人最高分）。
+  // 关卡设计基线靠这个字段聚合「玩家创新高时的回合数 steps_used」。
+  private _roundStartBestScore = 0;
 
   onEnter(): void {
     this.container.removeChildren();
@@ -91,15 +94,20 @@ export class ClassicScene implements Scene {
     // Init game
     BoardManager.init();
     this._roundStartTs = Date.now();
+    this._roundStartBestScore = BoardManager.bestScore;
     analytics.track('classic_start', {
       mode: 'classic',
       source: 'scene_enter',
+      baseline_best: this._roundStartBestScore,
     });
     this._boardView.syncWithBoard();
     this._scorePanel.setScore(0);
     this._scorePanel.setBestScore(BoardManager.bestScore);
 
     this._loadBestScore();
+    // 持久化的 best_score 可能比 BoardManager.init 后的 0 更高，
+    // 加载完毕后再覆盖一次 baseline，保证 is_new_best 判定基准是真正的历史最高
+    this._roundStartBestScore = BoardManager.bestScore;
     this._bindEvents();
     this._showNativeTemplateAd();
   }
@@ -121,23 +129,48 @@ export class ClassicScene implements Scene {
     this._saveBestScore();
     RankManager.addClassicScore(score);
     void LeaderboardManager.submitClassicScore(BoardManager.bestScore);
+    const isNewBest = score > this._roundStartBestScore;
     analytics.track('classic_end', {
       mode: 'classic',
       score,
       best_score: BoardManager.bestScore,
       duration_ms: Date.now() - this._roundStartTs,
+      // 本局回合数（每次合法 moveBall +1）。is_new_best=true 时这就是「玩家
+      // 个人最高分对应的步数」，是关卡设计调难度的核心依据。
+      steps_used: BoardManager.stepsUsed,
+      is_new_best: isNewBest,
+      baseline_best: this._roundStartBestScore,
       reason: 'board_full',
     });
     this._gameOverOverlay.show(score, BoardManager.bestScore);
   };
 
   private _onRestart = () => {
+    // 上一局没自然结束就重开 —— 仍按已完成的部分上报，便于分析"中途放弃"画像
+    const prevScore = BoardManager.score;
+    const prevSteps = BoardManager.stepsUsed;
+    const prevIsNewBest = prevScore > this._roundStartBestScore;
+    if (prevSteps > 0) {
+      analytics.track('classic_end', {
+        mode: 'classic',
+        score: prevScore,
+        best_score: BoardManager.bestScore,
+        duration_ms: Date.now() - this._roundStartTs,
+        steps_used: prevSteps,
+        is_new_best: prevIsNewBest,
+        baseline_best: this._roundStartBestScore,
+        reason: 'restart',
+      });
+    }
+
     PropManager.resetSession();
     BoardManager.reset();
     this._roundStartTs = Date.now();
+    this._roundStartBestScore = BoardManager.bestScore;
     analytics.track('classic_start', {
       mode: 'classic',
       source: 'restart',
+      baseline_best: this._roundStartBestScore,
     });
     this._boardView.syncWithBoard();
     this._scorePanel.setScore(0);
@@ -175,6 +208,9 @@ export class ClassicScene implements Scene {
         score: BoardManager.score,
         best_score: BoardManager.bestScore,
         duration_ms: Date.now() - this._roundStartTs,
+        steps_used: BoardManager.stepsUsed,
+        is_new_best: BoardManager.score > this._roundStartBestScore,
+        baseline_best: this._roundStartBestScore,
       });
       SceneManager.switchTo('home');
     });

@@ -81,6 +81,77 @@ interface RankRowView extends PIXI.Container {
 
 const ROW_AVATAR_RADIUS = 24;
 
+/**
+ * 真机微信好友榜 sharedCanvas 上屏专用 PIXI Resource。
+ *
+ * 背景：
+ *  - 开放数据域子进程画出来的 sharedCanvas 在真机微信里并不是普通 HTMLCanvasElement，
+ *    主域 WebGL 不能用 texImage2D 把它当 canvas 直接上传，否则得到的纹理是空白；
+ *  - 微信提供扩展 API `gl.wxBindCanvasTexture(TEXTURE_2D, sharedCanvas)`，
+ *    专门用来把子域 canvas 绑成当前 TEXTURE_2D，再走正常的 PIXI 渲染管线即可。
+ *  - 开发者工具里 sharedCanvas 跟主域同进程，普通 BaseTexture.from(canvas) 能上传，
+ *    所以工具里能看到好友榜，但真机白屏——这是真机/工具行为差异的根因。
+ *
+ * 用法：构造一个空 PIXI.BaseTexture(resource)，每帧调用 baseTexture.update() 触发
+ *      重新 upload，PIXI 会回调到本类的 upload()，里面调 wxBindCanvasTexture 绑定。
+ */
+class WxSharedCanvasResource extends PIXI.Resource {
+  private readonly source: HTMLCanvasElement & { width: number; height: number };
+  // 真机诊断：只在第一次 upload 时打印一次详细信息，避免每帧刷屏
+  private _diagLogged = false;
+
+  constructor(source: HTMLCanvasElement & { width: number; height: number }) {
+    super(Math.max(1, source.width | 0), Math.max(1, source.height | 0));
+    this.source = source;
+  }
+
+  upload(renderer: PIXI.Renderer, baseTexture: PIXI.BaseTexture, glTexture: any): boolean {
+    const gl = renderer.gl as any;
+    if (!gl || typeof gl.wxBindCanvasTexture !== 'function') {
+      if (!this._diagLogged) {
+        this._diagLogged = true;
+        console.log('[RankDiag] WxSharedCanvasResource.upload: wxBindCanvasTexture missing, return false');
+      }
+      return false;
+    }
+    try {
+      gl.wxBindCanvasTexture(gl.TEXTURE_2D, this.source);
+      glTexture.width = baseTexture.realWidth;
+      glTexture.height = baseTexture.realHeight;
+      if (!this._diagLogged) {
+        this._diagLogged = true;
+        console.log(
+          '[RankDiag] WxSharedCanvasResource.upload OK'
+            + ' size=' + (this.source.width | 0) + 'x' + (this.source.height | 0)
+            + ' glSize=' + baseTexture.realWidth + 'x' + baseTexture.realHeight
+        );
+      }
+      return true;
+    } catch (error) {
+      if (!this._diagLogged) {
+        this._diagLogged = true;
+        console.warn('[RankDiag] WxSharedCanvasResource.upload threw', error);
+      }
+      return false;
+    }
+  }
+
+  override update(): void {
+    this.resize(Math.max(1, this.source.width | 0), Math.max(1, this.source.height | 0));
+    super.update();
+  }
+}
+
+/** 检测当前 WebGL 上下文是否支持微信 wxBindCanvasTexture 扩展（真机微信下为 true） */
+function canBindWxSharedCanvas(): boolean {
+  try {
+    const gl = (Game.app?.renderer as any)?.gl;
+    return !!gl && typeof gl.wxBindCanvasTexture === 'function';
+  } catch {
+    return false;
+  }
+}
+
 export class RankScene implements Scene {
   readonly name = 'rank';
   readonly container = new PIXI.Container();
@@ -137,8 +208,16 @@ export class RankScene implements Scene {
 
   // ── 用户资料 ──
   private _profileUnsub: (() => void) | null = null;
-  private _profilePrompted = false;
   private _meBarAvatarKey = '';
+
+  // ── 微信资料授权 CTA（"使用微信昵称头像上榜 [授权]"）──
+  // 抄水果方案：PIXI 只画黄底提示条，「授权」绿色按钮上面用 CSS 像素
+  // 覆盖一个透明 wx.createUserInfoButton —— 用户点的是微信原生按钮，
+  // 弹出的就是微信原生授权框（主域 wx.getUserProfile 在新基础库已基本失效）。
+  private _wxCtaContainer: PIXI.Container | null = null;
+  private _wxCtaBtnRect = { x: 0, y: 0, w: 0, h: 0 };
+  private _wxCtaNativeBtn: any = null;
+  private _wxCtaLastCss: { left: number; top: number; width: number; height: number } | null = null;
 
   // ─── Lifecycle ─────────────────────────────────────────────
 
@@ -201,10 +280,11 @@ export class RankScene implements Scene {
       void this._onProfileChanged();
     });
 
-    void this._promptUserProfileAuth();
     void this._loadInitialData();
     this._renderList();
     this._refreshMeBar();
+    // 未授权微信资料时，在 me-bar 上方显示 CTA + 覆盖透明原生按钮，跨 tab 常驻
+    this._refreshWxProfileCta();
 
     title.alpha = 0;
     TweenManager.to({ target: title, props: { alpha: 1 }, duration: 0.4 });
@@ -219,6 +299,8 @@ export class RankScene implements Scene {
       this._profileUnsub();
       this._profileUnsub = null;
     }
+    // 退出场景时务必销毁透明微信原生按钮，否则它会留在屏幕上盖住 HomeScene
+    this._destroyWxProfileNativeBtn();
     this._teardownFriendCanvas();
     // 行池里的 PIXI.Text 一并销毁，避免下次进入复用到已 detach 但未清理的旧节点
     this._destroyWorldRowPool();
@@ -246,20 +328,10 @@ export class RankScene implements Scene {
 
   // ─── User profile ──────────────────────────────────────────
 
-  private async _promptUserProfileAuth(): Promise<void> {
-    if (this._profilePrompted) return;
-    this._profilePrompted = true;
-    if (UserProfileManager.profile.authorized) return;
-    const profile = await Platform.getUserProfile('用于排行榜显示');
-    if (profile && (profile.nickName || profile.avatarUrl)) {
-      await UserProfileManager.updateProfile(profile.nickName, profile.avatarUrl);
-      await LeaderboardManager.resyncAuthorizedProfile();
-      void this._loadInitialData(true);
-    }
-  }
-
   private async _onProfileChanged(): Promise<void> {
     this._refreshMeBar();
+    // 授权状态可能变了——已授权时销毁 CTA 和透明原生按钮，未授权时确保挂上
+    this._refreshWxProfileCta();
     if (!UserProfileManager.isAuthorized) return;
     await LeaderboardManager.resyncAuthorizedProfile();
     if (this._classicData) {
@@ -379,22 +451,27 @@ export class RankScene implements Scene {
 
   private async _switchScope(tab: ScopeTab): Promise<void> {
     if (this._scopeTab === tab) return;
+    console.log('[RankDiag] _switchScope start tab=' + tab + ' scope=' + this._scopeTab);
     if (tab === 'friends' && !Platform.supportsOpenData) {
+      console.log('[RankDiag] _switchScope abort: supportsOpenData=false');
       Platform.showToast('好友榜仅在微信小游戏环境可用');
       return;
     }
+
+    // 切到好友 tab 同步发一次 authorize（_switchScope 是 PIXI pointerdown 同步链路里，
+    // 此处仍在用户手势内）。已授权立刻 resolve，未授权弹微信原生授权框；用户拒绝过则
+    // 走 openSetting 兜底入口。
     if (tab === 'friends') {
-      const ok = await Platform.authorizeWxFriendInteraction();
-      if (!ok) {
-        Platform.showToast('需要允许好友关系授权后查看好友榜');
-        return;
-      }
+      const granted = await Platform.authorizeWxFriendInteraction();
+      console.log('[RankDiag] friend auth granted=' + granted);
     }
+
     this._scopeTab = tab;
     this._dragKind = null;
     this._pendingDragY = null;
     this._friendScrollY = 0;
     this._restyleScopeTabs();
+    console.log('[RankDiag] _switchScope -> _renderList scope=' + tab);
     this._renderList();
     this._refreshMeBar();
   }
@@ -589,6 +666,13 @@ export class RankScene implements Scene {
 
   private _renderFriendList(): void {
     const W = Game.logicWidth;
+    const diagLine = '_renderFriendList enter'
+      + ' supportsOpenData=' + Platform.supportsOpenData
+      + ' isWechat=' + Platform.isWechat
+      + ' isSimulator=' + Platform.isSimulator
+      + ' canBindWx=' + canBindWxSharedCanvas()
+      + ' canComposite=' + Game.canCompositeOpenDataOverlay();
+    console.log('[RankDiag] ' + diagLine);
     if (!Platform.supportsOpenData) {
       this._listArea.addChild(this._renderEmpty('当前环境不支持好友榜\n请在微信小游戏中体验', W));
       return;
@@ -596,19 +680,78 @@ export class RankScene implements Scene {
 
     const sharedCanvas = Platform.getSharedCanvas();
     if (!sharedCanvas) {
+      console.log('[RankDiag] sharedCanvas null -> show loading placeholder');
       this._listArea.addChild(this._renderEmpty('正在加载好友榜...', W));
       return;
     }
 
-    const listW = W - LIST_PADDING_X * 2;
+    const area = this._listAreaRect;
+    const listW = area.w;
+    const listH = area.h;
     this._friendListWidth = listW;
+
+    // 主域同步 sharedCanvas 物理像素尺寸，使其与目标显示区域 1:1 对应。
+    // 子域内 sharedCanvas.width/height 是只读的，必须由主域设。
+    // pixelRatio=2 保证文字/头像在高 DPR 屏上仍清晰。
+    const pixelRatio = 2;
+    const physW = Math.max(1, Math.round(listW * pixelRatio));
+    const physH = Math.max(1, Math.round(listH * pixelRatio));
+    try {
+      const sc: any = sharedCanvas;
+      if (sc.width !== physW) sc.width = physW;
+      if (sc.height !== physH) sc.height = physH;
+    } catch (error) {
+      console.warn('[RankDiag] resize sharedCanvas failed', error);
+    }
+    console.log(
+      '[RankDiag] sharedCanvas init'
+        + ' size=' + (sharedCanvas.width | 0) + 'x' + (sharedCanvas.height | 0)
+        + ' listW=' + Math.round(listW) + ' listH=' + Math.round(listH)
+    );
     this._postFriendRender();
 
-    try {
-      const baseTexture = PIXI.BaseTexture.from(sharedCanvas as any, {
-        scaleMode: PIXI.SCALE_MODES.LINEAR,
-        resourceOptions: { autoLoad: true },
+    // ── 主路径：双 canvas 2D 合成（真机 iOS/Android 微信都走这条） ──
+    if (Game.canCompositeOpenDataOverlay()) {
+      const ok = Game.setOpenDataOverlay({
+        canvas: sharedCanvas as HTMLCanvasElement & { width: number; height: number },
+        x: area.x,
+        y: area.y,
+        width: listW,
+        height: listH,
       });
+      if (ok) {
+        // 2D 合成模式下不需要 PIXI sprite，sharedCanvas 由 Game 的合成器每帧
+        // 直接 drawImage 到主屏 canvas 上层。listArea 留空即可。
+        console.log('[RankDiag] friend overlay path=composite');
+        return;
+      }
+    }
+
+    // ── 兜底路径：direct-webgl，把 sharedCanvas 当 PIXI 纹理 ──
+    // 仅开发者工具/无 createCanvas/无 2D ctx 的极端情况下生效；真机几乎不会走到。
+    try {
+      const useWxBind = canBindWxSharedCanvas();
+      console.log('[RankDiag] friend overlay path=sprite useWxBind=' + useWxBind);
+      let baseTexture: PIXI.BaseTexture;
+      if (useWxBind) {
+        const resource = new WxSharedCanvasResource(
+          sharedCanvas as HTMLCanvasElement & { width: number; height: number }
+        );
+        baseTexture = new PIXI.BaseTexture(resource, {
+          mipmap: PIXI.MIPMAP_MODES.OFF,
+          scaleMode: PIXI.SCALE_MODES.LINEAR,
+          wrapMode: PIXI.WRAP_MODES.CLAMP,
+        });
+        baseTexture.setRealSize(
+          Math.max(1, sharedCanvas.width | 0),
+          Math.max(1, sharedCanvas.height | 0)
+        );
+      } else {
+        baseTexture = PIXI.BaseTexture.from(sharedCanvas as any, {
+          scaleMode: PIXI.SCALE_MODES.LINEAR,
+          resourceOptions: { autoLoad: true },
+        });
+      }
       this._friendBaseTexture = baseTexture;
       const texture = new PIXI.Texture(baseTexture);
       const sprite = new PIXI.Sprite(texture);
@@ -663,6 +806,8 @@ export class RankScene implements Scene {
   }
 
   private _teardownFriendCanvas(): void {
+    // 2D 合成路径：通知 Game 不再把 sharedCanvas 合成到主屏
+    try { Game.clearOpenDataOverlay(); } catch {}
     if (this._friendTickerCb) {
       try { Game.ticker.remove(this._friendTickerCb); } catch {}
       this._friendTickerCb = null;
@@ -1170,6 +1315,242 @@ export class RankScene implements Scene {
       );
       this._meBarScoreText.text = `★ ${lm.totalStars}`;
     }
+  }
+
+  // ─── 微信资料授权 CTA ─────────────────────────────────────
+  //
+  // 抄水果（hot-pot）方案：PIXI 画黄底「使用微信昵称头像上榜 [授权]」提示条，
+  // 「授权」绿色按钮对应的物理矩形上盖一个透明 wx.createUserInfoButton。
+  // 用户点击 → 微信原生授权框 → onTap 拿到 nickName / avatarUrl → 写 UserProfileManager。
+  // me-bar 在 4 个 tab（经典/关卡 × 全服/好友）都常驻，CTA 也跟着常驻。
+
+  private _refreshWxProfileCta(): void {
+    if (!this._sceneActive) return;
+    const needCta = !UserProfileManager.isAuthorized && Platform.isWechat;
+    if (!needCta) {
+      this._removeWxProfileCta();
+      this._destroyWxProfileNativeBtn();
+      return;
+    }
+    if (!this._wxCtaContainer) {
+      this._wxCtaContainer = this._createWxProfileCta(Game.logicWidth);
+      const cta = this._wxCtaContainer;
+      cta.x = Game.logicWidth / 2;
+      cta.y = this._meBar.y - 36;
+      this.container.addChild(cta);
+      this._applyWxProfileCtaRect(cta);
+    } else {
+      this._syncWxProfileNativeBtn();
+    }
+  }
+
+  private _removeWxProfileCta(): void {
+    if (this._wxCtaContainer) {
+      try { this._wxCtaContainer.destroy({ children: true }); } catch {}
+      this._wxCtaContainer = null;
+    }
+    this._wxCtaBtnRect = { x: 0, y: 0, w: 0, h: 0 };
+  }
+
+  private _createWxProfileCta(W: number): PIXI.Container {
+    const root = new PIXI.Container();
+    const w = W - 44;
+    const h = 64;
+
+    const bg = new PIXI.Graphics();
+    bg.beginFill(0xFFF3D6, 1);
+    bg.lineStyle(2, 0xF5B94A, 1);
+    bg.drawRoundedRect(-w / 2, -h / 2, w, h, 20);
+    bg.endFill();
+    root.addChild(bg);
+
+    const icon = new PIXI.Text('💚', new PIXI.TextStyle({ fontSize: 30 }));
+    icon.anchor.set(0.5);
+    icon.position.set(-w / 2 + 36, 0);
+    root.addChild(icon);
+
+    const label = new PIXI.Text('使用微信昵称头像上榜', new PIXI.TextStyle({
+      fontSize: 24,
+      fill: 0x8A5A2B,
+      fontFamily: 'Arial',
+      fontWeight: 'bold',
+    }));
+    label.anchor.set(0, 0.5);
+    label.position.set(-w / 2 + 64, 0);
+    root.addChild(label);
+
+    const btnW = 120;
+    const btnH = 48;
+    const btnCenterX = w / 2 - btnW / 2 - 14;
+    const btnBg = new PIXI.Graphics();
+    btnBg.beginFill(0x07C160, 1);
+    btnBg.lineStyle(2, 0x059149, 1);
+    btnBg.drawRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 24);
+    btnBg.endFill();
+    btnBg.position.set(btnCenterX, 0);
+    root.addChild(btnBg);
+
+    const btnLabel = new PIXI.Text('授权', new PIXI.TextStyle({
+      fontSize: 24,
+      fill: 0xFFFFFF,
+      fontFamily: 'Arial',
+      fontWeight: 'bold',
+      stroke: 0x059149,
+      strokeThickness: 3,
+    }));
+    btnLabel.anchor.set(0.5);
+    btnLabel.position.set(btnCenterX, 0);
+    root.addChild(btnLabel);
+
+    // 缓存「授权」按钮在 root 局部坐标系下的位置，挂到父容器后由 applyWxProfileCtaRect
+    // 用 toGlobal 换算成全局物理像素再除 stage scale 得到设计像素矩形。
+    (root as any)._authBtnLocalX = btnCenterX;
+    (root as any)._authBtnW = btnW;
+    (root as any)._authBtnH = btnH;
+    return root;
+  }
+
+  private _applyWxProfileCtaRect(cta: PIXI.Container): void {
+    const btnCenterX = (cta as any)._authBtnLocalX as number;
+    const btnW = (cta as any)._authBtnW as number;
+    const btnH = (cta as any)._authBtnH as number;
+    if (!Number.isFinite(btnCenterX) || !Number.isFinite(btnW) || !Number.isFinite(btnH)) return;
+    const global = cta.toGlobal(new PIXI.Point(btnCenterX, 0));
+    const stageScale = Math.max(0.0001, Game.scale || 1);
+    // caizhu 没有 stage letterbox（直接铺满），不需要再减 stageOffsetX/Y
+    const designX = global.x / stageScale;
+    const designY = global.y / stageScale;
+    this._wxCtaBtnRect = {
+      x: designX - btnW / 2,
+      y: designY - btnH / 2,
+      w: btnW,
+      h: btnH,
+    };
+    this._syncWxProfileNativeBtn();
+  }
+
+  private _syncWxProfileNativeBtn(): void {
+    const api = Platform.api;
+    if (!api?.createUserInfoButton) return;
+    const rect = this._wxCtaBtnRect;
+    if (!rect.w || !rect.h) {
+      this._destroyWxProfileNativeBtn();
+      return;
+    }
+    const dpr = Math.max(1, Game.dpr || 1);
+    const scale = Math.max(0.0001, Game.scale || 1);
+    // rect 是设计像素 → 物理像素（× scale）→ CSS 像素（÷ dpr）
+    const cssLeft = Math.round((rect.x * scale) / dpr);
+    const cssTop = Math.round((rect.y * scale) / dpr);
+    const cssW = Math.max(1, Math.round((rect.w * scale) / dpr));
+    const cssH = Math.max(1, Math.round((rect.h * scale) / dpr));
+
+    if (!this._wxCtaNativeBtn) {
+      try {
+        this._wxCtaLastCss = { left: cssLeft, top: cssTop, width: cssW, height: cssH };
+        // text 必须非空、fontSize 最低 12，部分基础库下 text='' 或 fontSize<12 按钮不响应。
+        // backgroundColor / color 都设全透明，让玩家看到的是下面 PIXI 画的绿色按钮。
+        const btn = api.createUserInfoButton({
+          type: 'text',
+          text: ' ',
+          style: {
+            left: cssLeft,
+            top: cssTop,
+            width: cssW,
+            height: cssH,
+            backgroundColor: 'rgba(0,0,0,0)',
+            borderColor: 'rgba(0,0,0,0)',
+            borderWidth: 0,
+            borderRadius: Math.round(cssH / 2),
+            color: 'rgba(0,0,0,0)',
+            fontSize: 12,
+            textAlign: 'center',
+            lineHeight: cssH,
+          },
+          withCredentials: false,
+        });
+        if (!btn) {
+          console.warn('[RankScene] createUserInfoButton returned falsy');
+          return;
+        }
+        this._wxCtaNativeBtn = btn;
+        btn.onTap?.((res: any) => this._handleWxProfileTap(res));
+        btn.show?.();
+        console.log(
+          `[RankScene] wxCtaBtn created css(left=${cssLeft} top=${cssTop} w=${cssW} h=${cssH})`
+          + ` screen(${Game.screenWidth}x${Game.screenHeight})`,
+        );
+      } catch (error) {
+        console.warn('[RankScene] createUserInfoButton failed', error);
+      }
+      return;
+    }
+
+    const last = this._wxCtaLastCss;
+    if (last && last.left === cssLeft && last.top === cssTop && last.width === cssW && last.height === cssH) {
+      return;
+    }
+    try {
+      this._wxCtaLastCss = { left: cssLeft, top: cssTop, width: cssW, height: cssH };
+      Object.assign(this._wxCtaNativeBtn.style, {
+        left: cssLeft,
+        top: cssTop,
+        width: cssW,
+        height: cssH,
+        lineHeight: cssH,
+        borderRadius: Math.round(cssH / 2),
+      });
+    } catch (error) {
+      console.warn('[RankScene] sync wxCtaBtn style failed', error);
+    }
+  }
+
+  private _destroyWxProfileNativeBtn(): void {
+    this._wxCtaLastCss = null;
+    if (!this._wxCtaNativeBtn) return;
+    try { this._wxCtaNativeBtn.hide?.(); } catch {}
+    try { this._wxCtaNativeBtn.destroy?.(); } catch (error) {
+      console.warn('[RankScene] destroy wxCtaBtn failed', error);
+    }
+    this._wxCtaNativeBtn = null;
+  }
+
+  private async _handleWxProfileTap(res: any): Promise<void> {
+    const errMsg = String(res?.errMsg || '');
+    const info = res?.userInfo;
+    console.log('[RankScene] wxCtaBtn onTap:', JSON.stringify({
+      hasUserInfo: !!info,
+      nick: info?.nickName,
+      errMsg,
+      errCode: res?.err_code,
+    }));
+
+    // 隐私协议未配置：兜底提示
+    if (errMsg.includes('no privacy api permission') || res?.err_code === -12034) {
+      Platform.showToast('隐私协议未配置');
+      return;
+    }
+    // 用户拒绝授权 → 提示一下，CTA 继续保留
+    if (errMsg.includes('fail') && errMsg.includes('deny')) {
+      Platform.showToast('已取消授权');
+      return;
+    }
+
+    const nick = String(info?.nickName || '').trim();
+    const avatar = String(info?.avatarUrl || '').trim();
+    if (!nick && !avatar) {
+      Platform.showToast('微信限制，未获取到真实昵称');
+      return;
+    }
+    try {
+      await UserProfileManager.updateProfile(nick, avatar);
+      await LeaderboardManager.resyncAuthorizedProfile();
+    } catch (error) {
+      console.warn('[RankScene] apply wxProfile failed', error);
+    }
+    Platform.showToast('已带微信昵称上榜');
+    // 强制重拉数据，让自己最新的真实昵称/头像出现在世界榜
+    void this._loadInitialData(true);
   }
 
   private _localFallbackValue(): number {

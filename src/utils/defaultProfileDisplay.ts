@@ -9,7 +9,7 @@ function hashUserId(userId: string): number {
   return Math.abs(h);
 }
 
-/** 未授权时的默认昵称：玩家 + 3 位数字（同一 userId 稳定不变） */
+/** 未授权时的默认昵称：玩家 + 3 位数字（同一 userId 稳定不变）。 */
 export function formatDefaultNickname(userId: string): string {
   const suffix = 100 + (hashUserId(userId) % 900);
   return `玩家${suffix}`;
@@ -43,10 +43,14 @@ export function resolveDisplayAvatarUrl(avatarUrl: string, userId: string): stri
   return getDefaultOrbAvatarPath(userId);
 }
 
-/** 是否为系统自动生成的默认昵称（玩家123 / 游客XXXX） */
+/**
+ * 是否为系统自动生成的默认昵称（玩家XXX / 游客XXX）。
+ * 用 `\d{3,}` 兼容历史 3 位 / 7 位等不同长度数字，确保老存档里的默认昵称
+ * 仍能被识别为「未授权占位」，授权后才覆盖成真实微信昵称。
+ */
 export function isGeneratedDefaultNickname(nickname: string): boolean {
   const n = String(nickname || '').trim();
-  return /^玩家\d{3}$/.test(n) || /^游客/i.test(n);
+  return /^玩家\d{3,}$/.test(n) || /^游客/i.test(n);
 }
 
 export function resolveDisplayNickname(nickname: string, userId: string): string {
