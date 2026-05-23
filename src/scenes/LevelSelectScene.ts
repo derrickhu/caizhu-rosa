@@ -9,6 +9,7 @@ import { createBgSprite } from '@/utils/bgHelper';
 import { addImageSprite, loadImageTexture } from '@/utils/imageTexture';
 import { AudioManager } from '@/core/AudioManager';
 import { AUDIO_ASSETS, AUDIO_VOLUME } from '@/config/AudioConfig';
+import { analytics } from '@/analytics';
 
 const NODE_SIZE = 64;
 const CURRENT_NODE_SIZE = 76;
@@ -228,6 +229,13 @@ export class LevelSelectScene implements Scene {
           return;
         }
         AudioManager.play('button');
+        analytics.track('level_select', {
+          mode: 'level',
+          level_id: levelId,
+          stars,
+          max_unlocked: LevelManager.maxUnlocked,
+          source: 'level_map',
+        });
         LevelManager.currentLevelId = levelId;
         SceneManager.switchTo('level');
       });

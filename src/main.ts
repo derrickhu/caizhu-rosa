@@ -19,6 +19,7 @@ import { BackendService } from '@/core/BackendService';
 import { Platform } from '@/core/PlatformService';
 import { configureWechatShare } from '@/core/ShareService';
 import { AudioManager } from '@/core/AudioManager';
+import { analytics, initAnalytics, setAnalyticsUserId } from '@/analytics';
 import { loadPropIcons } from '@/utils/iconLoader';
 import { loadOrbTextures } from '@/utils/orbLoader';
 import { preloadImageAssets } from '@/utils/assetPreloader';
@@ -31,8 +32,15 @@ declare const tt: any;
 declare const GameGlobal: any;
 
 if (typeof GameGlobal !== 'undefined') {
-  GameGlobal.onError = (msg: string) => console.error('[GlobalError]', msg);
-  GameGlobal.onUnhandledRejection = (ev: any) => console.error('[UnhandledRejection]', ev?.reason || ev);
+  GameGlobal.onError = (msg: string) => {
+    console.error('[GlobalError]', msg);
+    analytics.trackAppError(new Error(msg), { source: 'global_error' });
+  };
+  GameGlobal.onUnhandledRejection = (ev: any) => {
+    const reason = ev?.reason || ev;
+    console.error('[UnhandledRejection]', reason);
+    analytics.trackAppError(reason, { source: 'unhandled_rejection' });
+  };
 }
 
 function loadWechatSubpackage(name: string): Promise<void> {
@@ -53,8 +61,6 @@ function loadWechatSubpackage(name: string): Promise<void> {
 
 async function main(): Promise<void> {
   try {
-    console.log(`[main] ${GAME_DISPLAY_NAME} 启动中...`);
-
     const canvas = (typeof GameGlobal !== 'undefined' && GameGlobal.canvas)
       || (typeof window !== 'undefined' && (window as any).canvas)
       || null;
@@ -76,6 +82,7 @@ async function main(): Promise<void> {
     await loadWechatSubpackage('audio');
 
     configureWechatShare();
+    initAnalytics();
 
     AudioManager.register('eliminate', AUDIO_ASSETS.eliminate, AUDIO_VOLUME.eliminate);
     AudioManager.register('eliminateBig', AUDIO_ASSETS.eliminateBig, AUDIO_VOLUME.eliminateBig);
@@ -88,7 +95,15 @@ async function main(): Promise<void> {
 
     CloudSyncManager.prewarm();
     const cloudStartup = await CloudSyncManager.awaitStartupSync();
-    console.log(`[main] 云同步启动状态: ${cloudStartup.status}, reason=${cloudStartup.reason}`);
+    if (CloudSyncManager.userId) {
+      setAnalyticsUserId(CloudSyncManager.userId);
+    }
+    analytics.trackSessionStart({
+      entry: 'main',
+      with_user_id: !!CloudSyncManager.userId,
+      cloud_status: cloudStartup.status,
+      cloud_reason: cloudStartup.reason,
+    });
 
     // Init managers after startup sync has had a chance to import cloud data.
     LevelManager.init();
@@ -120,6 +135,11 @@ async function main(): Promise<void> {
     SceneManager.register(rankScene);
     SceneManager.register(skinScene);
 
+    Game.ticker.add(() => {
+      const dt = Game.ticker.deltaMS / 1000;
+      SceneManager.current?.update?.(dt);
+    });
+
     // Enter home scene
     SceneManager.switchTo('home');
 
@@ -132,19 +152,23 @@ async function main(): Promise<void> {
           firstTouch = false;
           AudioManager.resumeOnInteraction();
         }
-      });
+      }, { capture: true });
     }
 
     // Save on hide
+    let lastHideAt = 0;
     Platform.onHide(() => {
-      console.log('[main] 游戏退到后台');
+      lastHideAt = Date.now();
+      analytics.trackSessionEnd('app-hide');
       void CloudSyncManager.flushNow('hide');
     });
     Platform.onShow(() => {
       CloudSyncManager.prewarm();
+      analytics.trackAppShow({
+        from_background: lastHideAt > 0,
+        background_ms: lastHideAt > 0 ? Date.now() - lastHideAt : 0,
+      });
     });
-
-    console.log(`[main] ${GAME_DISPLAY_NAME} 启动完成`);
   } catch (e) {
     console.error('[main] 启动失败:', e);
   }

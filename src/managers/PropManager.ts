@@ -3,15 +3,20 @@ import { EventBus } from '@/core/EventBus';
 import { PersistService } from '@/core/PersistService';
 import { Platform } from '@/core/PlatformService';
 import { PropType, PROP_DEFS } from '@/config/PropConfig';
+import { showRewardedAd } from '@/utils/rewardedAd';
 
 interface PropInventory {
   [key: string]: number;
 }
 
+interface PropUseContext {
+  levelId?: number | string;
+  mode?: string;
+}
+
 class PropManagerClass {
   private _inventory: PropInventory = {};
   private _sessionUsage: Record<string, number> = {};
-  private _adResolve: ((granted: boolean) => void) | null = null;
 
   constructor() {
     PersistService.subscribeCloudImport((info) => {
@@ -70,13 +75,13 @@ class PropManagerClass {
 
   /** Request to use a prop with ad fallback.
    *  Every use requires a rewarded ad, and each prop is limited per game. */
-  async requestUse(type: PropType): Promise<boolean> {
+  async requestUse(type: PropType, context: PropUseContext = {}): Promise<boolean> {
     if (!this.canRequestUse(type)) {
       Platform.showToast('本局该道具已使用');
       return false;
     }
 
-    const adGranted = await this._showRewardedAd(type);
+    const adGranted = await this._showRewardedAd(type, context);
     if (adGranted) {
       this._sessionUsage[type] = (this._sessionUsage[type] ?? 0) + 1;
       EventBus.emit('prop:used', type);
@@ -86,53 +91,24 @@ class PropManagerClass {
     return false;
   }
 
-  private _onAdClose = (res: any) => {
-    const resolve = this._adResolve;
-    this._adResolve = null;
-    if (!resolve) return;
-    if (res && res.isEnded) {
-      resolve(true);
-    } else {
-      Platform.showToast('需要看完广告才能获得道具');
-      resolve(false);
-    }
-  };
-
-  private _onAdError = () => {
-    const resolve = this._adResolve;
-    this._adResolve = null;
-    if (!resolve) return;
-    Platform.showToast('广告加载失败');
-    resolve(false);
-  };
-
-  private _showRewardedAd(type: PropType): Promise<boolean> {
-    return new Promise((resolve) => {
-      const def = PROP_DEFS[type];
-      const ad = Platform.createRewardedVideoAd(def.adUnitId);
-
-      if (!ad) {
-        Platform.showToast('开发模式：免费获得道具');
-        resolve(true);
-        return;
-      }
-
-      // Remove previous listeners before binding to avoid duplicates
-      ad.offClose?.(this._onAdClose);
-      ad.offError?.(this._onAdError);
-      ad.onClose(this._onAdClose);
-      ad.onError(this._onAdError);
-
-      this._adResolve = resolve;
-
-      ad.show().catch(() => {
-        ad.load().then(() => ad.show()).catch(() => {
-          this._adResolve = null;
-          Platform.showToast('广告暂时不可用');
-          resolve(false);
-        });
-      });
+  private async _showRewardedAd(type: PropType, context: PropUseContext): Promise<boolean> {
+    const def = PROP_DEFS[type];
+    const result = await showRewardedAd(def.adUnitId, {
+      scene: `level_prop_${type}`,
+      levelId: context.levelId,
+      extra: { prop_type: type, mode: context.mode || 'level' },
     });
+    if (result === 'completed') return true;
+    if (result === 'unavailable' && Platform.isSimulator) {
+      Platform.showToast('开发模式：免费获得道具');
+      return true;
+    }
+    if (result === 'skipped') {
+      Platform.showToast('需要看完广告才能获得道具');
+    } else {
+      Platform.showToast('广告暂时不可用');
+    }
+    return false;
   }
 
   /** GM：一键将所有道具补满至指定数量（仅供模拟器使用） */

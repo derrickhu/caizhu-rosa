@@ -8,6 +8,7 @@ import { GmOverlay } from '@/ui/GmOverlay';
 import { SettingsOverlay } from '@/ui/SettingsOverlay';
 import { AudioManager } from '@/core/AudioManager';
 import { AUDIO_ASSETS, AUDIO_VOLUME } from '@/config/AudioConfig';
+import { analytics } from '@/analytics';
 
 export class HomeScene implements Scene {
   readonly name = 'home';
@@ -35,12 +36,30 @@ export class HomeScene implements Scene {
     this._addImage('subpkg_assets/images/home_btn_settings.png', W * 0.29, H * 0.84, W * 0.34);
     this._addImage('subpkg_assets/images/home_btn_rewards.png', W * 0.71, H * 0.84, W * 0.34);
 
-    this._createHotspot(W * 0.21, H * 0.415, W * 0.79, H * 0.505, () => SceneManager.switchTo('levelSelect'));
-    this._createHotspot(W * 0.26, H * 0.525, W * 0.74, H * 0.615, () => SceneManager.switchTo('classic'));
-    this._createHotspot(W * 0.09, H * 0.665, W * 0.49, H * 0.78, () => SceneManager.switchTo('rank'));
-    this._createHotspot(W * 0.51, H * 0.665, W * 0.91, H * 0.78, () => SceneManager.switchTo('skin'));
-    this._createHotspot(W * 0.09, H * 0.785, W * 0.49, H * 0.90, () => this._openSettingsOverlay());
-    this._createHotspot(W * 0.51, H * 0.785, W * 0.91, H * 0.90, () => this._handleRewardsTap());
+    this._createHotspot(W * 0.21, H * 0.415, W * 0.79, H * 0.505, () => {
+      this._trackModeEnter('level');
+      SceneManager.switchTo('levelSelect');
+    });
+    this._createHotspot(W * 0.26, H * 0.525, W * 0.74, H * 0.615, () => {
+      this._trackModeEnter('classic');
+      SceneManager.switchTo('classic');
+    });
+    this._createHotspot(W * 0.09, H * 0.665, W * 0.49, H * 0.78, () => {
+      this._trackModeEnter('rank');
+      SceneManager.switchTo('rank');
+    });
+    this._createHotspot(W * 0.51, H * 0.665, W * 0.91, H * 0.78, () => {
+      this._trackModeEnter('skin');
+      SceneManager.switchTo('skin');
+    });
+    this._createHotspot(W * 0.09, H * 0.785, W * 0.49, H * 0.90, () => {
+      this._trackModeEnter('settings');
+      this._openSettingsOverlay();
+    });
+    this._createHotspot(W * 0.51, H * 0.785, W * 0.91, H * 0.90, () => {
+      this._trackModeEnter('game_club');
+      this._handleRewardsTap();
+    });
     this._createGameClubButton(W * 0.51, H * 0.785, W * 0.91, H * 0.90);
 
     this._maybeAddGmEntry();
@@ -82,6 +101,10 @@ export class HomeScene implements Scene {
 
   private _showComingSoon(message: string): void {
     Platform.showToast(message);
+  }
+
+  private _trackModeEnter(mode: string): void {
+    analytics.track('gameplay_mode_enter', { mode, source: 'home' });
   }
 
   private _handleRewardsTap(): void {

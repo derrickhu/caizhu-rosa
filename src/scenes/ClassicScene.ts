@@ -20,6 +20,7 @@ import { BallSprite } from '@/gameobjects/BallSprite';
 import { addImageSprite } from '@/utils/imageTexture';
 import { AudioManager } from '@/core/AudioManager';
 import { AUDIO_ASSETS, AUDIO_VOLUME } from '@/config/AudioConfig';
+import { analytics } from '@/analytics';
 
 const CLASSIC_NATIVE_TEMPLATE_AD_UNIT_ID = 'adunit-d00b51d63418091a';
 
@@ -33,6 +34,8 @@ export class ClassicScene implements Scene {
   private _gameOverOverlay!: GameOverOverlay;
   private _backBtn!: PIXI.Container;
   private _nativeTemplateAd: any = null;
+  private _nativeTemplateAdShown = false;
+  private _roundStartTs = 0;
 
   onEnter(): void {
     this.container.removeChildren();
@@ -87,6 +90,11 @@ export class ClassicScene implements Scene {
 
     // Init game
     BoardManager.init();
+    this._roundStartTs = Date.now();
+    analytics.track('classic_start', {
+      mode: 'classic',
+      source: 'scene_enter',
+    });
     this._boardView.syncWithBoard();
     this._scorePanel.setScore(0);
     this._scorePanel.setBestScore(BoardManager.bestScore);
@@ -113,12 +121,24 @@ export class ClassicScene implements Scene {
     this._saveBestScore();
     RankManager.addClassicScore(score);
     void LeaderboardManager.submitClassicScore(BoardManager.bestScore);
+    analytics.track('classic_end', {
+      mode: 'classic',
+      score,
+      best_score: BoardManager.bestScore,
+      duration_ms: Date.now() - this._roundStartTs,
+      reason: 'board_full',
+    });
     this._gameOverOverlay.show(score, BoardManager.bestScore);
   };
 
   private _onRestart = () => {
     PropManager.resetSession();
     BoardManager.reset();
+    this._roundStartTs = Date.now();
+    analytics.track('classic_start', {
+      mode: 'classic',
+      source: 'restart',
+    });
     this._boardView.syncWithBoard();
     this._scorePanel.setScore(0);
     this._scorePanel.setBestScore(BoardManager.bestScore);
@@ -150,6 +170,12 @@ export class ClassicScene implements Scene {
     btn.on('pointerdown', () => {
       AudioManager.play('button');
       this._saveBestScore();
+      analytics.track('classic_quit', {
+        mode: 'classic',
+        score: BoardManager.score,
+        best_score: BoardManager.bestScore,
+        duration_ms: Date.now() - this._roundStartTs,
+      });
       SceneManager.switchTo('home');
     });
 
@@ -185,6 +211,12 @@ export class ClassicScene implements Scene {
   private _showNativeTemplateAd(): void {
     this._destroyNativeTemplateAd();
     if (!Platform.isWechat) return;
+    const adContext = {
+      adUnitId: CLASSIC_NATIVE_TEMPLATE_AD_UNIT_ID,
+      adType: 'custom',
+      scene: 'classic_native_template',
+    };
+    analytics.trackAdRequest(adContext);
 
     const adWidth = Math.min(Game.screenWidth, 360);
     const adHeight = 96;
@@ -194,26 +226,46 @@ export class ClassicScene implements Scene {
       width: adWidth,
       fixed: true,
     });
-    if (!ad) return;
+    if (!ad) {
+      analytics.trackAdError(adContext, { errCode: -100, errMsg: 'unavailable' });
+      return;
+    }
 
-    ad.onLoad?.(() => {
-      console.log('[ClassicScene] native template ad loaded');
-    });
     ad.onError?.((err: any) => {
       console.warn('[ClassicScene] native template ad error', err);
+      analytics.trackAdError(adContext, {
+        errCode: Number(err?.errCode ?? -1),
+        errMsg: String(err?.errMsg || 'unknown'),
+      });
     });
     this._nativeTemplateAd = ad;
-    ad.show?.().catch?.((err: any) => {
+    const showPromise = ad.show?.();
+    showPromise?.then?.(() => {
+      this._nativeTemplateAdShown = true;
+      analytics.trackAdShow(adContext);
+    }).catch?.((err: any) => {
       console.warn('[ClassicScene] native template ad show failed', err);
+      analytics.trackAdError(adContext, {
+        errCode: Number(err?.errCode ?? -1),
+        errMsg: String(err?.errMsg || 'show_failed'),
+      });
     });
   }
 
   private _destroyNativeTemplateAd(): void {
     if (!this._nativeTemplateAd) return;
     try {
+      if (this._nativeTemplateAdShown) {
+        analytics.trackAdClose({
+          adUnitId: CLASSIC_NATIVE_TEMPLATE_AD_UNIT_ID,
+          adType: 'custom',
+          scene: 'classic_native_template',
+        }, { result: 'hide' });
+      }
       this._nativeTemplateAd.hide?.();
       this._nativeTemplateAd.destroy?.();
     } catch {}
     this._nativeTemplateAd = null;
+    this._nativeTemplateAdShown = false;
   }
 }

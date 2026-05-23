@@ -28,6 +28,7 @@ import { PersistService } from '@/core/PersistService';
 import { AudioManager } from '@/core/AudioManager';
 import { AUDIO_ASSETS, AUDIO_VOLUME } from '@/config/AudioConfig';
 import type { Point } from '@/systems/PathFinder';
+import { analytics } from '@/analytics';
 
 export class LevelScene implements Scene {
   readonly name = 'level';
@@ -49,6 +50,7 @@ export class LevelScene implements Scene {
   private _tickerCallback: (() => void) | null = null;
   private _finished = false;
   private _tutorialActive = false;
+  private _roundStartTs = 0;
 
   onEnter(): void {
     this.container.removeChildren();
@@ -150,6 +152,21 @@ export class LevelScene implements Scene {
     } else {
       BoardManager.initLevel(levelConfig);
     }
+    this._roundStartTs = Date.now();
+    analytics.trackLevelStart({
+      levelId: def.id,
+      levelName: `第${def.id}关`,
+      mode: 'level',
+      extra: {
+        level_type: def.type,
+        pass_score: getPassScore(def.starScores),
+        max_star_score: getMaxStarScore(def.starScores),
+        color_count: def.colorCount,
+        step_limit: def.stepLimit || 0,
+        time_limit: def.timeLimit || 0,
+        is_tutorial: this._tutorialActive,
+      },
+    });
     this._boardView.syncWithBoard(true);
     requestAnimationFrame(() => {
       if (!this.container.destroyed && this._boardView) {
@@ -221,6 +238,13 @@ export class LevelScene implements Scene {
 
     if (this._tutorialActive) {
       if (this._tutorialOverlay.currentStep === 'move') {
+        analytics.trackTutorialStep({
+          stepId: 'move_first_piece',
+          stepIndex: 2,
+          status: 'done',
+          isForce: true,
+          extra: { level_id: this._levelDef.id },
+        });
         this._tutorialOverlay.setStep('complete');
       }
       return;
@@ -309,10 +333,24 @@ export class LevelScene implements Scene {
       ballRadius: this._boardView.ballRadius,
       previewBanner: { width: 560, height: 101 },
     }, () => this._completeLevel1Tutorial());
+    analytics.trackTutorialStep({
+      stepId: 'show_first_move_hint',
+      stepIndex: 0,
+      status: 'done',
+      isForce: true,
+      extra: { level_id: this._levelDef.id },
+    });
   }
 
   private _completeLevel1Tutorial(): void {
     PersistService.writeJSON(LEVEL1_TUTORIAL_KEY, { completed: true, version: 1, completedAt: Date.now() });
+    analytics.trackTutorialStep({
+      stepId: 'complete_first_move',
+      stepIndex: 3,
+      status: 'done',
+      isForce: true,
+      extra: { level_id: this._levelDef.id },
+    });
     this._tutorialActive = false;
     this._boardView.setTutorialGate(null);
     this._boardView.syncWithBoard(true);
@@ -349,6 +387,19 @@ export class LevelScene implements Scene {
     const stars = getLevelStars(score, this._levelDef.starScores);
     LevelManager.recordCompletion(this._levelDef.id, score, this._levelDef.starScores);
     AudioManager.play('victory');
+    analytics.trackLevelClear({
+      levelId: this._levelDef.id,
+      levelName: `第${this._levelDef.id}关`,
+      mode: 'level',
+      durationMs: Date.now() - this._roundStartTs,
+      extra: {
+        score,
+        stars,
+        steps_used: BoardManager.stepsUsed,
+        pass_score: getPassScore(this._levelDef.starScores),
+        max_star_score: getMaxStarScore(this._levelDef.starScores),
+      },
+    });
 
     const isLast = this._levelDef.id >= TOTAL_LEVELS;
     this._completeOverlay.show(score, stars, isLast);
@@ -359,6 +410,18 @@ export class LevelScene implements Scene {
     this._finished = true;
     this._timerActive = false;
 
+    analytics.trackLevelFail({
+      levelId: this._levelDef.id,
+      levelName: `第${this._levelDef.id}关`,
+      mode: 'level',
+      durationMs: Date.now() - this._roundStartTs,
+      reason: this._getFailReason(),
+      extra: {
+        score: BoardManager.score,
+        steps_used: BoardManager.stepsUsed,
+        pass_score: getPassScore(this._levelDef.starScores),
+      },
+    });
     this._failOverlay.show(BoardManager.score, getPassScore(this._levelDef.starScores));
   }
 
@@ -368,6 +431,14 @@ export class LevelScene implements Scene {
     if (this._finished || this._tutorialActive) return;
 
     const canRequestUse = PropManager.canRequestUse(type);
+    analytics.track('prop_request', {
+      mode: 'level',
+      prop_type: type,
+      level_id: this._levelDef.id,
+      can_request: canRequestUse,
+      score: BoardManager.score,
+      steps_used: BoardManager.stepsUsed,
+    });
     this._propInfoOverlay.show(type, canRequestUse, () => this._confirmPropUse(type));
   };
 
@@ -375,8 +446,15 @@ export class LevelScene implements Scene {
     if (this._finished || this._tutorialActive) return;
 
     // 道具每次使用都必须看激励视频，并且每局每种道具只能使用一次。
-    PropManager.requestUse(type).then((granted) => {
+    PropManager.requestUse(type, { levelId: this._levelDef.id, mode: 'level' }).then((granted) => {
       if (granted && !this._finished) {
+        analytics.track('prop_use', {
+          mode: 'level',
+          prop_type: type,
+          level_id: this._levelDef.id,
+          score: BoardManager.score,
+          steps_used: BoardManager.stepsUsed,
+        });
         this._executeProp(type);
       }
     });
@@ -425,6 +503,12 @@ export class LevelScene implements Scene {
 
   private _onRetry = () => {
     if (this._tutorialActive) return;
+    analytics.track('level_retry', {
+      mode: 'level',
+      level_id: this._levelDef.id,
+      score: BoardManager.score,
+      steps_used: BoardManager.stepsUsed,
+    });
     SceneManager.switchTo('level');
   };
 
@@ -440,6 +524,13 @@ export class LevelScene implements Scene {
 
   private _onBack = () => {
     if (this._tutorialActive) return;
+    analytics.track('level_quit', {
+      mode: 'level',
+      level_id: this._levelDef.id,
+      score: BoardManager.score,
+      steps_used: BoardManager.stepsUsed,
+      duration_ms: Date.now() - this._roundStartTs,
+    });
     SceneManager.switchTo('levelSelect');
   };
 
@@ -447,6 +538,13 @@ export class LevelScene implements Scene {
 
   private _onBoardSelected = (_pos: Point) => {
     if (!this._tutorialActive || this._tutorialOverlay.currentStep !== 'select') return;
+    analytics.trackTutorialStep({
+      stepId: 'select_first_piece',
+      stepIndex: 1,
+      status: 'done',
+      isForce: true,
+      extra: { level_id: this._levelDef.id },
+    });
     this._tutorialOverlay.setStep('move');
   };
 
@@ -496,6 +594,14 @@ export class LevelScene implements Scene {
 
     btn.on('pointerdown', () => {
       if (this._tutorialActive) return;
+      analytics.track('level_quit', {
+        mode: 'level',
+        level_id: this._levelDef.id,
+        score: BoardManager.score,
+        steps_used: BoardManager.stepsUsed,
+        duration_ms: Date.now() - this._roundStartTs,
+        source: 'top_back',
+      });
       SceneManager.switchTo('levelSelect');
     });
     return btn;
@@ -505,5 +611,14 @@ export class LevelScene implements Scene {
     if (levelId !== 1) return false;
     const state = PersistService.readJSON<{ completed?: boolean }>(LEVEL1_TUTORIAL_KEY);
     return state?.completed !== true;
+  }
+
+  private _getFailReason(): string {
+    if (this._levelDef.type === 'timed' && this._timeRemaining <= 0) return 'time_out';
+    if (this._levelDef.type === 'steps' && this._levelDef.stepLimit && BoardManager.stepsUsed >= this._levelDef.stepLimit) {
+      return 'step_limit';
+    }
+    if (BoardManager.gameOver) return 'board_full';
+    return 'score_below_pass';
   }
 }

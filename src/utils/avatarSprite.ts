@@ -76,15 +76,6 @@ export function createAvatarSprite(avatarUrl: string, radius: number, userId = '
   placeholder.drawCircle(radius, radius, radius);
   container.addChild(placeholder);
 
-  const useRemote = isRemoteAvatarUrl(resolvedUrl);
-  const orbTex = !useRemote ? getOrbTexture(getDefaultOrbColorIndex(userId)) : null;
-  if (orbTex) {
-    mountTexture(orbTex);
-    return container;
-  }
-
-  const primaryLoader = useRemote ? loadRemoteAvatar(resolvedUrl) : loadImageTexture(resolvedUrl);
-
   const mountTexture = (texture: PIXI.Texture | null): boolean => {
     if (!texture || container.destroyed) return false;
     const sprite = new PIXI.Sprite(texture);
@@ -108,6 +99,15 @@ export function createAvatarSprite(avatarUrl: string, radius: number, userId = '
     placeholder.visible = false;
     return true;
   };
+
+  const useRemote = isRemoteAvatarUrl(resolvedUrl);
+  const orbTex = !useRemote ? getOrbTexture(getDefaultOrbColorIndex(userId)) : null;
+  if (orbTex) {
+    mountTexture(orbTex);
+    return container;
+  }
+
+  const primaryLoader = useRemote ? loadRemoteAvatar(resolvedUrl) : loadImageTexture(resolvedUrl);
 
   const tryFallbackOrb = (): void => {
     const orbTex = getOrbTexture(getDefaultOrbColorIndex(userId));

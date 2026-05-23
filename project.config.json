@@ -29,7 +29,7 @@
   "compileType": "game",
   "cloudfunctionRoot": "cloudfunctions/",
   "miniprogramRoot": "minigame/",
-  "libVersion": "latest",
+  "libVersion": "3.15.1",
   "appid": "wx19255301c4f7232e",
   "projectname": "caizhu",
   "condition": {
