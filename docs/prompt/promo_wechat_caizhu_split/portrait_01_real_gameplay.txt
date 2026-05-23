@@ -1,0 +1,18 @@
+9:16 vertical WeChat Mini Game promotional poster for 彩珠五连.
+
+Create one complete designed poster with the artwork and Chinese advertising text together. Use the provided screenshots only as gameplay reference: ocean bubble background, 9x9 square board, glossy colored marbles, top score/next preview, satisfying five-in-a-row clear.
+
+Art style: premium polished casual mobile game ad, vibrant cartoon, glossy rounded UI, high saturation, toy-like glass marbles, soft bevel, strong contrast, clean hierarchy, inspired by hot-pot promo poster framing.
+
+Composition from top to bottom:
+1. Thick rounded poster frame in aqua blue and purple, decorated with bubble stickers and small glossy marbles.
+2. Top 70% inner artwork: a recomposed game scene with a large square puzzle board in perspective, a glowing five-in-a-row combo of purple marbles, particle burst, score stars and small next-piece queue floating above. It should look like the actual gameplay but more polished and dramatic, not a raw screenshot.
+3. Bottom 30% title area: white curved scroll/ribbon with large Chinese headline and smaller subtitle, integrated into the design.
+
+Chinese promotional text must be part of the poster, large and readable:
+Main title EXACTLY: 五连爆爽
+Subtitle EXACTLY: 彩珠一摆就上头
+
+Typography style: thick rounded Chinese POP font, yellow fill, white shine, dark blue outer outline, orange shadow, strong thumbnail readability.
+
+Constraints: Only these Chinese text strings. No English letters, no watermark, no logo, no QR code, no app store badges, no random numbers, no ad labels, no messy small text.

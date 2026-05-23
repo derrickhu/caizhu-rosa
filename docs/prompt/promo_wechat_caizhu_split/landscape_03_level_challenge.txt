@@ -1,0 +1,15 @@
+16:9 horizontal promotional illustration for 彩珠五连, a WeChat Mini Game puzzle challenge.
+
+Use the game screenshots as visual reference only: level panel, target score stars, remaining steps, next marbles, square board, bright ocean bubble background. Rebuild these elements into a polished ad composition.
+
+Art style: premium cartoon mobile game advertising key art, glossy rounded UI, toy-like glass marbles, blue-cyan fantasy bubbles, bright highlights, soft 3D volume, thick clean outlines, readable at small size.
+
+Composition: horizontal cinematic scene. Left and center show a heroic challenge panel floating above a big puzzle board, three glowing star milestones rising upward, an hourglass/step icon shining, and the next marbles queue leading into the board. The board is partially visible with green, blue, purple, yellow and red marbles arranged for a clever move. Right side contains large title text on a curved blue ribbon panel. Add celebratory sparkles and reward coins without clutter.
+
+Chinese promotional text must be part of the poster, large and readable:
+Main title EXACTLY: 闯关挑战
+Subtitle EXACTLY: 步步都要想清楚
+
+Typography style: bold Chinese headline, white and yellow fill, deep navy outline, cyan glow, premium mobile game sticker feel.
+
+Constraints: Do not duplicate the screenshot exactly. No English letters, no fake glyphs, no extra small UI text, no watermark, no logo, no QR code, no app store badge.

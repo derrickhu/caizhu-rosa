@@ -1,0 +1,15 @@
+16:9 horizontal WeChat Mini Game promotional poster for 彩珠五连, a glossy marble puzzle game.
+
+Use the reference screenshots to extract game hooks, then recompose them as advertising art: colorful glass marbles, ocean bubble background, three power-up tools, playful puzzle board, explosive combo feedback.
+
+Art style: high-end casual mobile game ad, vibrant cartoon, glossy 2.5D, rounded shapes, saturated cyan blue and violet lighting, sparkles, confetti, soft shadows, clean commercial poster design.
+
+Composition: full-bleed horizontal hero layout. Center is a dramatic puzzle-board moment where three power-ups are shown as large polished icons: a red bomb for 同色爆破, a cross-shaped beam for 十字清场, and a rainbow marble for 万能预备. The power-ups orbit above the board and send colorful beams through rows and columns. Background has the game's blue underwater-bubble fantasy ribbons and floating beads. Keep the image energetic but uncluttered.
+
+Chinese promotional text must be part of the poster, large and readable:
+Main title EXACTLY: 神奇道具
+Subtitle EXACTLY: 一点清屏超解压
+
+Typography style: thick rounded Chinese POP font, bright yellow fill, white inner highlight, dark blue outline, orange drop shadow, sticker-like title plaque.
+
+Constraints: Not a direct screenshot, no UI copy-paste, no English letters, no extra Chinese, no watermark, no logo, no QR code, no app badges, no random numbers.

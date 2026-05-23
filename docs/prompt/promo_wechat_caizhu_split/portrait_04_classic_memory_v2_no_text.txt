@@ -1,0 +1,15 @@
+9:16 vertical promotional artwork for 彩珠五连, inspired by the classic old PC five-in-a-row marble game layout from around 20 years ago.
+
+IMPORTANT: Generate artwork only. Leave clean empty title plaques for later real-font Chinese overlay. Do NOT draw any text, letters, numbers, labels, captions, UI words, logo, watermark, or fake glyphs anywhere.
+
+Use the provided old classic-game reference only as nostalgic layout inspiration: a central square grid with colored balls, simple side panels, old desktop puzzle-game feeling. Do NOT copy its exact characters, watermark, English labels, window chrome, or blurry photo quality. Rebuild it as polished modern mobile promotional artwork.
+
+Art style: polished casual mobile game ad, glossy 2.5D marbles, clean rounded UI, nostalgic retro PC puzzle-game mood, soft CRT glow, warm beige and blue-cyan color blend, high saturation, readable at thumbnail size.
+
+Composition from top to bottom:
+1. Top 18%: one large clean cream-and-teal empty title plaque with no text. It must be visually simple and leave enough room for a short Chinese headline later.
+2. Middle 60%: a classic 9x9 grid centered on screen. The board is flatter and more old-school than the modern version, but with beautiful glossy marbles. In the center row, show exactly five same-color blue marbles in a perfect unbroken horizontal line, adjacent cells, glowing as they are about to disappear. Keep the five connected marbles very obvious.
+3. Left and right sides: cute redesigned marble mascots or side-panel decorations that suggest old desktop puzzle games, but no labels or words.
+4. Bottom 22%: one clean white scroll ribbon with no text, reserved for later subtitle overlay. Add a few bubbles and sparkles linking the old memory to the new mobile version.
+
+Strict constraints: NO text, NO Chinese characters, NO English letters, NO numbers, NO logo, NO watermark, NO QR code, NO app badge, NO fake UI labels, NO random glyphs. Exactly five connected blue marbles in one horizontal line must be visible.

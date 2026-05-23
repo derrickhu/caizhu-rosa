@@ -1,0 +1,29 @@
+Create ONE square 1:1 official WeChat mini-game app icon for 彩珠五连.
+
+Use the provided reference image only for composition guidance:
+- It shows the desired "central rainbow marble + surrounding colorful marbles + clearing light" content.
+- It also shows a red diamond safe area. Keep the important marbles and light effect inside that central safe area.
+- Ignore the black outer background, red guide lines, screenshots, and any UI artifacts in the reference.
+
+Main correction:
+The whole icon should use a warm yellow / golden orange visual identity. Do NOT use a green or teal background. Do NOT fill the whole image with marbles.
+
+Composition:
+- Full square canvas, edge-to-edge warm golden yellow / orange gradient background.
+- Add a soft radial glow from the center, slightly lighter yellow behind the marbles.
+- Place one glossy rainbow magic marble exactly in the center as the hero focal point, about 26% to 30% of the icon width.
+- Around the center marble, place 6 to 8 large glossy colored marbles: red, blue, green, cyan, purple, yellow. Arrange them radially around the center like the earlier power-burst icon, not stacked like a flower pile.
+- All marbles must stay within the central 65% of the image width and height, matching the red diamond safe-area idea from the reference. Leave clean yellow background around the edges.
+- Add short bright white-gold clearing beams from the center toward the surrounding marbles, but keep the beams within the central area. The beams should suggest puzzle power-up clearing without reaching every edge.
+- Add only 2 or 3 simple sparkle highlights near the central group. No confetti, no busy tiny particles.
+
+Style:
+Premium polished WeChat mini-game app icon, high-quality 2D cartoon with glossy glass marbles, thick clean dark brown/navy outlines, saturated colors, strong highlights, soft bevels, readable at 48px and attractive at 144px. Clear central focus, professional icon feeling.
+
+Strict constraints:
+- Overall background must be yellow / golden orange, not green, not teal, not blue.
+- Do NOT spread marbles across the whole canvas.
+- Do NOT place marbles near the corners or edges.
+- Do NOT make a compact stacked flower pile; use center rainbow marble with surrounding separate marbles and light beams.
+- NO white border, NO gray margin, NO transparent padding, NO rounded square tile sitting on another background.
+- NO TEXT, no Chinese characters, no English letters, no numbers, no logo, no watermark, no QR code, no fake glyphs.

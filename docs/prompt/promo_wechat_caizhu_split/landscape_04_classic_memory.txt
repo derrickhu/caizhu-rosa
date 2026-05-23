@@ -1,0 +1,15 @@
+16:9 horizontal WeChat Mini Game promotional poster for 彩珠五连, inspired by the classic old PC "Lines / five marbles in a row" layout from around 20 years ago.
+
+Use the provided old classic-game reference only for nostalgic layout ideas: central square grid, colored balls, side panels, simple desktop-game feeling. Do NOT copy its characters, watermark, window title bar, English words, or low-quality photo look. Rebuild it as polished modern mobile ad art with a retro memory feeling.
+
+Art style: premium 2.5D casual mobile game advertisement, modern glossy marbles and clean board, with subtle retro computer-game nostalgia: soft CRT glow, warm desk light, blue-gray classic window-panel shapes, 2000s puzzle-game memory, but still vivid and high quality.
+
+Composition: horizontal banner. Center has a large clean 9x9 grid with glossy colored balls. In the exact middle of the board, show five red marbles in one unbroken horizontal line, adjacent and glowing, clearly demonstrating the classic five-in-a-row rule. Left and right sides have simplified nostalgic side panels like an old puzzle game, but redesigned as friendly cartoon UI panels, no English labels. Background blends an old beige computer-room glow with the current game's blue bubble effects. Add tiny sparkles where the five balls clear.
+
+Chinese promotional text must be part of the poster, large and emotional:
+Main title EXACTLY: 当年那一局
+Subtitle EXACTLY: 五珠一线回青春
+
+Typography style: big readable Chinese title, golden yellow fill, dark navy outline, slight retro pixel shine mixed with modern glossy mobile-game sticker style.
+
+Constraints: no English letters, no watermark, no photo border, no QR code, no app badge, no copied old-game characters, no fake tiny text. The classic five-in-a-row layout must be instantly recognizable.

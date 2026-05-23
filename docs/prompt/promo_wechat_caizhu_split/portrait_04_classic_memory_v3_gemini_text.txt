@@ -1,0 +1,20 @@
+9:16 vertical WeChat Mini Game promotional poster for 彩珠五连, with the artwork and Chinese promotional words generated together in one coherent image.
+
+Goal: make players who played classic five-in-a-row marble games around 20 years ago immediately feel nostalgia. The poster should look like a polished modern mobile ad inspired by an old PC puzzle game layout.
+
+Use the provided old classic-game reference only for layout memory: central square grid, colored balls, left and right side panels, old desktop puzzle-game feeling. Do NOT copy its exact characters, watermark, English labels, window title bar, or blurry photo look.
+
+Art style: premium 2.5D casual mobile game ad, glossy marbles, clean rounded UI, retro PC puzzle-game nostalgia, soft CRT glow, warm beige plus blue-cyan bubble accents, high saturation, readable at thumbnail size.
+
+Composition:
+1. Top title plaque: a large cream-and-teal plaque with ONLY four Chinese characters, EXACTLY: 当年那局
+2. Middle gameplay: a classic 9x9 grid centered on the poster. In the center row, show EXACTLY FIVE blue marbles connected horizontally in five adjacent cells, glowing as a clear five-in-a-row moment. Make this line unmistakable.
+3. Left and right side panels: cute redesigned marble mascots on columns, inspired by old desktop puzzle games, but no labels or words.
+4. Bottom scroll ribbon: ONLY four Chinese characters, EXACTLY: 还是五连
+
+Typography requirements:
+- The top title “当年那局” must be large, centered, complete, not cropped, not stacked.
+- The bottom subtitle “还是五连” must be centered on the white scroll ribbon, complete, not cropped, not stacked.
+- Use bold rounded Chinese mobile-game POP lettering, cream/yellow fill, dark teal outline, soft shadow, matching the artwork.
+
+Strict text constraints: Generate ONLY these two Chinese strings: 当年那局 and 还是五连. NO other text, NO English letters, NO numbers, NO labels, NO fake glyphs, NO watermark, NO QR code, NO app badge, NO duplicated text, NO overlapping text.

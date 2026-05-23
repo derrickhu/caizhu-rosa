@@ -1,0 +1,19 @@
+9:16 vertical WeChat Mini Game promotional poster for 彩珠五连, designed to make players who played classic five-in-a-row marble games 20 years ago instantly remember the old feeling.
+
+Use the provided old classic-game reference only as layout inspiration: square grid with colored balls, nostalgic desktop puzzle-game side panels. Do NOT copy its exact characters, watermark, English labels, window chrome, or blurry photo quality. Combine nostalgia with the current game's polished ocean-bubble marble style.
+
+Art style: polished casual mobile game ad, glossy 2.5D marbles, clean rounded UI, nostalgic retro PC puzzle-game mood, soft CRT glow, warm beige and blue-cyan color blend, high saturation, readable at thumbnail size.
+
+Composition from top to bottom:
+1. Top title area with big emotional Chinese headline.
+2. Main art: a vertical poster frame showing a classic 9x9 grid centered on screen. The board is flatter and more old-school than the modern version, but with beautiful glossy marbles. In the center row, show exactly five same-color blue marbles in a perfect unbroken horizontal line, adjacent cells, glowing as they are about to disappear.
+3. Side decorations hint at old desktop game panels with simple crowned marble mascots, but redesigned and cute, no English text.
+4. Bottom ribbon subtitle, with a few bubbles and sparkles linking the old memory to the new mobile version.
+
+Chinese promotional text must be part of the poster, large and readable:
+Main title EXACTLY: 二十年前的快乐
+Subtitle EXACTLY: 还是五颗连一起
+
+Typography style: bold Chinese poster lettering, warm yellow fill, cream highlights, deep blue outline, subtle retro screen glow, modern sticker shadow.
+
+Strict constraints: exactly five connected blue marbles in one horizontal line must be visible. No English letters, no watermark, no QR code, no app badge, no random small text, no copied screenshot, no blurry camera photo look.
