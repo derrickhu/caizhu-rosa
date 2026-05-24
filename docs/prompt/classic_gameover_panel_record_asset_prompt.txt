@@ -1,0 +1,21 @@
+Single isolated game UI popup panel asset for a Chinese casual marble puzzle mobile game — NEW HIGH SCORE celebration variant.
+
+CRITICAL — asset export rules:
+- Solid pure BLACK background (#000000) filling entire canvas, panel centered with generous black margins (easy matting / rembg)
+- Absolutely NO text, NO numbers, NO letters, NO Chinese characters, NO labels, NO watermarks
+- Empty zones for dynamic score and labels drawn in code
+
+Panel design (celebration / new record):
+- Slightly larger premium vertical rounded card than normal popup, portrait orientation
+- Blue-purple gradient base PLUS golden ornate top banner strip and small cartoon golden crown icon centered above panel (decorative only, no text)
+- Subtle gold border glow, scattered small star sparkles and confetti dots around panel edges (baked into art, not text)
+- Top 20%: empty festive header area under crown (for “新纪录” text in code)
+- Middle 45%: very large empty glowing score zone — soft golden radial glow behind empty center, NO digits
+- Bottom 30%: TWO stacked glossy capsule buttons, NO text:
+  - Upper button: orange-yellow gradient with small generic white share icon (three dots connected, no words)
+  - Lower button: green gradient, plain surface
+- Mood: exciting, celebratory, rewarding
+
+Art style: same game as 彩珠五连 — vibrant cartoon glossy UI, consistent with level complete panel but more festive gold accents.
+
+Canvas: 3:4 portrait, panel only on black, high resolution, crisp edges.

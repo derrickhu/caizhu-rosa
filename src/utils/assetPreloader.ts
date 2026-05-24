@@ -44,6 +44,8 @@ export const IMAGE_ASSETS: readonly string[] = [
   'subpkg_assets/images/level_star_icon.png',
   'subpkg_assets/images/level_next_banner.png',
   'subpkg_assets/images/level_complete_panel.png',
+  'subpkg_assets/images/classic_gameover_panel_normal.png',
+  'subpkg_assets/images/classic_gameover_panel_record.png',
   'subpkg_assets/images/rank_panel.png',
   'subpkg_assets/images/avatar_default.png',
   'subpkg_assets/images/rank_title_banner.png',

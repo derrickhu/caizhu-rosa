@@ -1,5 +1,10 @@
 import { Platform, type PlatformShareOptions } from './PlatformService';
-import { SHARE_IMAGES, SHARE_TITLES, buildShareQuery } from '@/config/ShareConfig';
+import {
+  SHARE_IMAGES,
+  SHARE_TITLES,
+  buildClassicRecordShareTitle,
+  buildShareQuery,
+} from '@/config/ShareConfig';
 import { analytics } from '@/analytics';
 
 function buildAppMessageShare(source: string): PlatformShareOptions {
@@ -49,6 +54,21 @@ export function configureWechatShare(): void {
 export function shareToFriend(source = 'button'): void {
   const payload = buildAppMessageShare(source);
   analytics.trackShareAppMessage(source === 'button' ? 'api_share_game' : `api_${source}`, {
+    title: payload.title,
+    imageUrl: payload.imageUrl,
+    query: payload.query,
+  });
+  Platform.shareAppMessage(payload);
+}
+
+/** 经典模式破纪录：专用炫耀分享图 + 带分数的 title */
+export function shareClassicRecord(score: number): void {
+  const payload: PlatformShareOptions = {
+    title: buildClassicRecordShareTitle(score),
+    imageUrl: SHARE_IMAGES.classicRecord,
+    query: buildShareQuery('classic_record'),
+  };
+  analytics.trackShareAppMessage('classic_record', {
     title: payload.title,
     imageUrl: payload.imageUrl,
     query: payload.query,

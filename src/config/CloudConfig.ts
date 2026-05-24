@@ -23,6 +23,8 @@ export const BACKEND_ANON_ID_KEY = `${GAME_KEY}_anon_id`;
 export const LEVEL_PROGRESS_KEY = `${GAME_KEY}_level_progress`;
 export const CLASSIC_RANKS_KEY = `${GAME_KEY}_classic_ranks`;
 export const BEST_SCORE_KEY = `${GAME_KEY}_best_score`;
+/** 经典模式进行中的局内存档（仅本地，不同步云端） */
+export const CLASSIC_SAVED_GAME_KEY = `${GAME_KEY}_classic_saved_game`;
 export const SKIN_STATE_KEY = `${GAME_KEY}_skin_state`;
 export const PROP_INVENTORY_KEY = `${GAME_KEY}_prop_inventory`;
 export const SEEN_SPECIAL_INTROS_KEY = `${GAME_KEY}_seen_special_piece_intros`;

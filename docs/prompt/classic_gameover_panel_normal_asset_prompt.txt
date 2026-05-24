@@ -1,0 +1,19 @@
+Single isolated game UI popup panel asset for a Chinese casual marble puzzle mobile game.
+
+CRITICAL — asset export rules:
+- Solid pure BLACK background (#000000) filling entire canvas, panel centered with generous black margins on all sides (easy background removal / matting)
+- Absolutely NO text, NO numbers, NO letters, NO Chinese characters, NO labels, NO watermarks anywhere
+- Leave empty placeholder zones where code will draw dynamic text later
+
+Panel design (normal game over, calm not celebratory):
+- One vertical rounded rectangle card, portrait orientation, about 75% canvas width
+- Style matches existing level-complete popup: glossy cartoon, blue-to-indigo gradient fill, bright cyan top highlight strip, thick soft light border, subtle drop shadow on panel edges
+- Top 18%: empty title banner area (decorative header band only, no words)
+- Middle 42%: large completely empty score zone — plain gradient only, maybe very subtle decorative frame lines but NO digits
+- Below score zone: thin empty subtitle strip for “best record” text (no characters, just spacing)
+- Bottom 28%: ONE large green glossy capsule button shape (3D bevel, highlight on top), centered, NO text on button
+- Mood: clean, friendly, neutral — NO confetti, NO gold crown, NO sparkles burst
+
+Art style: vibrant cartoon, high saturation, polished WeChat mini-game UI, consistent with 彩珠五连 blue purple panels.
+
+Canvas: 3:4 portrait, panel only on black, high resolution, crisp edges.

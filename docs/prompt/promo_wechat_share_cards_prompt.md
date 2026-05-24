@@ -25,6 +25,26 @@ Typography: bold rounded Chinese POP lettering, white/yellow fill, dark brown ou
 Strict constraints: Generate only these Chinese strings. NO English letters, NO extra Chinese, NO numbers, NO watermark, NO QR code, NO app store badge, NO fake glyphs, NO messy tiny UI text.
 ```
 
+## share_card_classic_record
+
+经典模式破纪录炫耀分享（`wx.shareAppMessage` 专用，与通用分享卡区分）。
+
+```text
+Create one 5:4 horizontal WeChat mini-game share card for 彩珠五连 classic mode NEW HIGH SCORE bragging share.
+
+Style: celebratory blue-purple gradient, golden light rays, confetti, glossy marbles. High contrast for chat preview.
+
+Chinese text baked in:
+Main headline EXACTLY: 我破纪录了！
+Subtitle EXACTLY: 经典模式等你来超越
+Small badge: 彩珠五连
+
+NO score numbers on image — dynamic score goes in share title only.
+Export: 500x400 JPG → share_card_classic_record.jpg
+```
+
+分享 title（代码动态）：`经典模式 {score} 分新纪录！不服来比比？`
+
 ## share_card_board_ocean
 
 ```text

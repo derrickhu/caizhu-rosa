@@ -1,0 +1,35 @@
+UI prototype mockup for a WeChat mini-game classic mode GAME OVER screen (normal result, score did NOT beat personal best).
+
+Aspect ratio: 9:16 vertical mobile phone screen, full-screen composition.
+
+Art style (MUST match existing game):
+- Vibrant cartoon casual puzzle game, glossy rounded UI, high saturation
+- Classic mode background: deep blue to purple gradient, soft light blobs, floating glossy colored marbles at edges (red, yellow, green, blue, purple), cheerful polished mobile game look
+- Same visual language as Chinese marble line puzzle "彩珠五连": toy-like glass marbles, thick bevel buttons, blue/purple popup panels with bright top highlight strip
+
+Background layer:
+- Blurred/dimmed classic gameplay scene behind: 9x9 marble board partially visible, score HUD at top
+- Semi-transparent dark navy overlay (40-50%) over entire screen
+
+Center popup panel (main focus):
+- Large rounded rectangle card, width ~78% of screen, blue-to-indigo gradient panel with glossy top highlight bar, soft drop shadow, thick light border, similar to level-complete popup in casual puzzle games
+- Top title area: bold Chinese text "游戏结束" in white with dark blue stroke, centered
+- Middle: label "本局得分" in smaller white/gray text
+- HUGE score number "1,280" in golden yellow with orange stroke, very prominent, centered
+- Below score: smaller text "最高记录 2,450" in light gray-blue (shows player did not beat best)
+- Bottom buttons:
+  - Primary green glossy capsule button "再来一局" (large, thick, highlight on top)
+  - Secondary smaller blue text-style or outline button "返回首页" optional subtle
+
+Mood: calm, clear, friendly failure — NOT celebratory. No confetti, no gold burst, no trophy.
+
+Layout notes for designers:
+- Safe area friendly, panel vertically centered slightly above middle
+- All Chinese text must be crisp and readable
+- This is a DESIGN PROTOTYPE with layout text included on purpose
+
+Constraints:
+- Portrait mobile only
+- No English except score digits
+- No watermark, no QR code, no WeChat logo
+- High quality game UI illustration, not photo, not 3D render of real objects

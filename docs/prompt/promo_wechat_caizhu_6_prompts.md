@@ -1,8 +1,77 @@
-# 彩珠五连微信小游戏推广图提示词
+# 彩珠五连微信小游戏宣传图规范与提示词
 
-参考方向：同级 `game_assets/hot-pot/推广` 的推广图使用高饱和卡通手游广告感、醒目中文标题、玩法元素重组，而不是直接复用截图。本组为“彩珠五连/财珠”设计 3 张横版与 3 张竖版推广图，提取实际游戏亮点：海蓝泡泡背景、9x9 棋盘、彩色玻璃珠、下一步预览、关卡目标、剩余步数、同色爆破/十字清场/万能预备道具。
+参考方向：同级 `game_assets/hot-pot/推广` 的推广图使用高饱和卡通手游广告感、醒目中文标题、玩法元素重组，而不是直接复用截图。玩法亮点：海蓝泡泡背景、9x9 棋盘、彩色玻璃珠、下一步预览、关卡目标、剩余步数、同色爆破/十字清场/万能预备道具。
 
-## landscape_01_combo_bubbles
+官方参考：[微信小游戏素材规范](https://game.weixin.qq.com/cgi-bin/minigame/static/minigame_setting/guide.html)
+
+## 素材规格总表
+
+| 类型 | 尺寸 | 格式 | 体积 | 文案 / 品牌 |
+|------|------|------|------|-------------|
+| **通用素材封面** | 650×250 | JPG/JPEG | **< 80 KB** | **纯玩法，无图标、无游戏名**；`--no-text` |
+| 横版宣传图 | 1280×720 | JPG | ≤ 200 KB | 可后期叠中文标题 |
+| 竖版宣传图 | 720×1280 | JPG | < 200 KB | 可后期叠中文标题 |
+| 分享卡片（项目内） | 500×400 等 | JPG | 按接入约定 | 见 `promo_wechat_share_cards_prompt.md` |
+
+通用素材封面每月后台限改 **3 次**（以微信平台为准）。
+
+## 生图与导出流程
+
+1. 用 Gemini 生成 **16:9** 高清原图（通用封面、横版）或 **9:16**（竖版）；提示词里禁止 AI 写字（通用封面禁止一切文字与 Logo）。
+2. 用 `export_wechat_promo.py` 裁剪、压缩并校验，勿直接上传 AI 原图。
+
+```bash
+python3 ~/.cursor/skills/wechat-minigame-promo-assets/scripts/export_wechat_promo.py \
+  --input ../game_assets/caizhu-rosa/推广/cover_banner_gameplay_v1.png \
+  --output ../game_assets/caizhu-rosa/推广/conformed/cover_banner_650x250_gameplay_v1.jpg \
+  --type banner \
+  --no-text --y-bias 0.42
+```
+
+- `banner` → 650×250，<80KB；`landscape` → 1280×720，≤200KB；`portrait` → 720×1280，<200KB
+- **落盘（与横竖版一致）**：高清原图 → `game_assets/caizhu-rosa/推广/`；合规终稿 → `game_assets/caizhu-rosa/推广/conformed/`（文件名含尺寸，如 `_650x250`、`_1280x720`）；审核后再拷入 `minigame/`
+
+### 内容共性要求
+
+- 重组玩法元素，**不要**直接贴游戏截图；缩略图也要能认出棋盘与彩珠。
+- 禁止：水印、二维码、应用商店角标、截图式 HUD、乱码假字。
+- 横/竖版宣传图：中文标题建议生图无字 + 导出脚本 `--title` 叠字；通用素材封面：**全程无字、无图标、无游戏名**。
+
+### 质检清单
+
+- [ ] `export_wechat_promo.py` 输出 `size_ok` 与 `bytes_ok` 均为 true
+- [ ] 无乱码、无水印、非纯截图
+- [ ] 通用素材封面：无 Logo、无游戏名、无图标
+
+---
+
+## cover_banner_650x250_gameplay（通用素材封面）
+
+导出：`--type banner --no-text`。终稿：`推广/conformed/cover_banner_650x250_<theme>_v1.jpg`；原图：`推广/cover_banner_<theme>_v1.png`。
+
+```text
+16:9 ultra-wide promotional illustration for a casual marble line-matching puzzle WeChat Mini Game.
+
+Art style: premium polished 2.5D casual mobile game key art, vibrant cartoon, glossy glass marbles, soft bevels, high saturation, cyan-purple ocean bubble fantasy background with floating beads and sparkles, strong contrast, readable at small thumbnail size. Not photoreal, not a UI screenshot.
+
+Main composition (gameplay only, no branding):
+- Center: a large playful 9x9 puzzle board with rounded cream cells and glossy purple frame, tilted slightly for depth
+- Hero moment: five red glass marbles in one glowing diagonal line with bright white-gold connection beam, lens flares, and clearing sparkles — clearly shows "connect five same-color marbles"
+- Foreground: a few oversized colorful marbles (red, yellow, blue, green, orange) floating at edges with motion blur
+- Background: soft layered ocean-blue bubble ribbons, bokeh lights, dreamy atmosphere
+- Optional subtle: tiny preview marbles hinting "place three new balls each turn" — keep minimal, no HUD panels
+
+Hard bans:
+NO text, NO letters, NO Chinese characters, NO numbers, NO logo, NO app icon, NO game title, NO watermark, NO UI screenshot, NO buttons, NO captions, NO speech bubbles, NO ad badges, NO QR code, NO black or white borders, NO cluttered collage.
+
+Leave clean negative space at far left and far right edges for ultra-wide crop. Full-bleed illustration.
+```
+
+---
+
+## 横版 / 竖版宣传图提示词
+
+### landscape_01_combo_bubbles
 
 ```text
 16:9 horizontal WeChat Mini Game promotional key art for a casual puzzle game named 彩珠五连.

@@ -14,6 +14,7 @@ import { computeBoardLayout, PLAYFIELD_VERTICAL_OFFSET } from '@/config/GameConf
 import { PersistService } from '@/core/PersistService';
 import { RankManager } from '@/managers/RankManager';
 import { LeaderboardManager } from '@/managers/LeaderboardManager';
+import { ClassicSaveManager } from '@/managers/ClassicSaveManager';
 import { SkinManager } from '@/managers/SkinManager';
 import { createBgSprite } from '@/utils/bgHelper';
 import { BallSprite } from '@/gameobjects/BallSprite';
@@ -91,17 +92,20 @@ export class ClassicScene implements Scene {
     this._gameOverOverlay = new GameOverOverlay();
     this.container.addChild(this._gameOverOverlay);
 
-    // Init game
-    BoardManager.init();
+    // Init or resume saved game
+    const resumed = ClassicSaveManager.tryResume();
+    if (!resumed) {
+      BoardManager.init();
+    }
     this._roundStartTs = Date.now();
     this._roundStartBestScore = BoardManager.bestScore;
     analytics.track('classic_start', {
       mode: 'classic',
-      source: 'scene_enter',
+      source: resumed ? 'scene_resume' : 'scene_enter',
       baseline_best: this._roundStartBestScore,
     });
     this._boardView.syncWithBoard();
-    this._scorePanel.setScore(0);
+    this._scorePanel.setScore(BoardManager.score);
     this._scorePanel.setBestScore(BoardManager.bestScore);
 
     this._loadBestScore();
@@ -114,6 +118,7 @@ export class ClassicScene implements Scene {
 
   onExit(): void {
     this._unbindEvents();
+    this._persistProgressOnLeave();
     this._saveBestScore();
     this._destroyNativeTemplateAd();
   }
@@ -126,6 +131,7 @@ export class ClassicScene implements Scene {
   };
 
   private _onGameOver = (score: number) => {
+    ClassicSaveManager.clear();
     this._saveBestScore();
     RankManager.addClassicScore(score);
     void LeaderboardManager.submitClassicScore(BoardManager.bestScore);
@@ -163,6 +169,7 @@ export class ClassicScene implements Scene {
       });
     }
 
+    ClassicSaveManager.clear();
     PropManager.resetSession();
     BoardManager.reset();
     this._roundStartTs = Date.now();
@@ -227,6 +234,13 @@ export class ClassicScene implements Scene {
       sprite.width = w;
       sprite.height = h;
     });
+  }
+
+  /** Save in-progress classic game when leaving before game over. */
+  private _persistProgressOnLeave(): void {
+    if (!BoardManager.gameOver) {
+      ClassicSaveManager.saveInProgress();
+    }
   }
 
   private _loadBestScore(): void {

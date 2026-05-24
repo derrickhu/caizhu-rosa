@@ -1,0 +1,17 @@
+Generate ONE celebration game UI panel asset on solid pure BLACK background (#000000), centered with wide black margins for easy matting.
+
+STYLE: Same family as simple blue glossy casual puzzle panels (彩珠五连) but MORE festive — still NO ornate gold grooves, NO heavy carved multi-layer frames. Clean rounded blue-purple gradient card with light gold accent strip on top edge, small cartoon stars/sparkles around edges, subtle golden glow in center. Simpler than ornate treasure chest UI.
+
+TEXT TO INCLUDE in image (Simplified Chinese, baked in, crisp):
+- Top: large golden bold title "新纪录！" with stroke (celebratory)
+- Below: white subtitle "恭喜打破最高分"
+- Bottom TWO glossy capsule buttons WITH text:
+  - Upper orange-yellow button: "分享给好友" (may include small share icon)
+  - Lower green button: "再来一局"
+
+MUST LEAVE EMPTY in center:
+- Large middle area between subtitle and buttons — empty gradient with soft golden glow only, NO score digits, NO numbers, NO "3680"
+
+DO NOT include: any score numbers, watermarks, English text.
+
+Canvas: portrait 3:4, single panel, high resolution.

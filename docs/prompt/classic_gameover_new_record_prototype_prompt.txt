@@ -1,0 +1,43 @@
+UI prototype mockup for a WeChat mini-game classic mode NEW HIGH SCORE celebration screen (player beat personal best).
+
+Aspect ratio: 9:16 vertical mobile phone screen, full-screen composition.
+
+Art style (MUST match existing game):
+- Vibrant cartoon casual puzzle game, glossy rounded UI, high saturation
+- Classic mode background: deep blue to purple gradient, soft light blobs, floating glossy colored marbles, same as 彩珠五连 classic mode
+- Popup panel style consistent with blue/purple rounded panels but MORE festive: gold accents, sparkles, confetti
+
+Background layer:
+- Blurred classic gameplay with 9x9 board behind
+- Slightly darker overlay with colorful light rays bursting from center
+- Confetti ribbons, stars, small sparkle particles in gold, cyan, pink around panel edges
+
+Center celebration popup panel (main focus):
+- Larger, more premium rounded card than normal game over, ~82% screen width
+- Blue-purple gradient base with GOLDEN ornate top banner strip and subtle crown or star motif (cartoon, not realistic)
+- Top headline: bold Chinese "新纪录!" or "刷新纪录!" in bright gold-yellow with red-orange stroke, extra large, celebratory
+- Optional small subtitle "恭喜打破最高分" in white
+- DOMINANT center element: MASSIVE score "3,680" in huge golden gradient numbers with thick stroke and glow, biggest text on screen
+- Small badge "历史最高" with upward arrow near score
+- Two bottom buttons side by side or stacked:
+  - Left/primary: bright orange-yellow glossy button with share icon + Chinese "分享给好友" (WeChat share style, cartoon icon)
+  - Right/secondary: green glossy button "再来一局"
+- Optional tiny tertiary "返回首页" link
+
+Mood: exciting, rewarding, festive — clear celebration feeling, player should want to share achievement.
+
+Lighting effects:
+- Soft golden glow behind score number
+- Sparkle bursts, star shapes, a few marble icons floating with motion blur
+- Panel edges have subtle shimmer
+
+Layout notes:
+- Score number is the hero —至少占面板高度 25%
+- Share button must be visually prominent (orange/gold), not hidden
+- Chinese text crisp and readable — prototype includes layout text on purpose
+
+Constraints:
+- Portrait mobile only
+- No English except score digits
+- No watermark, no QR code, no official WeChat brand logo (generic share icon OK)
+- High quality 2D game UI illustration

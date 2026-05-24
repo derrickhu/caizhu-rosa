@@ -500,6 +500,23 @@ class BoardManagerClass {
     this._bestScore = state.bestScore;
     this._gameOver = false;
   }
+
+  /** Restore classic mode from a saved in-progress game. */
+  loadClassicState(state: ReturnType<typeof this.exportState>): void {
+    this._isLevelMode = false;
+    this._colorCount = CLASSIC_COLOR_COUNT;
+    this._initialBalls = INITIAL_BALLS;
+    this._ballsPerTurn = BALLS_PER_TURN;
+    this._noSpawnThreshold = 99;
+    this._specialChances = {};
+    this._guaranteedInitialPieces = [];
+    this._guaranteedNextPieces = [];
+    this._stepsUsed = 0;
+    this._nextPositions = null;
+    this.loadState(state);
+    EventBus.emit('board:nextColors', this._nextPieces);
+    EventBus.emit('ui:scoreChanged', this._score, 0);
+  }
 }
 
 export interface NewBall {

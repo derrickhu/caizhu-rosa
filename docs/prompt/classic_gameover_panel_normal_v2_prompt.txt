@@ -1,0 +1,21 @@
+REFERENCE: Match the attached prototype UI mockup EXACTLY for layout and visual style.
+
+Generate ONE game UI panel asset on solid pure BLACK background (#000000), centered with wide black margins for easy background removal.
+
+STYLE (must match prototype):
+- Simple flat glossy blue rounded rectangle panel — NO gold frames, NO ornate grooves, NO inset slots, NO multi-layer carved borders, NO crown
+- Smooth blue gradient fill (royal blue to deeper blue), thin soft cyan highlight on top inner edge only
+- Clean casual mobile puzzle game look like 彩珠五连
+
+TEXT TO INCLUDE in image (Simplified Chinese, baked into art, crisp readable):
+- Top title: "游戏结束" — large bold white text with dark blue stroke (match prototype)
+- Below title: small label "本局得分" in white/light blue
+- Bottom: one large green glossy capsule button with white bold text "再来一局"
+
+MUST LEAVE EMPTY (no numbers, no placeholder digits):
+- Large center zone between "本局得分" and bottom button — completely empty smooth gradient only, for dynamic score number overlay (like where "1280" appears in prototype but WITHOUT any digits)
+- Small zone below score area — empty for dynamic "最高记录" line overlay (no text, no numbers)
+
+DO NOT include: score numbers, "最高记录" text, "1280", "2450", confetti, gold decorations.
+
+Canvas: portrait 3:4, single panel only, high resolution, crisp edges.

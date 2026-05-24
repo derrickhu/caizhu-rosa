@@ -1,0 +1,24 @@
+Create one 5:4 horizontal WeChat mini-game share card (500x400 style) for 彩珠五连 classic mode NEW HIGH SCORE bragging share.
+
+Style: celebratory premium casual mobile game share art — blue-purple gradient background, golden light rays, confetti, glossy colorful glass marbles, sparkles. Match the in-game "新纪录" celebration panel mood. High contrast, readable at small WeChat chat preview size.
+
+Composition:
+- Full-bleed blue-to-purple gradient with golden glow burst in center-right
+- Left/center: large golden trophy star or crown motif with glossy marbles cluster
+- Right side: bold Chinese text sticker area with brag / show-off tone
+- Festive confetti and stars, energetic NOT cluttered
+
+Chinese text MUST be baked into image, large readable bold rounded POP font with stroke:
+Main headline EXACTLY: 我破纪录了！
+Subtitle EXACTLY: 经典模式等你来超越
+
+Optional small corner game name badge text: 彩珠五连 (small but readable)
+
+Psychology: player wants to show off to friends, provocative friendly challenge, proud achievement.
+
+Strict constraints:
+- NO score numbers (no digits) — score added by game code in share title only
+- NO English letters except none needed
+- NO watermark, NO QR code, NO WeChat logo
+- Generate ONLY the Chinese strings above plus 彩珠五连 badge
+- NO extra random Chinese sentences
