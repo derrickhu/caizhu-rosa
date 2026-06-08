@@ -1,0 +1,58 @@
+彩珠五连软著申请信息
+====================
+
+一、软件基本信息
+
+软件全称：深圳幸运呱科技有限公司彩珠五连小游戏软件
+软件简称：彩珠五连
+版本号：V1.0.0
+软件分类：游戏软件 / 小游戏软件
+运行平台：微信小游戏
+开发语言：TypeScript、JavaScript
+渲染技术：PixiJS + WebGL/Canvas
+构建工具：Vite
+后端平台：腾讯云 CloudBase 云函数 (caizhu-api)
+著作权人：深圳幸运呱科技有限公司
+
+二、建议软件说明摘要
+
+彩珠五连是一款基于微信小游戏平台的休闲益智类连线消除小游戏。玩家在 9x9 棋盘上通过放置彩色珠子形成五连或以上同色连线进行消除得分。软件包含关卡闯关模式、经典无尽模式、皮肤切换、道具辅助、排行榜、云端存档同步和数据分析上报等功能。客户端采用 TypeScript 与 PixiJS 实现，后端采用 caizhu-api 云函数实现登录鉴权、存档同步和排行榜。
+
+三、已生成材料（占位版）
+
+1. 软著文档-彩珠五连-V1.0.0.pdf
+   - 文档类型：设计说明书
+   - 当前生成：12 页（10 张截图均为占位框，待补图后重生成）
+   - 截图目录：softcopyright/pics/
+
+2. 软著源程序-彩珠五连-V1.0.0.pdf
+   - 源码文件数：89 个
+   - 源码总页数：320 页
+   - 提取方式：前 30 页 + 后 30 页
+   - 最终生成：60 页
+
+四、截图目录
+
+请将运行截图按文件名放入：
+
+/Users/huyi/dk_proj/caizhu-rosa/softcopyright/pics/
+
+详细要求见同目录 截图清单.txt。当前 PDF 中已预留占位框，补图后重新生成文档 PDF 即可自动替换。
+
+五、生成命令
+
+1. 设计说明书（文档鉴别材料，含界面截图占位/实图）：
+
+python3 "/Users/huyi/dk_proj/caizhu-rosa/softcopyright/generate_softcopyright_doc_pdf.py"
+
+输出：
+/Users/huyi/dk_proj/caizhu-rosa/softcopyright/软著文档-彩珠五连-V1.0.0.pdf
+
+2. 源程序（代码鉴别材料）：
+
+python3 "/Users/huyi/dk_proj/caizhu-rosa/softcopyright/generate_softcopyright_pdf.py"
+
+输出：
+/Users/huyi/dk_proj/caizhu-rosa/softcopyright/软著源程序-彩珠五连-V1.0.0.pdf
+
+说明：源程序 PDF 通常仅在源码有大版本变化时需要重新生成；文档 PDF 在替换 pics 截图后需要重新生成。
